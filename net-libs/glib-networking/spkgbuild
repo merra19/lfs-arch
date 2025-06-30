@@ -1,0 +1,23 @@
+# description	: Network-related giomodules for glib
+# depends	: glib gnutls gsettings-desktop-schemas p11-kit meson dbus
+# depends	: glibc libproxy
+
+pkgname=glib-networking
+pkgver=2.80.1
+pkgrel=1
+source="https://ftp.gnome.org/pub/gnome/sources/$pkgname/${pkgver%.*}/$pkgname-$pkgver.tar.xz
+        lib32"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd $pkgname-$pkgver
+
+    arch-meson build -D libproxy=enabled
+    meson compile -C build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    meson install -C build --destdir "$pkgdir"
+}

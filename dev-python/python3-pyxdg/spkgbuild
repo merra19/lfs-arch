@@ -1,0 +1,21 @@
+# description	: A Python module to deal with freedesktop.org specifications
+# depends	: python3 python3-wheel python3-gpep517 python3-setuptools 
+# depends	: python3-flit-core
+
+pkgname=python3-pyxdg
+pkgver=0.28
+pkgrel=1
+source="https://files.pythonhosted.org/packages/b0/25/7998cd2dec731acbd438fbf91bc619603fc5188de0a9a17699a781840452/pyxdg-$pkgver.tar.gz"
+optsflags=" -fno-lto "
+
+build() {
+    cd pyxdg-$pkgver
+    
+    gpep517 build-wheel --wheel-dir .dist --output-fd 3 3>&1 >&2
+}
+
+package() {
+	cd pyxdg-$pkgver
+
+	python3 -m installer -d "$pkgdir" .dist/*.whl
+}

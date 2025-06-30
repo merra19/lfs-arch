@@ -1,0 +1,71 @@
+# description	: Utilities to deal with user accounts
+# depends	: acl attr xz linux-api-headers pam libxcrypt itstool
+# depends	: libtool
+
+pkgname=shadow
+pkgver=4.17.4
+pkgrel=1
+options="!emptydirs"
+source="https://github.com/shadow-maint/shadow/releases/download/$pkgver/$pkgname-$pkgver.tar.xz
+        0001-Disable-replaced-tools-their-man-pages-and-PAM-integ.patch
+        0002-Adapt-login.defs-for-PAM-and-util-linux.patch
+        0003-Add-Arch-Linux-defaults-for-login.defs.patch
+        shadow.sysusers shadow.tmpfiles useradd.defaults"
+backup="etc/default/useradd etc/login.defs etc/pam.d/chpasswd etc/pam.d/groupmems
+        etc/pam.d/newusers etc/pam.d/passwd" 
+optsflags=" -O3 -ffat-lto-objects -flto=auto -fstack-protector-strong -fzero-call-used-regs=used "
+
+build() {
+    cd $pkgname-$pkgver
+
+    patch -Np1 -i ../0001-Disable-replaced-tools-their-man-pages-and-PAM-integ.patch
+    patch -Np1 -i ../0002-Adapt-login.defs-for-PAM-and-util-linux.patch
+    patch -Np1 -i ../0003-Add-Arch-Linux-defaults-for-login.defs.patch
+
+    autoreconf -fiv
+
+    # add extra check, preventing accidental deletion of other user's home dirs when using `userdel -r <user with home in />`
+    export CFLAGS="$CFLAGS -DEXTRA_CHECK_HOME_DIR"
+
+    ./configure \
+        --bindir=/usr/bin \
+        --disable-account-tools-setuid \
+        --enable-man \
+        --libdir=/usr/lib \
+        --mandir=/usr/share/man \
+        --prefix=/usr \
+        --sbindir=/usr/bin \
+        --sysconfdir=/etc \
+        --without-audit \
+        --with-fcap \
+        --with-group-name-max-length=32 \
+        --with-libpam \
+        --with-yescrypt \
+        --without-bcrypt \
+        --without-libbsd \
+        --without-nscd \
+        --without-selinux \
+        --without-su
+        
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+    make DESTDIR="$pkgdir" -C man install
+
+    # custom useradd(8) defaults (not provided by upstream)
+    install -vDm 600 ../useradd.defaults "$pkgdir/etc/default/useradd"
+
+    install -vDm 644 ../shadow.sysusers "$pkgdir/usr/lib/sysusers.d/shadow.conf"
+    install -vDm 644 ../shadow.tmpfiles "$pkgdir/usr/lib/tmpfiles.dshadow.conf"
+
+    # adapt executables to match the modes used by tmpfiles.d
+    chmod 750 "$pkgdir/usr/bin/groupmems"
+
+    rm -f "$pkgdir"/usr/share/man/man3/getspnam.3
+    rm -f "$pkgdir"/usr/share/man/man5/passwd.5
+}

@@ -1,0 +1,22 @@
+# description	: Creates user dirs and asks to relocalize them
+# depends	: glibc glib gtk3 xdg-user-dirs meson
+
+pkgname=xdg-user-dirs-gtk
+pkgver=0.14
+pkgrel=1
+source="https://download.gnome.org/sources/xdg-user-dirs-gtk/$pkgver/xdg-user-dirs-gtk-$pkgver.tar.xz
+        0001-desktop-Show-in-more-environments.patch"
+
+prepare() {
+  cd $pkgname-$pkgver
+
+  patch -Np1 -i ../0001-desktop-Show-in-more-environments.patch
+}
+
+build() {
+    arch-meson $pkgname-$pkgver build
+    meson compile -C build
+}
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

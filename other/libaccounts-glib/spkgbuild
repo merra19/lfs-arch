@@ -1,0 +1,20 @@
+# description	: Accounts SSO (Single Sign-On) management library for GLib applications
+# depends	: glib glibc libxml2 sqlite check gobject-introspection
+# depends	: meson python3-gobject3 python3-packaging vala
+
+pkgname=libaccounts-glib
+pkgver=1.27
+pkgrel=3
+source="https://gitlab.com/accounts-sso/libaccounts-glib/-/archive/VERSION_$pkgver/libaccounts-glib-VERSION_$pkgver.tar.gz"
+
+build() {
+    sed -e "/^subdir('docs')$/d" -i $pkgname-VERSION_$pkgver/meson.build 
+
+    meson $pkgname-VERSION_$pkgver build \
+        -Dprefix=/usr
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

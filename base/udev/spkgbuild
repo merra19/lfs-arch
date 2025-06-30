@@ -1,0 +1,320 @@
+# description	: Controlling the startup, running, and shutdown of the system
+# depends	: meson acl xz python3-jinja gperf libcap libxcrypt kmod
+# depends	: elfutils lz4 pcre2 openssl iptables pam libidn2 qrencode
+# depends	: coreutils gettext libpwquality libseccomp glibc 
+# depends	: libgcrypt
+
+pkgname=udev
+pkgver=257.6
+pkgrel=1
+options="!lto"
+source="https://github.com/systemd/systemd/archive/v$pkgver/systemd-$pkgver.tar.gz
+        https://anduin.linuxfromscratch.org/LFS/systemd-man-pages-$pkgver.tar.xz
+        0001-artix-standalone-install.patch
+        0001-journal-raise-compression-threshold.patch
+        0002-journal-Add-option-to-skip-boot-kmsg-events.patch
+        0003-core-use-mmap-to-load-files.patch
+        0005-journal-flush-var-kmsg-after-starting-disable-kmsg-f.patch
+        0006-logind-pam-fix-systemd-user-to-include-common-sessio.patch
+        0007-sd-event-return-malloc-memory-reserves-when-main-loo.patch
+        0008-efi-boot-generator-Do-not-automount-boot-partition.patch
+        0009-core-do-not-apply-presets.patch
+        0011-Ship-default-services-in-system-unit-dir.patch
+        0012-bootctl-Add-force-option-to-enable-chroot-install-re.patch
+        0013-tmpfiles-Make-var-cache-ldconfig-world-readable.patch
+        0014-Set-a-default-unique-hostname-when-it-is-either-clr-.patch
+        0016-not-load-iptables.patch
+        0018-Enable-BBR-Bottleneck-Bandwidth-and-RTT.patch
+        0019-network-online-complete-once-one-link-is-online-not-.patch
+        0020-DHCP-retry-faster.patch
+        0021-Remove-libm-memory-overhead.patch
+        0022-skip-not-present-ACPI-devices.patch
+        0023-Ensure-var-run-is-never-a-directory.patch
+        0024-Make-timesyncd-a-simple-service.patch
+        0027-Don-t-do-transient-hostnames-we-set-ours-already.patch
+        0028-don-t-use-libm-just-for-integer-exp10.patch
+        0029-Notify-systemd-earlier-that-resolved-is-ready.patch
+        0030-Hand-off-coredumps-to-a-wrapper-that-will-optionally.patch
+        0032-Do-not-enable-audit-by-default-in-the-journal.patch
+        0034-Localize-1-symbol.patch
+        0036-Disable-LLDP-listening-by-default.patch
+        0037-units-use-var-swapfile-if-found.patch
+        elfsection.patch system-hooks.sh"
+#noextract="systemd-man-pages-$pkgver.tar.xz"
+backup="etc/udev/iocost.conf etc/udev/udev.conf"
+            
+# https://github.com/systemd/systemd-stable/archive/refs/tags/v255.9.tar.gz
+
+prepare() {
+    cd systemd-$pkgver
+
+    for i in $source;do
+        case $i in
+            0002-journal-Add-option-to-skip-boot-kmsg-events.patch) continue ;;
+            0005-journal-flush-var-kmsg-after-starting-disable-kmsg-f.patch) continue ;;
+            #0012-bootctl-Add-force-option-to-enable-chroot-install-re.patch) continue ;;
+            #0014-Set-a-default-unique-hostname-when-it-is-either-clr-.patch) continue ;;
+            #0034-Localize-1-symbol.patch ) continue ;;
+            *.patch) patch -Np1 -i ../$i
+        esac
+    done
+
+    cd "$srcdir"/systemd-man-pages-$pkgver
+
+    for i in man1 man3 man5 man7 man8;do
+        mv $i/*  ./
+    done
+}
+
+build() {
+
+    CFLAGS="-O2 -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector --param=ssp-buffer-size=32 -Wformat -Wformat-security -Wno-error -Wl,-z,max-page-size=0x4000 -march=$MMARCH"
+    CXXFLAGS=$CFLAGS
+    FFLAGS="-O2 -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector --param=ssp-buffer-size=32 -Wno-error -Wl,-z,max-page-size=0x4000 -march=$MMARCH"
+    FCFLAGS=$FFLAGS
+
+    CFLAGS="$CFLAGS -fno-lto "
+    FCFLAGS="$FFLAGS -fno-lto "
+    FFLAGS="$FFLAGS -fno-lto "
+    CXXFLAGS="$CXXFLAGS -fno-lto "
+    
+	#if [ -n "$FAKEROOTKEY" ]; then
+    #    PATHFAKEROOT=/usr/lib/libfakeroot:/usr/lib32/libfakeroot
+	#fi
+
+    # Replace cdrom/dialout/tape groups with optical/uucp/storage
+    #patch -Np1 -i ../0001-Use-Arch-Linux-device-access-groups.patch
+
+    local _timeservers=({0..3}.europe.pool.ntp.org)
+    local _nameservers=(
+        # We use these public name services, ordered by their privacy policy (hopefully):
+        #  * Cloudflare (https://1.1.1.1/)
+        #  * Quad9 (https://www.quad9.net/)
+        #  * Google (https://developers.google.com/speed/public-dns/)
+        '1.1.1.1#cloudflare-dns.com'
+        '9.9.9.9#dns.quad9.net'
+        '8.8.8.8#dns.google'
+        '2606:4700:4700::1111#cloudflare-dns.com'
+        '2620:fe::9#dns.quad9.net'
+        '2001:4860:4860::8888#dns.google'
+    )
+
+    local _meson_options=(
+        -D version-tag="$pkgver-tt"
+        -D vcs-tag=false
+        -D shared-lib-tag="$pkgver"
+        -D mode=release
+
+        -D standalone-binaries=true
+        -D sysusers=true
+        -D tmpfiles=true
+
+        -D hwdb=true
+
+        -D blkid=enabled
+
+        -D kmod=enabled
+
+        -D gshadow=false
+
+        -D sbat-distro='linux'
+        -D sbat-distro-summary='Linux'
+        -D sbat-distro-pkgname="systemd"
+        -D sbat-distro-version="$pkgver"
+
+        -D tests=true
+
+        -D link-udev-shared=false
+
+        -D default-keymap='fr'
+
+        -D man=disabled
+
+        -D html=disabled
+
+        -D ntp-servers="${_timeservers[*]}"
+        -D dns-servers="${_nameservers[*]}"
+        -Defi=false
+
+        -D sysvinit-path=
+        -D sysvrcnd-path=
+        -D default-dnssec=no
+
+        -D default-llmnr=no
+        -D default-mdns=no
+
+        -D sshconfdir=no
+
+        -D adm-group=false
+        -D analyze=false
+
+        -D apparmor=disabled
+        -D audit=disabled
+        -D backlight=false
+        -D binfmt=false
+        -D bootloader=disabled
+        -D bzip2=disabled
+        -D coredump=false
+        -D dbus=disabled
+        -D elfutils=disabled
+        -D environment-d=false
+        -D fdisk=disabled
+        -D gcrypt=disabled
+        -D glib=disabled
+        -D gnutls=disabled
+        -D hibernate=false
+        -D hostnamed=false
+        -D idn=false
+        -D ima=false
+        -D initrd=false
+        -D firstboot=false
+        -D kernel-install=false
+        -D ldconfig=false
+        -D libcryptsetup=disabled
+        -D libcurl=disabled
+        -D libfido2=disabled
+        -D libidn=disabled
+        -D libidn2=disabled
+        -D libiptc=disabled
+        -D localed=false
+        -D logind=false
+        -D lz4=disabled
+        -D machined=false
+        -D microhttpd=disabled
+        -D networkd=false
+        -D nscd=false
+        -D nss-myhostname=false
+        -D nss-resolve=disabled
+        -D nss-systemd=false
+        -D oomd=false
+        -D openssl=disabled
+        -D p11kit=disabled
+        -D pam=disabled
+        -D pcre2=disabled
+        -D polkit=disabled
+        -D portabled=false
+        -D pstore=false
+        -D pwquality=disabled
+        -D randomseed=false
+        -D resolve=false
+        -D rfkill=false
+        -D seccomp=disabled
+        -D smack=false
+        -D storagetm=false
+        -D sysext=false
+        -D timedated=false
+        -D timesyncd=false
+        -D tpm=false
+        -D qrencode=disabled
+        -D quotacheck=false
+        -D userdb=false
+        -D utmp=false
+        -D vconsole=false
+        -D vmspawn=disabled
+        -D wheel-group=false
+        -D xdg-autostart=false
+        -D xkbcommon=disabled
+        -D xz=disabled
+        -D zlib=disabled
+        -D zstd=disabled
+
+        -D bpf-framework=disabled
+        -D passwdqc=disabled
+        -D selinux=disabled
+        -D xenctrl=disabled
+        -D libcryptsetup-plugins=disabled
+        -D repart=disabled
+        -D sysupdate=disabled
+        -D importd=disabled
+        -D homed=disabled
+        -D remote=disabled
+        -D nss-mymachines=disabled
+        -D ukify=disabled
+        -D tpm2=disabled
+    )
+
+
+    PKG_CONFIG_PATH="/usr/lib/pkgconfig:/tools/lib/pkgconfig" \
+        arch-meson systemd-$pkgver build "${_meson_options[@]}"
+
+    _targets+=(
+        udev:shared_library
+        src/libudev/libudev.pc
+
+        udevadm
+        {ata_id,cdrom_id,dmi_memory_id,fido_id,iocost,mtd_probe,scsi_id,v4l_id}
+        rules.d/{50-udev-default,60-persistent-storage,64-btrfs}.rules
+        udev-hwdb
+        hwdb.d/60-autosuspend-chromiumos.hwdb
+        src/udev/udev.pc
+        #man/{libudev.3,udev.conf.5,hwdb.7,udev.7,udevadm.8,iocost.conf.5,systemd-hwdb.8}
+
+        esysusers
+        etmpfiles
+        sysusers.d/basic.conf
+        tmpfiles.d/{etc,static-nodes-permissions,var,legacy}.conf
+        #man/{sysusers,tmpfiles}.d.5
+        #man/systemd-{sysusers,tmpfiles}.8
+        factory/templates/{locale,vconsole}.conf
+
+        systemd-detect-virt
+        systemd-runtest.env
+
+        test-libudev
+        test-libudev-sym
+
+        test-udev-builtin
+        test-udev-device-thread
+        test-udev-format
+        test-udev-manager
+        test-udev-node
+        test-udev-rules
+        test-udev-spawn
+        #test-udev-util
+
+        test-fido-id-desc
+        test-link-config-tables
+    )
+    meson compile -C build "${_targets[@]}"
+}
+
+_inst_man() {
+    local x="$1" y=${1##*.} man
+    install -d "${pkgdir}"/usr/share/man/man"$y"
+    case "$x" in
+        *sysusers*|*tmpfiles*) man=${x/systemd-/e} ;;
+        *) man=${x/systemd/udev} ;;
+    esac
+    install -vm644 systemd-man-pages-$pkgver/"$x" "${pkgdir}"/usr/share/man/man"$y/$man"
+    #install -vm644 build/man/"$x" "${pkgdir}"/usr/share/man/man"$y/$man"
+}
+
+package() {
+
+    meson install -C build --destdir "$pkgdir" --no-rebuild --tags udev,udev-devel
+
+    for m in udev.conf.5 iocost.conf.5 udev.7 udevadm.8 systemd-hwdb.8; do
+        _inst_man "$m"
+    done
+
+    # libudev
+    meson install -C build --destdir "$pkgdir" --no-rebuild --tags libudev,libudev-devel
+
+    _inst_man "libudev.3"
+
+    # esysusers
+    meson install -C build --destdir "$pkgdir" --no-rebuild --tags esysusers
+
+    #_inst_man "sysusers.d.5"
+    _inst_man "systemd-sysusers.8"
+
+    # etmpfiles
+
+    meson install -C build --destdir "$pkgdir" --no-rebuild --tags etmpfiles
+
+    _inst_man "tmpfiles.d.5"
+    _inst_man "systemd-tmpfiles.8"
+
+    install -D -m0755 system-hooks.sh "$pkgdir"/usr/share/blfs-bootscripts/system-hooks.sh
+}
+

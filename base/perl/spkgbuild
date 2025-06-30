@@ -1,0 +1,101 @@
+# description	: Larry Wall's Practical Extraction and Report Language
+# depends	: gdbm bzip2 zlib libxcrypt
+
+pkgname=perl
+pkgver=5.40.2
+_baseversion="${pkgver%.*}"
+pkgrel=2
+options="makeflags !purge emptydirs"
+source="https://www.cpan.org/src/5.0/$pkgname-$pkgver.tar.xz
+        https://www.linuxfromscratch.org/patches/lfs/development/perl-5.40.2-upstream_fix-1.patch
+        config.over
+        perlbin.sh
+        perlbin.csh
+        perlbin.fish
+        detect-old-perl-modules.sh
+        detect-old-perl-modules.hook"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    cp ../config.over .
+
+    patch -Np1 -i ../perl-5.40.2-upstream_fix-1.patch
+
+    ./Configure \
+        -der \
+        -D prefix=/usr \
+        -D vendorprefix=/usr \
+        -D privlib=/usr/share/perl5/core_perl \
+        -D archlib=/usr/lib/perl5/$_baseversion/core_perl \
+        -D sitelib=/usr/share/perl5/site_perl \
+        -D sitearch=/usr/lib/perl5/$_baseversion/site_perl \
+        -D vendorlib=/usr/share/perl5/vendor_perl \
+        -D vendorarch=/usr/lib/perl5/$_baseversion/vendor_perl \
+        -D scriptdir=/usr/bin/core_perl \
+        -D sitescript=/usr/bin/site_perl \
+        -D vendorscript=/usr/bin/vendor_perl \
+        -D inc_version_list=none \
+        -D man1ext=1perl \
+        -D man3ext=3perl \
+        -D installman1dir='/usr/share/man/man1' \
+        -D installman3dir='/usr/share/man/man3' \
+        -D man1dir='/usr/share/man/man1' \
+        -D man3dir='/usr/share/man/man3' \
+        -D pager="/usr/bin/less -isR" \
+        -D usethreads \
+        -D useshrplib \
+        -A define:d_procselfexe \
+        -A define:procselfexe='"/proc/self/exe"' \
+        -A define:optimize="-O3 -ffunction-sections -fno-semantic-interposition -fopt-info-vec -ffat-lto-objects -flto=4 " \
+        -A define:ccflags="$CFLAGS" \
+        -A define:ldflags="$LDFLAGS" \
+        -A define:lddflags="$LDFLAGS"
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+
+    ### Perl Settings ###
+    # Change man page extensions for site and vendor module builds.
+    # Set no mail address since bug reports should go to the bug tracker
+    # and not someone's email.
+    sed -e '/^man1ext=/ s/1perl/1p/' -e '/^man3ext=/ s/3perl/3pm/' \
+        -e "/^cf_email=/ s/'.*'/''/" \
+        -e "/^perladmin=/ s/'.*'/''/" \
+        -i "${pkgdir}/usr/lib/perl5/$_baseversion/core_perl/Config_heavy.pl"
+
+    ### CPAN Settings ###
+    # Set CPAN default config to use the site directories.
+    sed -e '/(makepl_arg =>/   s/""/"INSTALLDIRS=site"/' \
+        -e '/(mbuildpl_arg =>/ s/""/"installdirs=site"/' \
+        -i "${pkgdir}/usr/share/perl5/core_perl/CPAN/FirstTime.pm"
+
+    # Profile script to set paths to perl scripts.
+    install -D -m644 "${srcdir}/perlbin.sh" \
+                    "${pkgdir}/etc/profile.d/perlbin.sh"
+    # Profile script to set paths to perl scripts on csh. (FS#22441)
+    install -D -m644 "${srcdir}/perlbin.csh" \
+                    "${pkgdir}/etc/profile.d/perlbin.csh"
+    # Profile script to set paths to perl scripts on fish. (FS#51191)
+    install -D -m 755 "$srcdir/perlbin.fish" \
+                    "$pkgdir/usr/share/fish/vendor_conf.d/perlbin.fish"
+
+    # Add the dirs so new installs will already have them in PATH once they
+    # install their first perl programm
+    install -d -m755 "$pkgdir/usr/bin/vendor_perl"
+    install -d -m755 "$pkgdir/usr/bin/site_perl"
+
+    #(cd ${pkgdir}/usr/bin; mv perl${pkgver} perl)
+    rm "$pkgdir/usr/bin/perl$pkgver"
+
+    #install -D -m755 -t "$pkgdir/usr/share/libalpm/scripts" "$srcdir/detect-old-perl-modules.sh"
+    #install -D -m644 -t "$pkgdir/usr/share/libalpm/hooks" "$srcdir/detect-old-perl-modules.hook"
+
+    find "$pkgdir" -name perllocal.pod -delete
+    find "$pkgdir" -name .packlist -delete
+}

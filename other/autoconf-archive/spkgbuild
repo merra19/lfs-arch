@@ -1,0 +1,30 @@
+# description	: GNU Autoconf Macro Archive
+# depends	: glibc autoconf automake
+
+pkgname=autoconf-archive
+pkgver=2024.10.16
+pkgrel=2
+source="https://ftpmirror.gnu.org/${pkgname}/${pkgname}-${pkgver}.tar.xz
+        $pkgname-$pkgver-lua.patch
+        https://dev.gentoo.org/~sam/distfiles/dev-build/autoconf-archive/autoconf-archive-2024.10.16-patches.tar.xz"
+optsflags=" -fno-lto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    patch -Np1 -i ../$pkgname-$pkgver-lua.patch
+
+    for i in "$srcdir"/autoconf-archive-2024.10.16-patches/*.patch ;do
+        patch -Np1 -i $i
+    done
+
+    ./configure \
+        --prefix=/usr
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="${pkgdir}" install
+}

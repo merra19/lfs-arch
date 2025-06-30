@@ -1,0 +1,19 @@
+# description	: A daemon/lib combo for Linux that allows games to request a set of optimisations be temporarily applied to the host OS
+# depends	: meson ninja inih dbus elogind bash polkit
+
+pkgname=gamemode
+pkgver=1.8.2
+pkgrel=1
+source="https://github.com/FeralInteractive/gamemode/releases/download/$pkgver/$pkgname-$pkgver.tar.xz"
+
+build() {
+    arch-meson $pkgname-$pkgver build \
+        --libexecdir /usr/lib/gamemode \
+        -D with-sd-bus-provider=elogind \
+        -D with-examples=false
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "${pkgdir}"
+}

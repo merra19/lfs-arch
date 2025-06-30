@@ -1,0 +1,38 @@
+# description	: Programmable completion for the bash shell
+# depends	: bash
+
+pkgname=bash-completion
+pkgver=2.16.0
+pkgrel=1
+options="!emptydirs !makeflags !lto"
+source="https://github.com/scop/bash-completion/releases/download/$pkgver/$pkgname-$pkgver.tar.xz"
+optsflags=" -fno-lto "
+
+bsdtar() {
+tar $@;
+}
+
+build() {
+    cd $pkgname-$pkgver
+
+    autoreconf -fiv
+    
+    ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+
+    # bash-completion is sourced in /etc/bash.bashrc so that non-bash shell don't source it
+    rm "${pkgdir}/etc/profile.d/bash_completion.sh"
+
+    # remove Slackware's makepkg completion
+    rm "$pkgdir/usr/share/bash-completion/completions/makepkg"
+     # remove libsecret provided completion issue #3
+    rm -f "$pkgdir"/usr/share/bash-completion/completions/secret-tool
+}

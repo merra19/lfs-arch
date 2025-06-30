@@ -1,0 +1,29 @@
+# description	: Console-based Audio Visualizer with support for multiple backends
+# depends	: glibc fftw  iniparser  alsa-lib pipewire portaudio sdl2
+# depends	: sndio ncurses pulseaudio
+
+pkgname=cava
+pkgver=0.10.4
+pkgrel=3
+source="https://github.com/karlstav/cava/archive/$pkgver/$pkgname-$pkgver.tar.gz"
+
+prepare() {
+    cd $pkgname-$pkgver
+
+    echo "$pkgver" > version
+    autoreconf -vif
+}
+
+build() {
+    cd $pkgname-$pkgver
+
+    ./configure \
+        --prefix=/usr 
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

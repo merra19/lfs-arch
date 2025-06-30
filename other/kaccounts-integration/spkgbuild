@@ -1,0 +1,21 @@
+# description	: Administer web accounts for the sites and services across the Plasma desktop
+# depends	:  glibc kcmutils kconfig kcoreaddons kdbusaddons
+# depends	: ki18n kio kirigami kwallet libaccounts-qt qt6-base
+# depends	: signond qt6-declarative extra-cmake-modules kdoctools 
+# depends	: qcoro6
+## signon-kwallet-extension signon-plugin-oauth2 signon-ui
+
+pkgname=kaccounts-integration
+pkgver=25.04.0
+pkgrel=1
+source="https://download.kde.org/stable/release-service/$pkgver/src/$pkgname-$pkgver.tar.xz"
+
+build() {
+    cmake -B build -S $pkgname-$pkgver \
+        -D BUILD_TESTING=OFF
+    cmake --build build
+}
+
+package() {
+    DESTDIR="$pkgdir" cmake --install build
+}

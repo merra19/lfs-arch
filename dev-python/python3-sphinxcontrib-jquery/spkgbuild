@@ -1,0 +1,20 @@
+# description	: Sphinx extension which outputs Devhelp documents
+# depends	: python3 python3-gpep517 python3-setuptools python3-wheel
+
+pkgname=python3-sphinxcontrib-jquery
+pkgver=4.1
+pkgrel=1
+source="https://files.pythonhosted.org/packages/source/s/sphinxcontrib-jquery/sphinxcontrib-jquery-$pkgver.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd sphinxcontrib-jquery-$pkgver
+
+    gpep517 build-wheel --wheel-dir .dist --output-fd 3 3>&1 >&2
+}
+
+package() {
+	cd sphinxcontrib-jquery-$pkgver
+
+    python3 -m installer -d "$pkgdir" .dist/*.whl
+}

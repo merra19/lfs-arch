@@ -1,0 +1,21 @@
+# description	: Easy-to-use Python module for text parsing
+# depends	: python3-flit-core python3-gpep517 python3-cython 
+# depends	: python3-meson python3-pyproject-metadata
+
+pkgname=python3-numpy
+pkgver=2.3.1
+pkgrel=1
+source="https://files.pythonhosted.org/packages/source/n/numpy/numpy-$pkgver.tar.gz"
+optsflags=" -O3 -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition "
+
+build() {
+	cd numpy-$pkgver
+
+    gpep517 build-wheel --wheel-dir .dist --output-fd 3 3>&1 >&2
+}
+
+package() {
+	cd numpy-$pkgver
+
+	python3 -m installer -d "$pkgdir" .dist/*.whl
+}

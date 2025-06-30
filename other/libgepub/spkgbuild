@@ -1,0 +1,18 @@
+# description	: GObject based library for handling and rendering epub documents
+# depends	: glibc glib  libarchive libsoup3 libxml2 webkit2gtk-4.1 meson
+# depends	: gobject-introspection
+
+pkgname=libgepub
+pkgver=0.7.3
+pkgrel=2
+source="https://download.gnome.org/sources/libgepub/${pkgver%.*}/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=4 "
+
+build() {
+    arch-meson libgepub-$pkgver build
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

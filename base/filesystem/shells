@@ -1,0 +1,8 @@
+# Begin /etc/shells
+
+/bin/sh
+/bin/bash
+/usr/bin/sh
+/usr/bin/bash
+
+# End /etc/shells

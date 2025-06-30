@@ -1,0 +1,37 @@
+# description	: Create, destroy, resize, check, copy partitions and file systems
+# depends	: lvm2 e2fsprogs util-linux readline ncurses pkgconf
+# depends	: dosfstools
+
+pkgname=parted
+pkgver=3.6
+pkgrel=1
+source="https://ftp.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -Os -fdata-sections -ffat-lto-objects -ffunction-sections -flto=auto -fno-semantic-interposition "
+
+build() {
+	cd $pkgname-$pkgver
+
+    # Get the GCC version string (e.g., "gcc 15.1.0")
+    version_str=$(gcc -dumpversion)
+
+    # Extract the major version number
+    major_version=${version_str%%.*}
+
+    # Compare with 15
+    if (( major_version >= 15 )); then
+        # Fix building with GCC-15
+        sed -i 's/do_version ()/do_version (PedDevice** dev, PedDisk** diskp)/' parted/parted.c
+    fi
+
+	./configure \
+        --prefix=/usr \
+        --sbindir=/usr/bin \
+        --disable-rpath
+	make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+	make DESTDIR="$pkgdir" install
+}

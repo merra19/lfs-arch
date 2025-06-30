@@ -1,0 +1,27 @@
+# description	: Tabular Datastream Library
+# depends	: glibc krb5 openssl readline unixodb
+
+pkgname=freetds
+pkgver=1.5.4
+pkgrel=1
+source="https://www.freetds.org/files/stable/$pkgname-$pkgver.tar.bz2"
+backup="etc/freetds/freetds.conf etc/freetds/locales.conf etc/freetds/pool.conf"
+
+build() {
+	cd $pkgname-$pkgver
+	
+  ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc/freetds \
+        --enable-msdblib \
+        --enable-krb5 \
+        --with-unixodbc=/usr \
+        --with-openssl
+  make 
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+	make DESTDIR="$pkgdir" install
+}

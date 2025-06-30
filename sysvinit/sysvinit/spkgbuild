@@ -1,0 +1,30 @@
+# description	: Access control list utilities, libraries, and headers
+# depends	: glibc lfs-bootscript
+
+pkgname=sysvinit
+pkgver=3.14
+pkgrel=1
+source="https://github.com/slicer69/sysvinit/releases/download/$pkgver/$pkgname-$pkgver.tar.xz
+        https://www.linuxfromscratch.org/patches/lfs/development/sysvinit-$pkgver-consolidated-1.patch
+        https://anduin.linuxfromscratch.org/LFS/udev-lfs-20230818.tar.xz
+        clock console inittab rc.site"
+
+build() {
+    cd $pkgname-$pkgver
+
+    patch -Np1 -i ../sysvinit-3.14-consolidated-1.patch
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+
+    cd "$srcdir"
+    make -f udev-lfs-20230818/Makefile.lfs DESTDIR="$pkgdir" install
+
+    install -d "$pkgdir"/etc/sysconfig/
+    install -m 0644 inittab "$pkgdir"/etc/inittab
+    install -m 0644 console clock rc.site "$pkgdir"/etc/sysconfig/
+}

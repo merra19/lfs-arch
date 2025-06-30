@@ -1,0 +1,17 @@
+# description	: dav1d is an AV1 Decoder :)
+# depends	: polkit cups glib glibc meson
+
+pkgname=cups-pk-helper
+pkgver=0.2.7
+pkgrel=2
+source="https://www.freedesktop.org/software/$pkgname/releases/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    arch-meson $pkgname-$pkgver build
+    meson compile -C build
+}
+
+package() {
+    DESTDIR="$pkgdir" ninja -C build install
+}

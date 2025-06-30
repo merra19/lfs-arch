@@ -1,0 +1,21 @@
+# description	: Python implementation of the markdown markup language
+# depends	: python3 python3-wheel python3-gpep517 python3-setuptools
+
+pkgname=python3-markdown
+pkgver=3.8
+pkgrel=1
+options="!lto"
+source="https://files.pythonhosted.org/packages/source/M/Markdown/Markdown-$pkgver.tar.gz"
+optsflags=" -fno-lto "
+
+build() {
+    cd Markdown-$pkgver
+
+    gpep517 build-wheel --wheel-dir .dist --output-fd 3 3>&1 >&2
+}
+
+package() {
+	cd Markdown-$pkgver
+
+	python3 -m installer -d "$pkgdir" .dist/*.whl
+}

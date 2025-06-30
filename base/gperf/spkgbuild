@@ -1,0 +1,24 @@
+# description	: A perfect hash function generator
+# depends	: glibc
+
+pkgname=gperf
+pkgver=3.3
+pkgrel=1
+options="!makeflags"
+source="https://ftp.gnu.org/gnu/gperf/$pkgname-$pkgver.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    ./configure \
+        --prefix=/usr \
+        --docdir=/usr/share/gperf/doc/
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

@@ -1,0 +1,74 @@
+# description	: An ultra-fast, ultra-compact key-value embedded data store
+# depends	: e2fsprogs keyutils lmdb yasm
+
+pkgname=krb5
+pkgver=1.21.3
+pkgrel=1
+options="!lto !emptydirs"
+source="https://kerberos.org/dist/krb5/${pkgver%.*}/$pkgname-$pkgver.tar.gz
+        https://www.linuxfromscratch.org/patches/blfs/svn/mitkrb-1.21.3-gcc15_fixes-1.patch"
+backup="etc/krb5.conf var/lib/krb5kdc/kdc.conf"
+optsflags=" -fno-lto "
+
+build() {
+	cd $pkgname-$pkgver
+
+    # FS#25384
+    sed -i "/KRB5ROOT=/s/\/local//" src/util/ac_check_krb5.m4
+
+    # Get the GCC version string (e.g., "gcc 15.1.0")
+    version_str=$(gcc -dumpversion)
+
+    # Extract the major version number
+    major_version=${version_str%%.*}
+
+    # Compare with 15
+    if (( major_version >= 15 )); then
+        # Fix building with GCC-15
+        patch -Np1 -i ../mitkrb-1.21.3-gcc15_fixes-1.patch
+    fi
+
+    cd src &&
+
+	sed -i -e '/eq 0/{N;s/12 //}'    plugins/kdb/db2/libdb2/test/run.test &&
+
+    export CFLAGS+=" -fPIC -fno-strict-aliasing -fstack-protector-all"
+    export CPPFLAGS+=" -I/usr/include/et"
+
+    scratch isinstalled openldap &&  OPT_LDAP="--with-ldap"
+   
+	./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --localstatedir=/var/lib \
+        --enable-shared \
+        --with-system-et \
+        --with-system-ss \
+        --disable-rpath \
+        --without-tcl \
+        --enable-dns-for-realm \
+        $OPT_LDAP \
+        --with-lmdb
+	make
+}
+
+package() {
+    cd $pkgname-$pkgver/src
+
+	make DESTDIR="$pkgdir" install
+    #make -C contrib DESTDIR="$pkgdir" install
+
+    mkdir -p "$pkgdir"/usr/share/doc/$pkgname
+    cp -vfr ../doc -T "$pkgdir"/usr/share/doc/$pkgname
+    sed '/PROG_RPATH_FLAGS/d' -i "$pkgdir"/usr/bin/krb5-config
+
+    # Fix FS#29889
+    install -d "$pkgdir/usr/share/doc/$pkgname/examples"
+    install -m 644 plugins/kdb/ldap/libkdb_ldap/kerberos.{ldif,schema} \
+            "$pkgdir/usr/share/doc/$pkgname/examples"
+
+    install -Dpm 644 config-files/krb5.conf -t "$pkgdir/etc"
+    install -Dpm 644 config-files/kdc.conf -t "$pkgdir/var/lib/krb5kdc"
+
+    install -Dm 644 util/ac_check_krb5.m4 -t "$pkgdir/usr/share/aclocal"
+}

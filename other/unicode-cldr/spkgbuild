@@ -1,0 +1,14 @@
+# description	: Unicode Common Locale Data Repository
+
+pkgname=unicode-cldr
+pkgver=42.0
+pkgrel=2
+source="https://unicode.org/Public/cldr/${pkgver%.*}/cldr-common-$pkgver.zip"
+
+package() {
+    cd common
+
+    install -dm755 "$pkgdir"/usr/share/unicode/cldr/common
+    cp -r * "$pkgdir"/usr/share/unicode/cldr/common/
+
+}

@@ -1,0 +1,25 @@
+# description	: kernel routing and traffic control utilities
+# depends	: linux-api-headers libmnl bison flex iptables
+
+pkgname=iproute2
+pkgver=6.15.0
+pkgrel=1
+options="!emptydirs"
+source="https://www.kernel.org/pub/linux/utils/net/iproute2/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -Os -fdata-sections -ffat-lto-objects -ffunction-sections -flto=auto -fno-semantic-interposition "
+
+build() {
+    cd $pkgname-$pkgver
+
+    # Remove arpd since it is dependent on Berkeley DB
+    sed -i /ARPD/d Makefile
+    rm -fv man/man8/arpd.8
+
+    make NETNS_RUN_DIR=/run/netns
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" SBINDIR=/usr/sbin install
+}

@@ -1,0 +1,33 @@
+# description	: A man replacement that utilizes dbm instead of flat files
+# depends	: gdbm libpipeline zlib xz groff libseccomp
+
+pkgname=man-db
+pkgver=2.13.1
+pkgrel=1
+source="https://download.savannah.gnu.org/releases/man-db/$pkgname-$pkgver.tar.xz"
+backup="etc/man_db.conf"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    ./configure \
+        --prefix=/usr \
+        --sbindir=/usr/bin \
+        --libexecdir=/usr/lib \
+        --sysconfdir=/etc \
+        --with-systemdsystemunitdir=no \
+        --with-snapdir=/var/lib/snapd/snap \
+        --with-db=gdbm \
+        --disable-setuid \
+        --enable-cache-owner=root \
+        --enable-mandirs=GNU \
+        --with-sections="1 1p n l 8 3 3p 0 0p 2 3type 5 4 9 6 7"
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

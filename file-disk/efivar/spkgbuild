@@ -1,0 +1,25 @@
+# description	: Tools and library to manipulate EFI variables
+# depends	: linux-api-headers
+
+pkgname=efivar
+pkgver=39
+pkgrel=1
+options="!lto"
+source="https://github.com/rhboot/efivar/archive/$pkgver/$pkgname-$pkgver.tar.gz"
+optsflags=" -fno-lto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    make ENABLE_DOCS=0
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install ENABLE_DOCS=0 bindir=/usr/bin/ LIBDIR=/usr/lib includedir=/usr/include/
+
+    install -d "$pkgdir"/usr/share/man/man1 "$pkgdir"/usr/share/man/man3
+    install -vm644 docs/efivar.1 "$pkgdir"/usr/share/man/man1
+    install -vm644 docs/*.3      "$pkgdir"/usr/share/man/man3
+}

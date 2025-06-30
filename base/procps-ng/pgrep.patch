@@ -1,0 +1,11 @@
+--- src/pgrep.c	2024-12-03 08:08:16.196837910 +0100
++++ src/pgrep.c	2025-06-24 10:36:16.855518949 +0200
+@@ -498,7 +498,7 @@
+     unsigned long long ret;
+     char *rem;
+     errno = 0;
+-    ret = strtoull(in, &rem, ITEMS_COUNT);
++    ret = strtoull(in, &rem, 16);
+     if (errno || *rem != '\0') {
+         xwarnx(_("not a hex string: %s"), in);
+         return 0;

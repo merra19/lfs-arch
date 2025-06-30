@@ -1,0 +1,43 @@
+# description	: GnuPG Made Easy is a library for making GnuPG easier to use
+# depends	: gnupg swig libassuan libgpg-error python3 clisp 
+# depends	: python3-gpep517 python3-setuptools python3-wheel
+# depends	: qt6-base
+
+pkgname=gpgme
+pkgver=1.24.3
+pkgrel=1
+options="!lto"
+source=" https://www.gnupg.org/ftp/gcrypt/gpgme/gpgme-$pkgver.tar.bz2"
+optsflags=" -fno-lto "
+
+build() {
+	cd gpgme-$pkgver
+
+    sed -i 's/-unknown//' autogen.sh
+    autoreconf -fi
+
+	./configure \
+        --prefix=/usr \
+        --disable-fd-passing \
+        --disable-static \
+        --disable-gpgsm-test
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+	make PYTHONS=
+
+    (
+        cd lang/python 
+        top_builddir="$srcdir/gpgme-$pkgver" gpep517 build-wheel --wheel-dir .dist --output-fd 3 3>&1 >&2
+    )
+}
+
+package() {
+    options+="!emptydirs"
+
+    cd gpgme-$pkgver
+
+    make DESTDIR="${pkgdir}" install
+
+    rm -r "${pkgdir}"/usr/lib/python*
+    cd lang/python 
+    python3 -m installer -d "$pkgdir" .dist/*.whl
+}

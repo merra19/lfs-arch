@@ -1,0 +1,22 @@
+# description	: Internationalized Domain Names in Applications (IDNA)
+# depends	: python3 python3-gpep517 python3-setuptools python3-wheel 
+# depends	: python3-flit-core
+
+pkgname=python3-idna
+pkgver=3.10
+pkgrel=1
+options="!lto"
+source="https://files.pythonhosted.org/packages/source/i/idna/idna-$pkgver.tar.gz"
+optsflags=" -fno-lto "
+
+build() {
+    cd idna-$pkgver
+
+    gpep517 build-wheel --wheel-dir .dist --output-fd 3 3>&1 >&2
+}
+
+package() {
+	cd idna-$pkgver
+
+	python3 -m installer -d "$pkgdir" .dist/idna-$pkgver-py3-none-any.whl
+}

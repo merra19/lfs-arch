@@ -1,0 +1,55 @@
+# description	: tool for automating interactive applications
+# depends	: tcl
+
+pkgname=expect
+pkgver=5.45.4
+pkgrel=1
+source="https://prdownloads.sourceforge.net/expect/$pkgname$pkgver.tar.gz
+        https://www.linuxfromscratch.org/patches/lfs/development/expect-5.45.4-gcc14-1.patch
+        https://www.linuxfromscratch.org/patches/lfs/development/expect-5.45.4-gcc15-1.patch
+        expect-configure-c99.patch expect-c99.patch
+        expect-5.45.4-covscan-fixes.patch 
+        expect-5.45-format-security.patch"
+optsflags=" -O3 -ffat-lto-objects -flto=4 "
+
+prepare() {
+  cd $pkgname$pkgver
+
+    # Get the GCC version string (e.g., "gcc 15.1.0")
+    version_str=$(gcc -dumpversion)
+
+    # Extract the major version number
+    major_version=${version_str%%.*}
+
+    # Compare with 15
+    if (( major_version >= 15 )); then
+        # Fix building with GCC-15
+        patch -Np1 -i ../expect-5.45.4-gcc15-1.patch
+    else
+        patch -Np1 -i ../expect-5.45.4-gcc14-1.patch
+    fi
+
+    patch -Np0 -i ../expect-5.45-format-security.patch
+    #patch -Np1 -i ../expect-c99.patch
+    #patch -Np1 -i ../expect-5.45.4-covscan-fixes.patch
+    patch -Np1 -i ../expect-configure-c99.patch
+
+    autoreconf -i
+}
+
+
+build() {
+    cd $pkgname$pkgver
+   
+    ./configure \
+        --prefix=/usr \
+        --mandir=/usr/share/man 
+    make
+}
+
+package() {
+    cd $pkgname$pkgver
+
+    make DESTDIR="$pkgdir" install
+    ln -svf $pkgname$pkgver/lib$pkgname$pkgver.so "$pkgdir"/usr/lib
+}

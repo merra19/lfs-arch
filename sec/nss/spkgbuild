@@ -1,0 +1,88 @@
+# description	: Mozilla's Network Security Services library that implements PKI support
+# depends	: nspr sqlite zlib perl p11-kit glibc python3-gyp
+
+pkgname=nss
+pkgver=3.113
+vrsn=$(echo $pkgver | sed 's/\./_/g')
+pkgrel=1
+options="!lto"
+source="https://archive.mozilla.org/pub/security/nss/releases/NSS_${vrsn}_RTM/src/nss-$pkgver.tar.gz
+        https://www.linuxfromscratch.org/patches/blfs/svn/nss-standalone-1.patch
+        bundle.sh
+        certdata2pem.py"
+
+prepare() {
+  mkdir -p certs
+  ln -srft certs nss/lib/ckfw/builtins/{certdata.txt,nssckbi.h}
+}
+
+build() {
+    local buildsh_options=(
+        --disable-tests
+        --enable-libpkix
+        --opt
+        --system-nspr
+        --system-sqlite
+        --target x64
+    )
+
+    #cd certs
+    #../certdata2pem.py
+
+    #cd ..
+    #./bundle.sh
+
+
+    CFLAGS="${CFLAGS/-ftree-vectorize/}"
+    CXXFLAGS="${CXXFLAGS/-ftree-vectorize/}"
+
+    cd $pkgname-$pkgver/nss
+
+    ./build.sh "${buildsh_options[@]}"
+}
+
+package() {
+    local nsprver="$(pkg-config --modversion nspr)"
+    local libdir=/usr/lib includedir=/usr/include/nss
+
+    cd $pkgname-$pkgver
+
+    sed nss/pkg/pkg-config/nss.pc.in \
+        -e "s,%prefix%,/usr,g" \
+        -e "s,%exec_prefix%,\${prefix},g" \
+        -e "s,%libdir%,$libdir,g" \
+        -e "s,%includedir%,$includedir,g" \
+        -e "s,%NSPR_VERSION%,$nsprver,g" \
+        -e "s,%NSS_VERSION%,$pkgver,g" |
+        install -Dm644 /dev/stdin "$pkgdir$libdir/pkgconfig/nss.pc"
+
+    ln -s nss.pc "$pkgdir$libdir/pkgconfig/mozilla-nss.pc"
+
+    install -Dt "$pkgdir$libdir" dist/Release/lib/*.so
+
+    local vmajor vminor vpatch
+    { read vmajor; read vminor; read vpatch; } \
+        < <(awk '/#define.*NSS_V(MAJOR|MINOR|PATCH)/ {print $3}' nss/lib/nss/nss.h)
+
+    sed nss/pkg/pkg-config/nss-config.in \
+        -e "s,@prefix@,/usr,g" \
+        -e "s,@exec_prefix@,/usr,g" \
+        -e "s,@libdir@,$libdir,g" \
+        -e "s,@includedir@,$includedir,g" \
+        -e "s,@MOD_MAJOR_VERSION@,$vmajor,g" \
+        -e "s,@MOD_MINOR_VERSION@,$vminor,g" \
+        -e "s,@MOD_PATCH_VERSION@,$vpatch,g" |
+    install -D /dev/stdin "$pkgdir/usr/bin/nss-config"
+
+    install -Dt "$pkgdir/usr/bin" \
+        dist/Release/bin/{*util,shlibsign,signtool,signver,ssltap}
+
+    install -Dt "$pkgdir$includedir" -m644 dist/public/nss/*.h
+
+    install -Dt "$pkgdir/usr/share/man/man1" -m644 \
+        nss/doc/nroff/{*util,signtool,signver,ssltap}.1
+
+    # Replace built-in trust with p11-kit connection
+    ln -s pkcs11/p11-kit-trust.so "$pkgdir$libdir/p11-kit-trust.so"
+    ln -sf p11-kit-trust.so "$pkgdir$libdir/libnssckbi.so"
+}

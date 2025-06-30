@@ -1,0 +1,31 @@
+# description	: Library for password quality checking and generating random passwords
+# depends	: cracklib pam python3 python3-gpep517 python3-setuptools
+# depends	: python3-wheel 
+
+pkgname=libpwquality
+pkgver=1.4.5
+pkgrel=1
+options="!lto"
+source="https://github.com/libpwquality/libpwquality/releases/download/$pkgname-$pkgver/$pkgname-$pkgver.tar.bz2"
+optsflags=" -fno-lto "
+
+build() {
+	cd $pkgname-$pkgver
+
+    ./configure \
+        --prefix=/usr \
+        --disable-static \
+        --disable-python-bindings
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+    make
+    gpep517 build-wheel --wheel-dir .dist --output-fd 3 3>&1 >&2
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+    python3 -m installer -d "$pkgdir" .dist/*.whl
+
+    install -dm755 "$pkgdir"/etc/security/pwquality.conf.d
+}

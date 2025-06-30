@@ -1,0 +1,52 @@
+# description	: POSIX 1003.1e capabilities
+# depends	: diffutils pam gcc glibc
+
+pkgname=libcap
+pkgver=2.76
+pkgrel=1
+source="https://www.kernel.org/pub/linux/libs/security/linux-privs/libcap2/$pkgname-$pkgver.tar.xz
+        libcap-2.73-cgo-flags.patch"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+_common_make_options=(
+    CGO_CPPFLAGS="$CPPFLAGS"
+    CGO_CFLAGS="$CFLAGS"
+    CGO_CXXFLAGS="$CXXFLAGS"
+    CGO_LDFLAGS="$LDFLAGS"
+    CGO_REQUIRED="1"
+    GOFLAGS="-buildmode=pie -mod=readonly -modcacherw"
+    GO_BUILD_FLAGS="-ldflags '-compressdwarf=false -linkmode=external'"
+    )
+
+build() {
+    cd $pkgname-$pkgver
+
+    patch -Np1 -i ../libcap-2.73-cgo-flags.patch
+
+    local make_options=(
+        "${_common_make_options[@]}"
+        DYNAMIC=yes
+        KERNEL_HEADERS=/usr/include
+        lib=lib
+        prefix=/usr
+        sbindir=bin
+    )
+
+    make "${make_options[@]}"
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    local make_options=(
+        "${_common_make_options[@]}"
+        DESTDIR="$pkgdir"
+        RAISE_SETFCAP=no
+        lib=lib
+        prefix=/usr
+        sbindir=bin
+        install
+    )
+
+    make "${make_options[@]}"
+}

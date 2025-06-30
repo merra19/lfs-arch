@@ -1,0 +1,43 @@
+# description	: Identify a file's format by scanning binary data for patterns
+# depends	: zlib xz bzip2
+
+pkgname=file
+pkgver=5.46
+pkgrel=1
+options="!lto !emptydirs"
+source="https://astron.com/pub/file/$pkgname-$pkgver.tar.gz
+        0001-PR-579-net147-Fix-stack-overrun.patch
+        0002-PR-571-jschleus-Some-zip-files-are-misclassified-as-data.patch"
+optsflags=" -fno-lto -fstack-protector-strong -fzero-call-used-regs=used "
+
+build() {
+    cd $pkgname-$pkgver
+
+    patch -Np1 < ../0001-PR-579-net147-Fix-stack-overrun.patch
+    patch -Np1 < ../0002-PR-571-jschleus-Some-zip-files-are-misclassified-as-data.patch
+
+    CFLAGS+=" -pthread"
+
+    mkdir build
+    pushd build
+    ../configure --disable-bzlib \
+                --disable-libseccomp \
+                --disable-xzlib \
+                --disable-zlib
+    make
+    popd
+
+    ./configure \
+        --prefix=/usr \
+        --datadir=/usr/share/file \
+        --enable-fsect-man5 \
+        --enable-libseccomp
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+    make FILE_COMPILE=$(pwd)/build/src/file
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

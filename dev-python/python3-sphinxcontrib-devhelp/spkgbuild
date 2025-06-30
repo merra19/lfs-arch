@@ -1,0 +1,21 @@
+# description	: Sphinx extension which outputs Devhelp documents
+# depends	: python3 python3-gpep517 python3-setuptools python3-wheel
+
+pkgname=python3-sphinxcontrib-devhelp
+pkgver=2.0.0
+pkgrel=2
+options="!lto"
+source="https://files.pythonhosted.org/packages/source/s/sphinxcontrib-devhelp/sphinxcontrib_devhelp-$pkgver.tar.gz"
+optsflags=" -fno-lto "
+
+build() {
+	cd sphinxcontrib_devhelp-$pkgver
+
+    gpep517 build-wheel --wheel-dir .dist --output-fd 3 3>&1 >&2
+}
+
+package() {
+	cd sphinxcontrib_devhelp-$pkgver
+
+    python3 -m installer -d "$pkgdir" .dist/*.whl
+}

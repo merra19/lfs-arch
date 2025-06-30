@@ -1,0 +1,31 @@
+# description	: Provides a standard configuration setup for installing PKCS#11
+# depends	: libtasn1 libffi meson glibc
+
+pkgname=p11-kit
+pkgver=0.25.5
+pkgrel=1
+options="!lto"
+source="https://github.com/p11-glue/p11-kit/releases/download/$pkgver/$pkgname-$pkgver.tar.xz"
+optsflags=" -Os -fdata-sections -ffunction-sections -fno-lto -fno-semantic-interposition "
+
+build() {
+    cd $pkgname-$pkgver
+
+    arch-meson \
+        -D gtk_doc=false \
+		-D backend_max_links=4 \
+		-D libffi=enabled \
+		-D trust_module=enabled \
+        -D trust_paths=/etc/ssl/certs/ca-certificates.crt \
+        -D systemd=disabled \
+        p11-build
+    ninja -C p11-build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" ninja -C p11-build install
+
+    install -Dm644 "$pkgdir"/etc/pkcs11/pkcs11.conf.example -t "$pkgdir"/usr/share/doc/$pkgname
+}

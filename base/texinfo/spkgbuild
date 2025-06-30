@@ -1,0 +1,26 @@
+# description	: The GNU info program and utilities
+# depends	: ncurses perl
+
+pkgname=texinfo
+pkgver=7.2
+pkgrel=1
+source="https://ftp.gnu.org/gnu/texinfo/$pkgname-$pkgver.tar.xz
+        texinfo-install.hook texinfo-remove.hook"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    ./configure \
+        --prefix=/usr
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+
+    #install -dm755 "$pkgdir"/usr/share/libalpm/hooks/
+    #install -m644 ../texinfo-{install,remove}.hook "$pkgdir"/usr/share/libalpm/hooks/
+}

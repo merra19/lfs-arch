@@ -1,0 +1,10 @@
+# description	: init service scripts for dhcpcd
+
+pkgname=dhcpcd-init
+pkgver=1.0
+pkgrel=1
+source="dhcpcd"
+
+package() {
+    install -Dm 754 dhcpcd  "$pkgdir"/lib/services/dhcpcd
+}

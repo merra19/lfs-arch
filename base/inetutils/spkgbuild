@@ -1,0 +1,66 @@
+# description	: Collection of common network programs
+# depends	: ncurses readline
+
+pkgname=inetutils
+pkgver=2.6
+pkgrel=1
+options="!emptydirs"
+source="https://ftp.gnu.org/gnu/inetutils/$pkgname-$pkgver.tar.xz
+        inetutils.sysusers rlogin.pam rsh.pam"
+backup="etc/pam.d/rlogin etc/pam.d/rsh"
+optsflags=" -O3 -ffat-lto-objects -flto=auto -fstack-protector-strong -fzero-call-used-regs=used "
+
+build() {
+    cd $pkgname-$pkgver
+
+    # First, make the package build with gcc-14.1 or later
+    sed -i 's/def HAVE_TERMCAP_TGETENT/ 1/' telnet/telnet.c
+    sed -i 's/def HAVE_TERMCAP_TGETENT/ 1/' telnetd/utility.c
+
+    ./configure \
+        --prefix=/usr \
+        --libexec=/usr/bin \
+        --localstatedir=/var \
+        --without-wrap \
+        --with-pam \
+        --enable-ftp \
+        --enable-ftpd \
+        --enable-telnet \
+        --enable-telnetd \
+        --enable-talk \
+        --enable-talkd \
+        --enable-rlogin \
+        --enable-rlogind \
+        --enable-rsh \
+        --enable-rshd \
+        --enable-rcp \
+        --enable-hostname \
+        --enable-dnsdomainname \
+        --disable-rexec \
+        --disable-rexecd \
+        --disable-tftp \
+        --disable-tftpd \
+        --disable-ping \
+        --disable-ping6 \
+        --disable-logger \
+        --disable-syslogd \
+        --disable-inetd \
+        --disable-whois \
+        --disable-uucpd \
+        --disable-ifconfig \
+        --disable-traceroute
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+    
+    chmod -s "$pkgdir"/usr/bin/{rcp,rlogin,rsh}
+
+    install -D -m644 "$srcdir/rlogin.pam" "$pkgdir/etc/pam.d/rlogin"
+    install -D -m644 "$srcdir/rsh.pam" "$pkgdir/etc/pam.d/rsh"
+
+    install -vDm 644 ../inetutils.sysusers "$pkgdir/usr/lib/sysusers.d/inetutils.conf"
+}

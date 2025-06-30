@@ -1,0 +1,37 @@
+# description	: 'A fast and versatile file copying tool for remote and local files
+# depends	: acl lz4 openssl popt xxhash zlib zstd python3
+# depends	: python3-commonmark
+
+pkgname=rsync
+pkgver=3.4.1
+pkgrel=1
+source="https://www.samba.org/ftp/rsync/src/$pkgname-$pkgver.tar.gz
+        rsyncd.conf"
+backup="etc/rsyncd.conf"
+optsflags=" -fno-lto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    ./configure \
+        --prefix=/usr \
+        --enable-ipv6 \
+        --disable-debug \
+        --with-rrsync \
+        --with-included-popt=no \
+        --with-included-zlib=no
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+    # install support scripts to doc
+    for i in support/*; do
+        install -Dm0644 "$i" "$pkgdir/usr/share/doc/rsync/$i"
+    done
+    install -Dm0644 "tech_report.tex" "$pkgdir/usr/share/doc/rsync/tech_report.tex"
+    install -Dm0644 ../rsyncd.conf "$pkgdir/etc/rsyncd.conf"
+    install -Dm0644 packaging/lsb/rsync.xinetd "$pkgdir/etc/xinetd.d/rsync"
+}

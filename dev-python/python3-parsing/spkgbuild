@@ -1,0 +1,20 @@
+# description	: Easy-to-use Python module for text parsing
+# depends	: python3-flit-core python3-gpep517
+
+pkgname=python3-parsing
+pkgver=3.2.3
+pkgrel=1
+source="https://files.pythonhosted.org/packages/source/p/pyparsing/pyparsing-$pkgver.tar.gz"
+optsflags=" -fno-lto "
+
+build() {
+	cd pyparsing-$pkgver
+
+    gpep517 build-wheel --wheel-dir .dist --output-fd 3 3>&1 >&2
+}
+
+package() {
+	cd pyparsing-$pkgver
+
+	python3 -m installer -d "$pkgdir" .dist/pyparsing-$pkgver-py3-none-any.whl
+}

@@ -1,0 +1,53 @@
+# description	: A dbus session bus service that is used to bring up authentication dialogs
+# depends	: glib polkit gtk3 intltool pkgconf gettext 
+# depends	: accountsservice
+
+pkgname=polkit-gnome
+pkgver=0.105
+pkgrel=1
+source="https://download.gnome.org/sources/polkit-gnome/$pkgver/$pkgname-$pkgver.tar.xz
+        https://www.linuxfromscratch.org/patches/blfs/svn/polkit-gnome-$pkgver-consolidated_fixes-1.patch
+        polkit-gnome-authentication-agent-1.desktop
+        0001-Select-the-current-user-to-authenticate-with-by-defa.patch
+        0002-Auth-dialog-Make-the-label-wrap-at-70-chars.patch
+        0003-Get-user-icon-from-accountsservice-instead-of-lookin.patch
+        0004-Use-fresh-X11-timestamps-when-displaying-authenticat.patch"
+
+prepare() {
+  cd $pkgname-$pkgver
+
+  #patch -Np1 -i ../polkit-gnome-$pkgver-consolidated_fixes-1.patch
+
+  # Select the current user to authenticate with by default
+  patch -Np1 -i ../0001-Select-the-current-user-to-authenticate-with-by-defa.patch
+
+  # Auth dialog: Make the label wrap at 70 chars
+  patch -Np1 -i ../0002-Auth-dialog-Make-the-label-wrap-at-70-chars.patch
+
+  # Get user icon from accountsservice instead of looking in ~/.face
+  patch -Np1 -i ../0003-Get-user-icon-from-accountsservice-instead-of-lookin.patch
+
+  # Use fresh X11 timestamps when displaying authentication dialog
+  patch -Np1 -i ../0004-Use-fresh-X11-timestamps-when-displaying-authenticat.patch
+}
+
+build() {
+    cd $pkgname-$pkgver
+
+    ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --localstatedir=/var \
+        --libexecdir=/usr/lib/$pkgname
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+	make DESTDIR="$pkgdir" install
+
+    mkdir -p "$pkgdir"/etc/xdg/autostart 
+      install -Dm644 "$srcdir/polkit-gnome-authentication-agent-1.desktop" \
+        "$pkgdir/usr/share/applications/polkit-gnome-authentication-agent-1.desktop"
+}

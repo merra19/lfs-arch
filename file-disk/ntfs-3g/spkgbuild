@@ -1,0 +1,37 @@
+# description	: Create, destroy, resize, check, copy partitions and file systems
+# depends	: util-linux attr
+
+pkgname=ntfs-3g
+pkgver=2022.10.3
+pkgrel=1
+options="!lto"
+source="https://tuxera.com/opensource/${pkgname}_ntfsprogs-$pkgver.tgz"
+
+build() {
+	cd ${pkgname}_ntfsprogs-$pkgver
+
+    autoreconf -fiv
+
+    sed 's|$(DESTDIR)/sbin|$(DESTDIR)/usr/bin|' -i {ntfsprogs,src}/Makefile.in
+
+    ./configure \
+        --prefix=/usr \
+        --sbin=/usr/bin \
+        --mandir=/usr/share/man \
+        --disable-ldconfig \
+        --disable-static \
+        --with-fuse=internal \
+        --enable-xattr-mappings \
+        --enable-posix-acls \
+        --enable-extras \
+        --enable-crypto 
+    make
+}
+
+package() {
+    cd ${pkgname}_ntfsprogs-$pkgver
+
+    make DESTDIR="${pkgdir}" rootbindir=/usr/bin rootsbindir=/usr/bin rootlibdir=/usr/lib install
+    rm "${pkgdir}"/usr/share/man/man8/ntfsfallocate.8 # uninstalled binary
+    ln -s /usr/bin/ntfs-3g "${pkgdir}/usr/bin/mount.ntfs"
+}

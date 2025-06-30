@@ -1,0 +1,25 @@
+# description	: init service scripts for fcron
+
+pkgname=fcron-init
+pkgver=1.0
+pkgrel=1
+source="fcron"
+
+package() {
+    install -d "$pkgdir"/etc/rc.d/init.d/
+    ln -sfn  rc.d/init.d "$pkgdir"/etc/init.d
+    install -Dm 754 fcron "$pkgdir"/etc/rc.d/init.d/fcron
+
+    for i in 0 1 2 3 4 5 6;do
+        install -d "$pkgdir"/etc/rc.d/rc$i.d
+    done
+
+	ln -sf  ../init.d/fcron "$pkgdir"/etc/rc.d/rc0.d/K08fcron
+	ln -sf  ../init.d/fcron "$pkgdir"/etc/rc.d/rc1.d/K08fcron
+	ln -sf  ../init.d/fcron "$pkgdir"/etc/rc.d/rc2.d/S40fcron
+	ln -sf  ../init.d/fcron "$pkgdir"/etc/rc.d/rc3.d/S40fcron
+	ln -sf  ../init.d/fcron "$pkgdir"/etc/rc.d/rc4.d/S40fcron
+	ln -sf  ../init.d/fcron "$pkgdir"/etc/rc.d/rc5.d/S40fcron
+	ln -sf  ../init.d/fcron "$pkgdir"/etc/rc.d/rc6.d/K08fcron
+    rm -rf "$pkgdir"/etc/init.d
+}

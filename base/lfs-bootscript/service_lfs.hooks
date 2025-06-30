@@ -1,0 +1,23 @@
+#!/bin/sh
+
+PKGDB_DIR="/var/lib/scratchpkg/db"
+
+services="
+avahi bluez cups dbus dhcpcd fcron iptables krb5 mariadb
+networkmanager openldap postgresql power-profiles-daemon
+samba sysklogd
+"
+
+for i in $services;do
+    if [ -f $PKGDB_DIR/$i ];then
+        if [ ! -f $PKGDB_DIR/${i}-init ];then
+            scratch -I -y ${i}-init
+        fi
+    else
+        if [ -f $PKGDB_DIR/$i-init ];then
+            scratch -R -y ${i}-init
+        fi
+    fi
+
+done
+

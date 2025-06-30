@@ -1,0 +1,29 @@
+# description	: C library for the Public Suffix List
+# depends	: libidn2 libunistring python3 icu glibc
+ 
+pkgname=libpsl
+pkgver=0.21.5
+pkgrel=1
+options="!lto"
+source="https://github.com/rockdaboot/libpsl/releases/download/$pkgver/libpsl-$pkgver.tar.gz"
+optsflags=" -fno-lto "
+
+build() {
+	cd libpsl-$pkgver
+
+    ./configure \
+        --prefix=/usr \
+        --disable-static \
+        --disable-dependency-tracking \
+        --enable-man \
+        --disable-gtk-doc \
+        --enable-builtin=libidn2 \
+        --enable-runtime=libidn2 
+	LC_CTYPE=en_US.UTF-8 make
+}
+
+package() {
+    cd libpsl-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

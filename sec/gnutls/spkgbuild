@@ -1,0 +1,42 @@
+# description	: A secure communications library implementing the SSL, TLS and DTLS protocols
+# depends	: nettle libtasn1 p11-kit libunistring libidn2 libgmp zlib 
+# depends	: zstd libseccomp brotli glibc
+
+pkgname=gnutls
+pkgver=3.8.9
+pkgrel=1
+options="!lto !zipman"
+source="https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/$pkgname-$pkgver.tar.xz
+        config"
+optsflags=" -falign-functions=32 -fno-lto -fno-semantic-interposition -fstack-protector-strong -fzero-call-used-regs=used "
+
+build() {
+	cd $pkgname-$pkgver
+
+	./configure \
+        --prefix=/usr \
+        --with-idn \
+        --with-brotli \
+        --with-zstd \
+        --without-tpm2 \
+        --enable-openssl-compatibility \
+        --with-default-trust-store-pkcs11="pkcs11:" \
+        --enable-ktls \
+        --without-leancrypto
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+	make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+
+    # prepare to load tls module required for ktls
+    install -dm755 "$pkgdir"/etc/modules-load.d
+    echo "#tls" > "$pkgdir"/etc/modules-load.d/gnutls.conf
+
+    # disable ktls by default for now
+    install -dm755 "$pkgdir"/etc/gnutls
+    install -Dm644 "$srcdir"/config  "$pkgdir"/etc/gnutls/config
+}

@@ -1,0 +1,51 @@
+# description	: Tool Command Language
+# depends	: zlib
+
+pkgname=tcl
+pkgver=8.6.16
+pkgrel=1
+options="!lto staticlibs"
+source="https://downloads.sourceforge.net/tcl/$pkgname$pkgver-src.tar.gz"
+optsflags=" -fno-lto "
+
+build() {
+    cd $pkgname$pkgver
+
+    cd unix
+    ./configure \
+        --prefix=/usr \
+        --enable-threads \
+        --mandir=/usr/share/man \
+        --enable-64bit
+    make -j1
+}
+
+package() {
+    cd $pkgname$pkgver/unix
+
+    make INSTALL_ROOT="$pkgdir" install install-private-headers
+    ln -sf tclsh${pkgver%.*} "$pkgdir/usr/bin/tclsh"
+    ln -sf libtcl${pkgver%.*}.so "$pkgdir/usr/lib/libtcl.so"
+    install -Dm644 tcl.m4 -t "$pkgdir/usr/share/aclocal"
+    chmod 644 "$pkgdir/usr/lib/libtclstub${pkgver%.*}.a"
+
+    # remove buildroot traces
+    _tclver=8.6
+    sed -e "s#$srcdir/$_archive/unix#/usr/lib#" \
+        -e "s#$srcdir/$_archive#/usr/include#" \
+        -e "s#'{/usr/lib} '#'/usr/lib/tcl$_tclver'#" \
+        -i "$pkgdir/usr/lib/tclConfig.sh"
+
+    tdbcver=tdbc1.1.10
+    sed -e "s#$srcdir/$_archive/unix/pkgs/$tdbcver#/usr/lib/$tdbcver#" \
+        -e "s#$srcdir/$_archive/pkgs/$tdbcver/generic#/usr/include#" \
+        -e "s#$srcdir/$_archive/pkgs/$tdbcver/library#/usr/lib/tcl${pkgver%.*}#" \
+        -e "s#$srcdir/$_archive/pkgs/$tdbcver#/usr/include#" \
+        -i "$pkgdir/usr/lib/$tdbcver/tdbcConfig.sh"
+
+    itclver=itcl4.3.2
+    sed -e "s#$srcdir/$_archive/unix/pkgs/$itclver#/usr/lib/$itclver#" \
+        -e "s#$srcdir/$_archive/pkgs/$itclver/generic#/usr/include#" \
+        -e "s#$srcdir/$_archive/pkgs/$itclver#/usr/include#" \
+        -i "$pkgdir/usr/lib/$itclver/itclConfig.sh"
+}

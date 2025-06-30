@@ -1,0 +1,19 @@
+# description	: WS-Discovery client library based on KDSoap
+# depends	: qt6-base boost kdsoap-qt6
+
+pkgname=kdsoap-ws-discovery-client
+pkgver=0.4.0
+pkgrel=1
+source="https://download.kde.org/stable/kdsoap-ws-discovery-client/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cmake -B build -S $pkgname-$pkgver \
+        -D BUILD_QCH=OFF \
+        -D QT_MAJOR_VERSION=6
+    cmake --build build
+}
+
+package() {
+    DESTDIR="$pkgdir" cmake --install build
+}

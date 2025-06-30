@@ -1,0 +1,36 @@
+# description	: Network exploration tool and security / port scanner
+# depends	: liblinear libpcap libssh2 lua pcre2 python3-gobject3
+# depends	: zlib openssl python3-build python3-pyproject_hooks
+
+pkgname=nmap
+pkgver=7.97
+pkgrel=1
+source="https://nmap.org/dist/$pkgname-$pkgver.tar.bz2"
+
+build() {
+    cd $pkgname-$pkgver
+
+    # ensure we build devendored deps
+    rm -rf liblua libpcap libpcre macosx mwin32 libssh2 libz
+    # fix build
+    sed -e '/strlcat/d' -i libdnet-stripped/acconfig.h
+
+    autoreconf -fiv
+
+    ./configure \
+        --prefix=/usr \
+        --with-libpcap=/usr \
+        --with-libpcre=/usr \
+        --with-zlib=/usr \
+        --with-libssh2=/usr \
+        --with-liblua=/usr \
+        --without-ndiff \
+        --without-zenmap
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

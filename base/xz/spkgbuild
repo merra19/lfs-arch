@@ -1,0 +1,25 @@
+# description	: Utils for managing LZMA compressed files
+# depends	: glibc
+
+pkgname=xz
+pkgver=5.8.1
+pkgrel=1
+source="https://github.com/tukaani-project/xz/releases/download/v$pkgver/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition -fstack-protector-strong -fzero-call-used-regs=used "
+
+build() {
+    cd $pkgname-$pkgver
+
+    ./configure \
+        --prefix=/usr \
+        --disable-rpath \
+        --enable-werror \
+        --enable-assume-ram=1024 
+    make 
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

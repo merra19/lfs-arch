@@ -1,0 +1,28 @@
+# description	: Stemming library supporting several languages
+# depends	: glibc perl
+
+pkgname=snowball
+pkgver=3.0.1
+pkgrel=1
+source="snowball-$pkgver.tar.gz::https://github.com/snowballstem/snowball/archive/refs/tags/v$pkgver.tar.gz
+        0001-Make-libstemmer-a-shared-library.patch"
+optsflags=" -O3 -ffat-lto-objects -flto=4 "
+
+build() {
+	cd snowball-$pkgver
+
+    patch -Np1 -i ../0001-Make-libstemmer-a-shared-library.patch
+    make
+}
+
+package() {
+    cd snowball-$pkgver
+
+    install -Dt "$pkgdir/usr/bin" snowball stemwords
+
+    install -Dt "$pkgdir/usr/include" -m644 include/libstemmer.h
+    install -Dm644 libstemmer.so.0 "$pkgdir/usr/lib/libstemmer.so.0.0.0"
+    ln -s libstemmer.so.0.0.0 "$pkgdir/usr/lib/libstemmer.so.0"
+    ln -s libstemmer.so.0 "$pkgdir/usr/lib/libstemmer.so"
+}
+

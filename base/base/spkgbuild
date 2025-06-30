@@ -1,0 +1,41 @@
+# description	: Meta port for base system
+# depends	: filesystem lfs-bootscript iana-etc glibc
+# depends	: gnulib-l10n zlib bzip2 xz  zstd file readline m4 bc 
+# depends	: man-pages flex tcl binutils libgmp libmpfr libmpc attr
+# depends	: acl libcap libxcrypt gcc 
+# depends	: pkgconf ncurses sed psmisc gettext bison
+# depends	: grep bash bash-completion shadow libtool gdbm gperf
+# depends	: expat less perl perl-xml-parser inetutils intltool 
+# depends	: autoconf automake openssl kmod elfutils libffi python3 
+# depends	: python3-wheel ninja meson coreutils diffutils gawk 
+# depends	: findutils groff gzip iproute2 kbd libpipeline make patch 
+# depends	: tar texinfo ca-certificates curl grub udev man-db 
+# depends	: p11-kit procps-ng util-linux e2fsprogs freetype libtasn1 
+# depends	: b3sum nano linux-firmware dosfstools mdadm logrotate
+# depends	: python3-flit-core fcron dbus elogind cracklib sudo
+# depends	: libpwquality dinit-rc sysklogd
+
+pkgname=base
+pkgver=20230101
+pkgrel=1
+source="https://gitea.artixlinux.org/artix/alpm-hooks/archive/c17eb2ad37113f53f5897247f2d3e66b42948923.tar.gz
+        spyxfamily.jpg"
+
+package() {
+    mkdir -p "$pkgdir"/usr/share/wallpapers/SxF "$pkgdir"/etc
+
+    cp spyxfamily.jpg "$pkgdir"/usr/share/wallpapers/SxF/
+
+    mkdir -p "$pkgdir"/mnt/steamhdd "$pkgdir"/mnt/steamssd "$pkgdir"/mnt/other
+
+    dircolors -p > "$pkgdir"/etc/dircolors
+
+    # pacman hooks
+    make -C alpm-hooks DESTDIR="$pkgdir" install_base
+
+    # artix-service wrapper
+    make -C alpm-hooks DESTDIR="$pkgdir" install_wrapper
+
+    # provide default symlink for PM file tracking
+    #ln -svf openrc-init "$pkgdir"/usr/bin/init
+}

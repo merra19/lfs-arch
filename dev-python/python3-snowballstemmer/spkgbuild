@@ -1,0 +1,20 @@
+# description	: Snowball stemming library collection for Python3
+# depends	: python3 python3-gpep517 python3-setuptools python3-wheel
+
+pkgname=python3-snowballstemmer
+pkgver=2.2.0
+pkgrel=5
+source="https://files.pythonhosted.org/packages/source/s/snowballstemmer/snowballstemmer-$pkgver.tar.gz"
+optsflags=" -fno-lto "
+
+build() {
+    cd snowballstemmer-$pkgver
+
+    gpep517 build-wheel --wheel-dir .dist --output-fd 3 3>&1 >&2
+}
+
+package() {
+    cd snowballstemmer-$pkgver
+
+    python3 -m installer -d "$pkgdir" .dist/*.whl
+}

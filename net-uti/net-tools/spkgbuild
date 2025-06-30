@@ -1,0 +1,31 @@
+# description	: Standard Linux networking tools
+# depends	: glibc
+
+pkgname=net-tools
+pkgver=2.10
+pkgrel=1
+options="!makeflags !lto"
+source="https://downloads.sourceforge.net/project/net-tools/$pkgname-$pkgver.tar.xz"
+optsflags=" -fno-lto "
+
+build() {
+	cd $pkgname-$pkgver
+
+    export BINDIR='/usr/bin' SBINDIR='/usr/bin'
+    yes "" | make
+
+	unset BINDIR SBINDIR
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" BINDIR='/usr/bin' SBINDIR='/usr/bin' install
+
+    # the following is provided by yp-tools
+    rm "$pkgdir"/usr/bin/{nis,yp}domainname
+
+    rm "$pkgdir"/usr/bin/{hostname,dnsdomainname,domainname}
+    rm -f "$pkgdir"/usr/share/man/man1/dnsdomainname.1
+    rm -f "$pkgdir"/usr/share/man/man1/hostname.1
+}

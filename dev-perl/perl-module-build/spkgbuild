@@ -1,0 +1,22 @@
+# description	: Build, test, and install Perl modules
+# depends	: perl perl-archive-zip
+
+pkgname=perl-module-build
+pkgver=0.4234
+pkgrel=4
+options="!emptydirs"
+source="https://search.cpan.org/CPAN/authors/id/L/LE/LEONT/Module-Build-$pkgver.tar.gz"
+
+
+build() {
+    cd Module-Build-$pkgver
+
+    perl Build.PL installdirs=vendor
+    perl Build
+}
+
+package() {
+	cd Module-Build-$pkgver
+
+    perl Build install destdir="$pkgdir"
+}

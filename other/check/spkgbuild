@@ -1,0 +1,33 @@
+# description	: A unit test framework for C
+# depends	: glibc
+
+pkgname=check
+pkgver=0.15.2
+pkgrel=1
+source="https://github.com/libcheck/check/releases/download/$pkgver/check-$pkgver.tar.gz
+        no-static.diff"
+optsflags=" -O3 -ffat-lto-objects -flto=4 "
+
+prepare() {
+    cd check-$pkgver
+
+    # https://bugs.archlinux.org/task/68076
+    patch -Np1 -i ../no-static.diff
+
+    autoreconf -fvi
+}
+    
+build() {
+    CFLAGS+=" -Wno-format-extra-args"
+
+    cmake -S check-$pkgver -B cmake \
+        -D CMAKE_INSTALL_PREFIX=/usr \
+        -D CMAKE_BUILD_TYPE=None \
+        -D CHECK_ENABLE_TIMEOUT_TESTS=OFF \
+        -D cAWK_GSUB_DBL_BSLASH='\\\\'
+    cmake --build cmake
+}
+
+package() {
+    DESTDIR="$pkgdir" cmake --build cmake --target install
+}

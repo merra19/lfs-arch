@@ -1,0 +1,21 @@
+# description	: Library for manipulating zip archives
+# depends	: zlib bzip2 zstd openssl gnutls cmake
+
+pkgname=libzip
+pkgver=1.11.4
+pkgrel=1
+source="https://libzip.org/download/$pkgname-$pkgver.tar.xz"
+optsflags=" -fno-lto "
+
+build() {
+    cmake -B build -S $pkgname-$pkgver \
+        -D CMAKE_BUILD_TYPE=None \
+        -D CMAKE_INSTALL_PREFIX=/usr \
+        -D CMAKE_INSTALL_LIBDIR=lib \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    DESTDIR="$pkgdir" cmake --install build
+}

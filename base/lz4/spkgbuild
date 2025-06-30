@@ -1,0 +1,20 @@
+# description	: Extremely Fast Compression algorithm
+# depends	: glibc
+
+pkgname=lz4
+pkgver=1.10.0 
+pkgrel=1
+source="https://github.com/lz4/lz4/releases/download/v$pkgver/$pkgname-$pkgver.tar.gz"
+optsflags=" -O3 -Os -falign-functions=32 -fdata-sections -ffat-lto-objects -ffunction-sections -flto=auto -fno-semantic-interposition "
+
+build() {
+    cd $pkgname-$pkgver
+
+    make BUILD_STATIC=no
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make BUILD_STATIC=no PREFIX=/usr DESTDIR="$pkgdir" install
+}

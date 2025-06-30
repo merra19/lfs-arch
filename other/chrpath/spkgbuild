@@ -1,0 +1,22 @@
+# description	: Chrpath can modify the rpath and runpath of ELF executables
+# depends	: glibc
+
+pkgname=chrpath
+pkgver=0.17
+pkgrel=1
+source="$pkgname-$pkgver.tar.gz::https://codeberg.org/pere/chrpath/archive/release-$pkgver.tar.gz"
+
+build() {
+    cd $pkgname-$pkgver
+
+    ./configure \
+        --prefix=/usr \
+        --mandir=/usr/share/man
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" docdir=/usr/share/doc/chrpath install
+}

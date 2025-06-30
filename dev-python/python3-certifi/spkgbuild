@@ -1,0 +1,25 @@
+# description	: A configurable sidebar-enabled Sphinx theme
+# depends	: python3 python3-gpep517 python3-setuptools python3-wheel 
+# depends	: ca-certificates
+
+pkgname=python3-certifi
+pkgver=2025.1.31
+pkgrel=1
+options="!lto"
+source="https://files.pythonhosted.org/packages/source/c/certifi/certifi-$pkgver.tar.gz"
+optsflags=" -fno-lto "
+
+build() {
+	cd certifi-$pkgver
+    
+	gpep517 build-wheel --wheel-dir .dist --output-fd 3 3>&1 >&2
+}
+
+package() {
+	cd certifi-$pkgver
+
+    python3 -m installer -d "$pkgdir" .dist/*.whl
+
+    # Remove bundled certificates, we use system certificates
+    rm -f "$pkgdir"/usr/lib/python3*/site-packages/certifi/cacert.pem
+}

@@ -1,0 +1,77 @@
+# description	: Tools necessary to build programs
+# depends	: flex zlib bison zstd jansson
+
+pkgname=binutils
+pkgver=2.44
+pkgrel=1
+options="!lto staticlibs"
+source="https://ftp.gnu.org/gnu/binutils/$pkgname-$pkgver.tar.xz"
+
+build() {
+    cd $pkgname-$pkgver
+
+    # System-dependent
+    MACHINE="$(gcc -dumpmachine)"
+
+    export CFLAGS="$CFLAGS -Wl,-z,norelro -Os -ffunction-sections"
+    export CXXFLAGS="$CXXFLAGS -Wl,-z,norelro -Os"
+
+    ./configure \
+        --prefix=/usr \
+        --libdir=/usr/lib \
+        --includedir=/usr/include \
+        --with-lib-path=/usr/lib:/usr/local/lib:/usr/lib32:/usr/local/lib32 \
+        --target=$MACHINE \
+        --build=$MACHINE \
+        --enable-cet \
+        --enable-colored-disassembly \
+        --enable-default-execstack=no \
+        --enable-deterministic-archives \
+        --enable-gold \
+        --enable-install-libiberty \
+        --enable-jansson \
+        --enable-ld=default \
+        --enable-new-dtags \
+        --enable-pgo-build=lto \
+        --enable-plugins \
+        --enable-relro \
+        --enable-shared \
+        --enable-targets=x86_64-pep,bpf-unknown-none \
+        --enable-threads \
+        --disable-gdb \
+        --disable-gdbserver \
+        --disable-libdecnumber \
+        --disable-readline \
+        --disable-sim \
+        --disable-werror \
+        --without-debuginfod \
+        --with-pic \
+        --with-system-zlib
+    make -O tooldir=/usr
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" tooldir=/usr install
+
+  # install PIC version of libiberty
+  install -m644 libiberty/pic/libiberty.a "$pkgdir"/usr/lib
+
+  # Remove unwanted files
+  rm -f "$pkgdir"/usr/share/man/man1/{dlltool,windres,windmc}*
+
+  # No shared linking to these files outside binutils
+  rm -f "$pkgdir"/usr/lib/lib{bfd,opcodes}.so
+  tee "$pkgdir"/usr/lib/libbfd.so << EOS
+/* GNU ld script */
+
+INPUT( /usr/lib/libbfd.a -lsframe -liberty -lz -lzstd -ldl )
+EOS
+
+  tee "$pkgdir"/usr/lib/libopcodes.so << EOS
+/* GNU ld script */
+
+INPUT( /usr/lib/libopcodes.a -lbfd )
+EOS
+}

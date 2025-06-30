@@ -1,0 +1,25 @@
+# description	: A Pythonic binding for the libxml2 and libxslt libraries
+# depends	: libxslt libxml2 python3-wheel python3-gpep517 
+# depends	: python3-setuptools python3-cython
+
+pkgname=python3-lxml
+pkgver=6.0.0
+pkgrel=1
+options="!lto"
+source="https://files.pythonhosted.org/packages/source/l/lxml/lxml-$pkgver.tar.gz"
+optsflags=" -fno-lto "
+
+build() {
+	cd lxml-$pkgver
+
+	gpep517 build-wheel \
+		--wheel-dir .dist \
+		--config-json '{"--build-option": ["--with-cython"]}' \
+		--output-fd 3 3>&1 >&2
+}
+
+package() {
+	cd lxml-$pkgver
+
+	python3 -m installer -d "$pkgdir" .dist/*.whl
+}

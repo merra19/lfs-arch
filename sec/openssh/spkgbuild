@@ -1,0 +1,70 @@
+# description	: Port of OpenBSD's free SSH release
+# depends	: pam xauth which net-tools libxcrypt zlib shadow
+
+pkgname=openssh
+pkgver=10.0p1
+pkgrel=1
+options="!lto"
+source="https://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable/$pkgname-$pkgver.tar.gz
+        99-linux.conf openssh.tmpfiles sshd.pam"
+backup="etc/pam.d/sshd etc/ssh/ssh_config etc/ssh/sshd_config"
+optsflags=" -fno-lto "
+
+prepare() {
+    cd $pkgname-$pkgver
+    # remove variable (but useless) first line in config (related to upstream VCS)
+    sed '/^#.*\$.*\$$/d' -i ssh{,d}_config
+
+    # prepend configuration option to include drop-in configuration files for sshd_config
+    printf "# Include drop-in configurations\nInclude /etc/ssh/sshd_config.d/*.conf\n" | cat - sshd_config > sshd_config.tmp
+    mv -v sshd_config.tmp sshd_config
+    # prepend configuration option to include drop-in configuration files for ssh_config
+    printf "# Include drop-in configurations\nInclude /etc/ssh/ssh_config.d/*.conf\n" | cat - ssh_config > ssh_config.tmp
+    mv -v ssh_config.tmp ssh_config
+}
+
+build() {
+	cd $pkgname-$pkgver
+
+    ./configure \
+        --prefix=/usr \
+        --sbindir=/usr/bin \
+        --libexecdir=/usr/lib/ssh \
+        --sysconfdir=/etc/ssh \
+        --disable-strip \
+        --with-readline \
+        --with-ssl-engine \
+        --with-pam \
+        --with-privsep-user=nobody \
+        --with-privsep-path=/usr/share/empty.sshd \
+        --with-xauth=/usr/bin/xauth \
+        --with-pid-dir=/run \
+        --with-default-path='/usr/local/sbin:/usr/local/bin:/usr/bin' \
+        --without-zlib-version-check \
+        "$(scratch isinstalled krb5 && echo "--with-kerberos5=/usr" || echo "--without-kerberos5")"             
+	make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+	make DESTDIR="$pkgdir" install
+
+    install -vDm 644 ../99-linux.conf -t "$pkgdir/etc/ssh/sshd_config.d/"
+    install -vdm 755 "$pkgdir/etc/ssh/ssh_config.d"
+
+    install -Dm644 ../sshd.pam "$pkgdir"/etc/pam.d/sshd
+
+    # factory files
+    install -Dm644 ../sshd.pam "$pkgdir"/usr/share/factory/etc/pam.d/sshd
+    install -Dm644 "$pkgdir/etc/ssh/moduli" -t "$pkgdir"/usr/share/factory/etc/ssh/
+    install -Dm644 "$pkgdir/etc/ssh/ssh_config" -t "$pkgdir"/usr/share/factory/etc/ssh/
+    install -Dm644 "$pkgdir/etc/ssh/sshd_config" -t "$pkgdir"/usr/share/factory/etc/ssh/
+    install -vDm 644 ../99-linux.conf -t "$pkgdir/usr/share/factory/etc/ssh/sshd_config.d/"
+
+    install -vDm 644 ../$pkgname.tmpfiles "$pkgdir/usr/lib/tmpfiles.d/$pkgname.conf"
+
+    install -Dm755 contrib/findssl.sh -t "$pkgdir"/usr/bin/
+    install -Dm755 contrib/ssh-copy-id -t "$pkgdir"/usr/bin/
+    install -Dm644 contrib/ssh-copy-id.1 -t "$pkgdir"/usr/share/man/man1/
+}

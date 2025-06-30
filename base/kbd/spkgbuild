@@ -1,0 +1,35 @@
+# description	: Keyboard and console utilities
+# depends	: pam gzip
+
+pkgname=kbd
+pkgver=2.8.0
+pkgrel=1
+source="https://www.kernel.org/pub/linux/utils/kbd/$pkgname-$pkgver.tar.xz
+        https://www.linuxfromscratch.org/patches/lfs/development/kbd-$pkgver-backspace-1.patch
+        vlock.pam"
+backup="etc/pam.d/vlock"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    patch -Np1 -i ../kbd-$pkgver-backspace-1.patch
+
+    ./configure \
+        --prefix=/usr \
+        --enable-optional-progs
+    make KEYCODES_PROGS=yes RESIZECONS_PROGS=yes
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" KEYCODES_PROGS=yes RESIZECONS_PROGS=yes install
+
+    mkdir -p "$pkgdir"/usr/share/doc/$pkgname
+    cp -R -v docs/doc -T "$pkgdir"/usr/share/doc/$pkgname
+
+    rm -rf "$pkgdir"/usr/share/doc/$pkgname/utf
+
+    install -Dm644 ../vlock.pam "$pkgdir"/etc/pam.d/vlock
+}

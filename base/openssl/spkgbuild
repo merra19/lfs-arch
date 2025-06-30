@@ -1,0 +1,42 @@
+# description	: full-strength general purpose cryptography library (including SSL and TLS)
+# depends	: zlib perl glibc
+
+pkgname=openssl
+pkgver=3.5.0
+pkgrel=1
+options="!lto"
+source="https://www.openssl.org/source/$pkgname-$pkgver.tar.gz
+        ca-dir.patch 0001-Use-clearlinux-CFLAGS-during-build.patch"
+backup="etc/ssl/openssl.cnf"
+
+build() {
+    cd $pkgname-$pkgver
+
+	# set ca dir to /etc/ssl by default
+	patch -Np1 -i ../ca-dir.patch
+
+    patch -Np1 -i ../0001-Use-clearlinux-CFLAGS-during-build.patch
+
+    CFLAGS=" -O3 -feliminate-unused-debug-types -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -Wformat -Wformat-security -m64 -fasynchronous-unwind-tables -Wp,-D_REENTRANT -ftree-loop-distribute-patterns -Wl,-z,now -Wl,-z,relro -fno-semantic-interposition -ffat-lto-objects -fno-trapping-math -Wl,-sort-common -Wl,--enable-new-dtags -mrelax-cmpxchg-loop -ffunction-sections "
+    FFLAGS=" -O3 -feliminate-unused-debug-types -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -m64 -fasynchronous-unwind-tables -Wp,-D_REENTRANT -ftree-loop-distribute-patterns -Wl,-z,now -Wl,-z,relro -malign-data=abi -fno-semantic-interposition -ftree-vectorize -ftree-loop-vectorize -Wl,--enable-new-dtags -ffunction-sections"
+    FCFLAGS=" -O3 -feliminate-unused-debug-types -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -m64 -fasynchronous-unwind-tables -Wp,-D_REENTRANT -ftree-loop-distribute-patterns -Wl,-z,now -Wl,-z,relro -malign-data=abi -fno-semantic-interposition -ftree-vectorize -ftree-loop-vectorize -Wl,-sort-common -Wl,--enable-new-dtags "
+    CXXFLAGS="$CFLAGS -fvisibility-inlines-hidden -Wl,--enable-new-dtags -std=gnu++17"
+
+    ./config \
+        --prefix=/usr \
+        --openssldir=/etc/ssl \
+        --libdir=lib \
+        shared enable-ktls enable-ec_nistp_64_gcc_128 linux-x86_64
+    make depend
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make MANSUFFIX=ssl DESTDIR="$pkgdir" install
+
+    rm "$pkgdir"/usr/bin/c_rehash
+
+    cp -vfr doc/* "$pkgdir"/usr/share/doc/openssl
+}

@@ -1,0 +1,36 @@
+# description	: LFS bootscript
+
+pkgname=lfs-bootscript
+pkgver=20250225
+pkgver2=20240825
+pkgrel=1
+source="https://www.linuxfromscratch.org/lfs/downloads/development/lfs-bootscripts-$pkgver2.tar.xz
+        https://anduin.linuxfromscratch.org/BLFS/blfs-bootscripts/blfs-bootscripts-$pkgver.tar.xz
+        c89 c99 service_lfs.hooks"
+        
+package() {
+    cd lfs-bootscripts-$pkgver2
+
+    make DESTDIR="$pkgdir" install
+
+    cd "$srcdir"/blfs-bootscripts-$pkgver
+            
+    mkdir -p "$pkgdir"/usr/share/blfs-bootscripts
+    cp -r Makefile blfs "$pkgdir"/usr/share/blfs-bootscripts
+
+    install -Dm755 "$srcdir"/c89 "$pkgdir"/usr/bin/c89
+	install -Dm755 "$srcdir"/c99 "$pkgdir"/usr/bin/c99
+
+    rm -f "$pkgdir"/etc/sysconfig/rc.site
+    rm -f "$pkgdir"/etc/rc.d/init.d/sysklogd
+
+	rm -f "$pkgdir"/etc/rc.d/rc0.d/K90sysklogd
+	rm -f "$pkgdir"/etc/rc.d/rc1.d/K90sysklogd
+	rm -f  "$pkgdir"/etc/rc.d/rc2.d/S20sysklogd
+	rm -f "$pkgdir"/etc/rc.d/rc3.d/S10sysklogd
+	rm -f "$pkgdir"/etc/rc.d/rc4.d/S10sysklogd
+	rm -f  "$pkgdir"/etc/rc.d/rc5.d/S10sysklogd
+	rm -f  "$pkgdir"/etc/rc.d/rc6.d/K90sysklogd
+
+    install -Dm755  "$srcdir"/service_lfs.hooks "$pkgdir"/usr/share/blfs-bootscripts/hooks/service_lfs.hooks
+}

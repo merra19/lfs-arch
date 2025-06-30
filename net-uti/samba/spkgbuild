@@ -1,0 +1,85 @@
+# description	: Samba Suite Version 4
+# depends	: glibc libarchive perl icu libtasn1 perl-parse-yapp popt 
+# depends	: gnutls e2fsprogs libcap ncurses readline zlib libxcrypt 
+# depends	: acl cups jansson pam libtirpc glib dbus rpcsvc-proto 
+# depends	: gpgme lmdb libaio libnsl python3-markdown krb5 talloc
+# depends	: avahi openldap
+# liburing
+
+pkgname=samba
+pkgver=4.22.2
+pkgrel=1
+source="https://download.samba.org/pub/samba/stable/samba-$pkgver.tar.gz
+        samba.logrotate samba.pam samba.conf"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+backup="etc/logrotate.d/samba etc/pam.d/samba"
+
+build() {
+    cd samba-$pkgver
+
+    _samba4_idmap_modules=idmap_ad,idmap_rid,idmap_adex,idmap_hash,idmap_tdb2
+    _samba4_pdb_modules=pdb_tdbsam,pdb_ldap,pdb_ads,pdb_smbpasswd,pdb_wbc_sam,pdb_samba4
+    _samba4_auth_modules=auth_unix,auth_wbc,auth_server,auth_netlogond,auth_script,auth_samba4
+
+    _pkgsrc="$srcdir"/samba-pkg
+    rm -rf ${_pkgsrc}
+
+    export PATH=$PATH:/usr/bin/vendor_perl
+
+    ./configure \
+        --prefix=/usr \
+        --enable-fhs \
+        --sysconfdir=/etc \
+        --sbindir=/usr/bin \
+        --libdir=/usr/lib \
+        --libexecdir=/usr/lib/samba \
+        --localstatedir=/var \
+        --with-configdir=/etc/samba \
+        --with-lockdir=/var/cache/samba \
+        --with-sockets-dir=/run/samba \
+        --with-piddir=/run \
+        --with-ads \
+        --with-ldap \
+        --with-winbind \
+        --with-acl-support \
+        --without-systemd \
+        --with-pam \
+        --with-pammodulesdir=/usr/lib/security \
+        --private-libraries='!ldb' \
+        --bundled-libraries='!talloc,!pytalloc-util,!popt,!pyldb-util' \
+        --with-shared-modules="${_samba4_idmap_modules},${_samba4_pdb_modules},${_samba4_auth_modules}" \
+        --disable-rpath-install \
+        --with-profiling-data \
+        --without-ad-dc 
+    make
+}
+
+package() {
+    make DESTDIR="$pkgdir" install -C samba-$pkgver
+
+    # create ephemeral dirs via tmpfiles rather than shipping them in package
+    install -D -m644 "${srcdir}"/samba.conf "${pkgdir}"/usr/lib/tmpfiles.d/samba.conf
+    # create config dir
+    install -d -m755 "${pkgdir}"/etc/samba
+
+    mkdir -p "${pkgdir}"/etc/samba/private
+    chmod 700 "${pkgdir}"/etc/samba/private
+
+    install -D -m644 "${srcdir}"/samba.logrotate "${pkgdir}"/etc/logrotate.d/samba
+    install -D -m644 "${srcdir}"/samba.pam "${pkgdir}"/etc/pam.d/samba 
+    
+    # spool directory
+    install -d -m1777 "${pkgdir}"/var/spool/samba
+    
+    rm -rf "${pkgdir}"/run
+    rm -rf "${pkgdir}"/var/run
+    rm -rf "${pkgdir}"/etc/sysconfig
+    
+    # copy ldap example
+    install -D -m644 "${srcdir}"/samba-${pkgver}/examples/LDAP/samba.schema \
+        "${pkgdir}"/usr/share/doc/samba/examples/LDAP/samba.schema
+
+    # Add /usr/lib/samba paths to the default library search path
+    install -d "${pkgdir}"/etc/ld.so.conf.d
+    echo "/usr/lib/samba" > "${pkgdir}"/etc/ld.so.conf.d/samba.conf
+}

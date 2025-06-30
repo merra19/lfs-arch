@@ -1,0 +1,41 @@
+# description	: Lightweight high-performance web server
+# depends	: glibc brotli lua nettle nss pcre2 php openssl libxml2 meson
+# depends	: libunwind sqlite attr zlib zstd libxcrypt mariadb 
+ 
+pkgname=lighttpd
+pkgver=1.4.77
+pkgrel=1
+options="!lto"
+source="https://download.lighttpd.net/lighttpd/releases-${pkgver%.*}.x/$pkgname-$pkgver.tar.xz
+        lighttpd.logrotate.d lighttpd.conf lighttpd.tmpfiles"
+backup="etc/lighttpd/lighttpd.conf"
+
+build() {
+	arch-meson $pkgname-$pkgver build \
+	  -D with_xattr=true \
+	  -D with_brotli=enabled \
+	  -D with_dbi=enabled \
+	  -D with_krb5=enabled \
+	  -D with_ldap=enabled \
+	  -D with_lua=true \
+	  -D with_maxminddb=enabled \
+	  -D with_mysql=enabled \
+	  -D with_openssl=true \
+	  -D with_pcre2=true \
+	  -D with_webdav_props=enabled \
+	  -D with_webdav_locks=enabled
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "${pkgdir}"
+
+	install -D -m644 lighttpd.logrotate.d "${pkgdir}"/etc/logrotate.d/lighttpd
+	install -D -m644 lighttpd.conf "${pkgdir}"/etc/lighttpd/lighttpd.conf
+	install -d -m700 -o 33 -g 33 "${pkgdir}"/var/{log,cache}/lighttpd/
+	install -D -m644 lighttpd.tmpfiles "${pkgdir}"/usr/lib/tmpfiles.d/lighttpd.conf
+
+	pushd $pkgname-$pkgver/doc/config >/dev/null
+	find . -type f ! -name 'Makefile*' -exec install -D -m644 {} "${pkgdir}"/usr/share/doc/lighttpd/config/{} \;
+	popd >/dev/null
+}

@@ -1,0 +1,17 @@
+# description	: Simple GObject game controller library
+# depends	:  glib glibc hidapi libevdev libgudev
+# depends	: gobject-introspection meson vala
+
+pkgname=libmanette
+pkgver=0.2.12
+pkgrel=1
+source="https://download.gnome.org/sources/$pkgname/${pkgver%.*}/$pkgname-$pkgver.tar.xz"
+
+build() {
+    arch-meson libmanette-$pkgver build -D doc=false -D demos=false -D install-tests=false -D introspection=false
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

@@ -1,0 +1,275 @@
+# description	: The GNU Compiler Collection
+# depends	: glibc zlib libgmp libmpc libmpfr binutils bison flex
+# depends	: libisl
+
+pkgname=gcc
+pkgver=15.1.0
+pkgrel=2
+options="!emptydirs !lto !strip staticlibs"
+source="https://ftp.gnu.org/gnu/gcc/gcc-$pkgver/gcc-$pkgver.tar.xz"
+
+# System-dependent
+CHOST="$(gcc -dumpmachine)"
+_libdir=usr/lib/gcc/$CHOST/$pkgver
+
+prepare() {
+    ln -sf gcc gcc-$pkgver
+
+    cd gcc-$pkgver
+
+    # Change the default directory name for 64-bit libraries to “lib”
+    sed -i -e 's@/lib/ld-linux.so.2@/lib32/ld-linux.so.2@g' gcc/config/i386/linux64.h
+    sed -i -e '/MULTILIB_OSDIRNAMES/d' gcc/config/i386/t-linux64
+    echo "MULTILIB_OSDIRNAMES = m64=../lib m32=../lib32 mx32=../libx32" >> gcc/config/i386/t-linux64
+
+    # Do not run fixincludes
+    sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
+
+    mkdir -p "$srcdir"/gcc-build
+}
+
+
+build() {
+    cd  gcc-build
+
+    unset CFLAGS
+    unset CXXFLAGS
+    unset LDFLAGS
+
+    export CFLAGS="-march=$MMARCH -fstack-protector -O3 -Wl,-z -Wl,now -Wl,-z -Wl,relro -Wl,-z,max-page-size=0x1000 -falign-functions=32 "
+    export CXXFLAGS="-march=$MMARCH -fstack-protector -O3 -Wl,-z,max-page-size=0x1000 "
+    export FFLAGS=" -O3 -feliminate-unused-debug-types -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -m64 \
+            -fasynchronous-unwind-tables -Wp,-D_REENTRANT -ftree-loop-distribute-patterns -Wl,-z,now -Wl,-z,relro \
+            -malign-data=abi -fno-semantic-interposition -ftree-vectorize -ftree-loop-vectorize "
+    export FCFLAGS="$FFLAGS"
+    export CFLAGS_FOR_TARGET="$CFLAGS -march=$MMARCH -fstack-protector -fno-semantic-interposition "
+    export CXXFLAGS_FOR_TARGET="$CXXFLAGS -march=$MMARCH -fstack-protector -fno-semantic-interposition "
+    export FFLAGS_FOR_TARGET="$FFLAGS -march=$MMARCH  -fstack-protector -fno-semantic-interposition "
+
+    if [ -n "$FAKEROOTKEY" ]; then
+
+    "$srcdir/gcc-$pkgver/configure" \
+        --prefix=/usr \
+        --libdir=/usr/lib \
+        --libexecdir=/usr/lib \
+        --enable-languages=c,c++,lto,fortran,go \
+        --build=$CHOST \
+        --host=$CHOST \
+        --target=$CHOST \
+        --with-linker-hash-style=gnu \
+        --with-system-zlib \
+        --enable-__cxa_atexit \
+        --enable-cet=auto \
+        --enable-checking=release \
+        --enable-clocale=gnu \
+        --enable-default-pie \
+        --enable-default-ssp \
+        --enable-gnu-indirect-function \
+        --enable-gnu-unique-object \
+        --enable-libstdcxx-backtrace \
+        --enable-link-serialization=1 \
+        --enable-linker-build-id \
+        --enable-lto \
+        --enable-multilib \
+        --enable-plugin \
+        --enable-shared \
+        --enable-threads=posix \
+        --disable-libssp \
+        --disable-libstdcxx-pch \
+        --disable-werror \
+        --with-zstd \
+        --disable-bootstrap
+        make -O 
+        
+    else
+
+    "$srcdir/gcc-$pkgver/configure" \
+        --prefix=/usr \
+        --libdir=/usr/lib \
+        --libexecdir=/usr/lib \
+        --enable-languages=c,c++,lto,fortran,go \
+        --build=$CHOST \
+        --host=$CHOST \
+        --target=$CHOST \
+        --with-build-config=bootstrap-lto \
+        --with-linker-hash-style=gnu \
+        --with-system-zlib \
+        --enable-__cxa_atexit \
+        --enable-cet=auto \
+        --enable-checking=release \
+        --enable-clocale=gnu \
+        --enable-default-pie \
+        --enable-default-ssp \
+        --enable-gnu-indirect-function \
+        --enable-gnu-unique-object \
+        --enable-libstdcxx-backtrace \
+        --enable-link-serialization=1 \
+        --enable-linker-build-id \
+        --enable-lto \
+        --enable-multilib \
+        --enable-plugin \
+        --enable-shared \
+        --enable-threads=posix \
+        --disable-libssp \
+        --disable-libstdcxx-pch \
+        --disable-werror \
+        --enable-bootstrap
+        make -O STAGE1_CFLAGS="-O2" \
+          BOOT_CFLAGS="$CFLAGS" \
+          BOOT_LDFLAGS="$LDFLAGS" \
+          LDFLAGS_FOR_TARGET="$LDFLAGS" \
+          bootstrap
+    fi
+}
+
+package() {
+    cd gcc-build
+
+    make -C gcc DESTDIR="$pkgdir" install-driver install-cpp install-gcc-ar \
+        c++.install-common install-headers install-plugin install-lto-wrapper
+
+    install -m755 -t "$pkgdir/usr/bin/" gcc/gcov{,-tool}
+    install -m755 -t "$pkgdir/${_libdir}/" gcc/{cc1,cc1plus,collect2,lto1}
+
+    make -C $CHOST/libgcc DESTDIR="$pkgdir" install
+    make -C $CHOST/32/libgcc DESTDIR="$pkgdir" install
+    rm -f "$pkgdir"/usr/lib{,32}/libgcc_s.so*
+
+    make -C $CHOST/libstdc++-v3/src DESTDIR="$pkgdir" install
+    make -C $CHOST/libstdc++-v3/include DESTDIR="$pkgdir" install
+    make -C $CHOST/libstdc++-v3/libsupc++ DESTDIR="$pkgdir" install
+    make -C $CHOST/libstdc++-v3/python DESTDIR="$pkgdir" install
+    make -C $CHOST/32/libstdc++-v3/src DESTDIR="$pkgdir" install
+    make -C $CHOST/32/libstdc++-v3/include DESTDIR="$pkgdir" install
+    make -C $CHOST/32/libstdc++-v3/libsupc++ DESTDIR="$pkgdir" install
+
+    make DESTDIR="$pkgdir" install-libcc1
+    install -d "$pkgdir/usr/share/gdb/auto-load/usr/lib"
+    mv "$pkgdir"/usr/lib/libstdc++.so.6.*-gdb.py \
+        "$pkgdir/usr/share/gdb/auto-load/usr/lib/"
+    rm "$pkgdir"/usr/lib{,32}/libstdc++.so*
+
+    make DESTDIR="$pkgdir" install-fixincludes
+    make -C gcc DESTDIR="$pkgdir" install-mkheaders
+
+    make -C lto-plugin DESTDIR="$pkgdir" install
+    install -dm755 "$pkgdir"/usr/lib/bfd-plugins/
+    ln -s /${_libdir}/liblto_plugin.so \
+        "$pkgdir/usr/lib/bfd-plugins/"
+
+    make -C $CHOST/libgomp DESTDIR="$pkgdir" install-nodist_{libsubinclude,toolexeclib}HEADERS
+    make -C $CHOST/libitm DESTDIR="$pkgdir" install-nodist_toolexeclibHEADERS
+    make -C $CHOST/libquadmath DESTDIR="$pkgdir" install-nodist_libsubincludeHEADERS
+    make -C $CHOST/libsanitizer DESTDIR="$pkgdir" install-nodist_{saninclude,toolexeclib}HEADERS
+    make -C $CHOST/libsanitizer/asan DESTDIR="$pkgdir" install-nodist_toolexeclibHEADERS
+    make -C $CHOST/libsanitizer/tsan DESTDIR="$pkgdir" install-nodist_toolexeclibHEADERS
+    make -C $CHOST/libsanitizer/lsan DESTDIR="$pkgdir" install-nodist_toolexeclibHEADERS
+    make -C $CHOST/32/libgomp DESTDIR="$pkgdir" install-nodist_toolexeclibHEADERS
+    make -C $CHOST/32/libitm DESTDIR="$pkgdir" install-nodist_toolexeclibHEADERS
+    make -C $CHOST/32/libsanitizer DESTDIR="$pkgdir" install-nodist_{saninclude,toolexeclib}HEADERS
+    make -C $CHOST/32/libsanitizer/asan DESTDIR="$pkgdir" install-nodist_toolexeclibHEADERS
+
+    make -C gcc DESTDIR="$pkgdir" install-man install-info
+    rm -f "$pkgdir"/usr/share/man/man1/{gccgo,gfortran,lto-dump,gdc,gm2}.1
+    rm -f "$pkgdir"/usr/share/info/{gccgo,gfortran,gnat-style,gnat_rm,gnat_ugn,gdc,m2}.info
+
+    make -C libcpp DESTDIR="$pkgdir" install
+    make -C gcc DESTDIR="$pkgdir" install-po
+
+    # many packages expect this symlink
+    ln -s gcc "$pkgdir"/usr/bin/cc
+
+    # create cc-rs compatible symlinks
+    # https://github.com/rust-lang/cc-rs/blob/1.0.73/src/lib.rs#L2578-L2581
+    for binary in {c++,g++,gcc,gcc-ar,gcc-nm,gcc-ranlib}; do
+        ln -s /usr/bin/${binary} "${pkgdir}"/usr/bin/x86_64-linux-gnu-${binary}
+    done
+
+    # POSIX conformance launcher scripts for c89 and c99
+    #install -Dm755 "$srcdir/c89" "$pkgdir/usr/bin/c89"
+    #install -Dm755 "$srcdir/c99" "$pkgdir/usr/bin/c99"
+
+    # install the libstdc++ man pages
+    #make -C $CHOST/libstdc++-v3/doc DESTDIR="$pkgdir" doc-install-man
+
+    # remove files provided by lib32-gcc-libs
+    rm -f "$pkgdir"/usr/lib32/lib{stdc++,gcc_s}.so
+
+    # byte-compile python libraries
+    python -m compileall "$pkgdir/usr/share/gcc-${pkgver%%+*}/"
+    python -O -m compileall "$pkgdir/usr/share/gcc-${pkgver%%+*}/"
+
+    # Fortran
+    make -C $CHOST/libgfortran DESTDIR="$pkgdir" install-cafexeclibLTLIBRARIES \
+            install-{toolexeclibDATA,nodist_fincludeHEADERS,gfor_cHEADERS}
+    make -C $CHOST/32/libgfortran DESTDIR="$pkgdir" install-cafexeclibLTLIBRARIES \
+            install-{toolexeclibDATA,nodist_fincludeHEADERS,gfor_cHEADERS}
+    make -C $CHOST/libgomp DESTDIR="$pkgdir" install-nodist_fincludeHEADERS
+    make -C gcc DESTDIR="$pkgdir" fortran.install-{common,man,info}
+    install -Dm755 gcc/f951 "$pkgdir/${_libdir}/f951"
+
+    ln -s gfortran "$pkgdir/usr/bin/f95"
+    
+    # Go
+    make -C $CHOST/libgo DESTDIR="$pkgdir" install-exec-am
+    make -C $CHOST/32/libgo DESTDIR="$pkgdir" install-exec-am
+    make DESTDIR="$pkgdir" install-gotools
+    make -C gcc DESTDIR="$pkgdir" go.install-{common,man,info}
+
+    rm -f "$pkgdir"/usr/lib{,32}/libgo.so*
+    install -Dm755 gcc/go1 "$pkgdir/${_libdir}/go1"
+
+    # libs
+    make -C $CHOST/libgcc DESTDIR="$pkgdir" install-shared
+    #rm -f "$pkgdir/$_libdir/libgcc_eh.a"
+
+    for lib in libatomic \
+                libgfortran \
+                libgo \
+                libgomp \
+                libitm \
+                libquadmath \
+                libsanitizer/{a,l,ub,t}san \
+                libstdc++-v3/src \
+                libvtv; do
+        make -C $CHOST/$lib DESTDIR="$pkgdir" install-toolexeclibLTLIBRARIES
+    done
+
+    #make -C $CHOST/libobjc DESTDIR="$pkgdir" install-libs
+    make -C $CHOST/libstdc++-v3/po DESTDIR="$pkgdir" install
+
+    # language D
+    #make -C $CHOST/libphobos DESTDIR="$pkgdir" install
+    #rm -rf "$pkgdir"/$_libdir/include/d/
+    #rm -f "$pkgdir"/usr/lib/libgphobos.spec
+
+    for lib in libgomp \
+                libitm \
+                libquadmath; do
+        make -C $CHOST/$lib DESTDIR="$pkgdir" install-info
+    done
+
+    # lib32
+    make -C $CHOST/32/libgcc DESTDIR="$pkgdir" install-shared
+    #rm -f "$pkgdir/$_libdir/32/libgcc_eh.a"
+
+    for lib in libatomic \
+                libgfortran \
+                libgo \
+                libgomp \
+                libitm \
+                libquadmath \
+                libsanitizer/{a,l,ub}san \
+                libstdc++-v3/src \
+                libvtv; do
+        make -C $CHOST/32/$lib DESTDIR="$pkgdir" install-toolexeclibLTLIBRARIES
+    done
+
+    #make -C $CHOST/32/libobjc DESTDIR="$pkgdir" install-libs
+
+    #make -C $CHOST/libphobos DESTDIR="$pkgdir" install
+    #rm -f "$pkgdir"/usr/lib32/libgphobos.spec
+
+    # LTO-dump
+    make -C gcc DESTDIR="$pkgdir" lto.install-{common,man,info}
+}

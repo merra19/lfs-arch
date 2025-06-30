@@ -1,0 +1,27 @@
+# description	: Public client interface for NIS(YP) in a IPv6 ready version
+# depends	: glibc libtirpc
+
+pkgname=libnsl
+pkgver=2.0.1
+pkgrel=1
+options="!lto"
+source="https://github.com/thkukuk/libnsl/releases/download/v$pkgver/$pkgname-$pkgver.tar.xz"
+optsflags=" -fno-lto "
+
+build() {
+	cd $pkgname-$pkgver
+
+    autoreconf -fiv
+
+	./configure \
+        --prefix=/usr \
+		--sysconfdir=/etc \
+		--disable-static
+	make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

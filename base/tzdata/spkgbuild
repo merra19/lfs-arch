@@ -1,0 +1,38 @@
+# description	: Sources for time zone and daylight saving time data
+# depends	: linux-api-headers lfs-bootscript
+
+pkgname=tzdata
+pkgver=2025b
+pkgrel=1
+options="!emptydirs"
+source="https://www.iana.org/time-zones/repository/releases/tzdata$pkgver.tar.gz
+        https://www.iana.org/time-zones/repository/releases/tzcode$pkgver.tar.gz"
+
+_timezones=('africa' 'antarctica' 'asia' 'australasia'
+           'europe' 'northamerica' 'southamerica'
+           'etcetera' 'backward' 'factory')
+
+prepare() {
+    # patch April to Apr
+    sed -i 's/April/Apr/' northamerica
+}
+
+build() {
+    sed -i "s:sbin:bin:g" Makefile
+    make LFLAGS="$LDFLAGS $LTOFLAGS"
+}
+
+package() {
+    # install tzcode stuff
+    make DESTDIR="$pkgdir" install
+
+    # install tzdata stuff
+    ./zic -b fat -d "$pkgdir"/usr/share/zoneinfo ${_timezones[@]}
+    ./zic -b fat -d "$pkgdir"/usr/share/zoneinfo/posix ${_timezones[@]}
+    ./zic -b fat -d "$pkgdir"/usr/share/zoneinfo/right -L leapseconds ${_timezones[@]}
+    # This creates the posixrules file. We use New York because POSIX requires the daylight savings time rules to be in accordance with US rules.   
+    ./zic -b fat -d "$pkgdir"/usr/share/zoneinfo -p America/New_York
+    install -m644 -t "$pkgdir"/usr/share/zoneinfo iso3166.tab leap-seconds.list zone1970.tab zone.tab SECURITY # zone.tab is depricated and will go soon
+
+      rm "${pkgdir}/etc/localtime"
+}

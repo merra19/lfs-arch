@@ -1,0 +1,37 @@
+# description	: Visual Studio Code (vscode) editor
+# depends	: at-spi2-core libsecret expat glib nspr nss alsa-lib 
+# depends	: libglvnd mesa curl dbus zlib lsof cairo gtk3 libdrm 
+# depends	: libx11 libxcb libxcomposite libxdamage libxext libxfixes 
+# depends	: libxkbcommon libxkbfile libxrandr libxscrnsaver pango 
+# depends	: xdg-utils p11-kit
+
+pkgname=vscode
+pkgver=1.100.2
+pkgrel=1
+options="!strip"
+source="$pkgname-$pkgver-amd64.tar.gz::https://update.code.visualstudio.com/$pkgver/linux-x64/stable
+	code.desktop code-url-handler.desktop"
+IGNORE_MDSUM="yes"
+DO_DEBUG="no"
+
+package() {
+	cd VSCode-linux-x64
+
+    if (! scratch isinstalled krb5 ); then 
+        rm -rv ./resources/app/node_modules/kerberos
+    fi
+
+	mkdir -p "$pkgdir"/opt/$pkgname
+	cp -Rv ./* "$pkgdir"/opt/$pkgname
+	mkdir -p "$pkgdir"/usr/bin
+	ln -s /opt/$pkgname/bin/code "$pkgdir"/usr/bin/code
+	install -Dm644 "$srcdir"/code.desktop "$pkgdir"/usr/share/applications/code.desktop
+	install -Dm644 "$srcdir"/code-url-handler.desktop "$pkgdir"/usr/share/applications/code-url-handler.desktop
+	install -Dm644 ./resources/app/resources/linux/code.png "$pkgdir/usr/share/pixmaps/code.png"
+
+	chmod 4711 "$pkgdir"/opt/$pkgname/chrome-sandbox
+
+    # Install bash and zsh completions
+    install -Dm 644 resources/completions/bash/code "$pkgdir"/usr/share/bash-completion/completions/code
+    install -Dm 644 resources/completions/zsh/_code "$pkgdir"/usr/share/zsh/site-functions/_code
+}

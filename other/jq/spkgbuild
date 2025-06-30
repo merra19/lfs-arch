@@ -1,0 +1,22 @@
+# description	: Lightweight and flexible command-line JSON processor
+# depends	: oniguruma autoconf automake bison flex python3
+
+pkgname=jq
+pkgver=1.8.0
+pkgrel=1
+options="!lto"
+source="https://github.com/jqlang/jq/releases/download/$pkgname-$pkgver/$pkgname-$pkgver.tar.gz"
+
+build() {
+	cd $pkgname-$pkgver
+
+	./configure \
+        --prefix=/usr
+	make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

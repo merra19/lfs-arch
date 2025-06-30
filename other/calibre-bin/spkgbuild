@@ -1,0 +1,25 @@
+# description	: Official desktop version Calibre
+# depends	: glibc
+
+pkgname=calibre-bin
+pkgver=8.5.0
+pkgrel=1
+options="!strip"
+source="https://github.com/kovidgoyal/calibre/releases/download/v$pkgver/calibre-$pkgver-x86_64.txz
+           https://github.com/calibre-share.tar.xz"
+DO_DEBUG="no"
+
+package() {
+	# Creating needed directories
+	install -dm755 "$pkgdir/usr/bin"
+	install -dm755 "$pkgdir/opt/calibre"
+
+	# Package calibre
+	cp -af "$srcdir/"* "$pkgdir/opt/calibre"
+	mv -f "$pkgdir/opt/calibre/share" "$pkgdir/usr"
+
+	# Create symlinks in /usr/bin
+	for f in `find "$pkgdir/opt/calibre" -maxdepth 1 -type f -printf "%f\n"`; do
+		ln -s "/opt/calibre/$f" "$pkgdir/usr/bin/$f"
+	done
+}

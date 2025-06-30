@@ -1,0 +1,42 @@
+# description	: Library for arbitrary-precision arithmetic on different type of numbers
+# depends	: m4 xz glibc
+
+pkgname=libgmp
+pkgver=6.3.0
+pkgrel=1
+source="https://ftp.gnu.org/gnu/gmp/gmp-$pkgver.tar.xz"
+
+build() {
+    cd ${pkgname#lib}-$pkgver
+
+    # Get the GCC version string (e.g., "gcc 15.1.0")
+    version_str=$(gcc -dumpversion)
+
+    # Extract the major version number
+    major_version=${version_str%%.*}
+
+    # Compare with 15
+    if (( major_version >= 15 )); then
+        # Fix building with GCC-15
+        sed -i '/long long t1;/,+1s/()/(...)/' configure
+    fi
+
+    export CFLAGS="-O3 -fno-semantic-interposition -ffat-lto-objects  -flto=4 -mno-vzeroupper -march=$MMARCH "
+    export CXXFLAGS="$CFLAGS"
+
+    LDFLAGS+=' -Wl,-z,shstk' 
+    ./configure \
+        --build=x86_64-pc-linux-gnu \
+        --prefix=/usr \
+        --enable-cxx \
+        --enable-fat 
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+    make
+    make html
+}
+
+package() {
+    cd ${pkgname#lib}-$pkgver
+
+    make DESTDIR="$pkgdir" install install-html
+}

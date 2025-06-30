@@ -1,0 +1,28 @@
+# description	: Signon daemon for libaccounts-glib
+# depends	:  glibc qt6-base qt6-tools doxygen
+# depends	: noto-fonts ttf-dejavu liberation-fonts
+
+pkgname=signond
+pkgver=8.61
+pkgrel=3
+commit=c8ad98249af541514ff7a81634d3295e712f1a39
+#source="https://gitlab.com/nicolasfella/signond/-/archive/VERSION_$pkgver/signond-VERSION_$pkgver.tar.gz"
+source="https://gitlab.com/nicolasfella/signond/-/archive/$commit/signond-$commit.tar.gz"
+
+build() {
+    cd $pkgname-$commit
+
+    qmake6 \
+        PREFIX=/usr \
+        LIBDIR=/usr/lib
+    make
+}
+
+package() {
+    cd $pkgname-$commit
+
+    make INSTALL_ROOT="$pkgdir" install
+
+    # Do not ship docs
+    rm -rf "$pkgdir"/usr/share/doc
+}

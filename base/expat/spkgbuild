@@ -1,0 +1,29 @@
+# description	: Stream-oriented XML parser library
+# depends	: glibc
+
+pkgname=expat
+pkgver=2.7.1
+pkgrel=1
+source="https://prdownloads.sourceforge.net/expat/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition -fstack-protector-strong -fzero-call-used-regs=used "
+
+build() { 
+    cd $pkgname-$pkgver
+
+    local cmake_options=(
+        -B build
+        -D CMAKE_BUILD_TYPE=None
+        -D CMAKE_INSTALL_PREFIX=/usr
+        -W no-dev
+        -D EXPAT_BUILD_DOCS:BOOL=OFF
+    )
+
+    cmake "${cmake_options[@]}"
+    cmake --build build --verbose
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

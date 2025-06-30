@@ -1,0 +1,17 @@
+# description	: Wayland clipboard utilities
+# depends	: wayland
+
+pkgname=wl-clipboard
+pkgver=2.2.1
+pkgrel=3
+epoch=1
+source="$pkgname-$pkgver.tar.gz::https://github.com/bugaevc/wl-clipboard/archive/v$pkgver.tar.gz"
+
+build() {
+    arch-meson "$pkgname-$pkgver" build
+    ninja -C build
+}
+
+package() {
+    DESTDIR="$pkgdir" ninja -C build install
+}

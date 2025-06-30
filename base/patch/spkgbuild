@@ -1,0 +1,22 @@
+# description	: Utility to apply diffs to files
+# depends	: attr
+
+pkgname=patch
+pkgver=2.8
+pkgrel=1
+source="https://ftp.gnu.org/gnu/patch/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto -fstack-protector-strong -fzero-call-used-regs=used "
+
+build() {
+    cd $pkgname-$pkgver
+
+    ./configure \
+        --prefix=/usr
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

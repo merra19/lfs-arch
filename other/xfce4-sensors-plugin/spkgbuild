@@ -1,0 +1,21 @@
+# description	: A panel plug-in for acpi, lm-sensors and hddtemp sensors
+# depends	: gtk3 libxfce4ui libxfce4util xfce4-panel netcat
+# depends	: libnotify lm-sensors
+
+pkgname=xfce4-sensors-plugin
+pkgver=1.5.0
+pkgrel=2
+source="https://archive.xfce.org/src/panel-plugins/xfce4-sensors-plugin/${pkgver%.*}/$pkgname-$pkgver.tar.xz"
+
+build() {
+    arch-meson $pkgname-$pkgver build \
+        --localstatedir=/var \
+        -D hddtemp=enabled \
+        -D netcat=enabled \
+        -D xnvctrl=disabled
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

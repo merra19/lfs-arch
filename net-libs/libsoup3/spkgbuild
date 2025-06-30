@@ -1,0 +1,34 @@
+# description	: HTTP client/server library for GNOME version 3
+# depends	: glib nghttp2 sqlite brotli libpsl zlib libxml2 samba
+# depends	: gobject-introspection vala glib-networking
+
+pkgname=libsoup3
+pkgver=3.6.5
+pkgrel=1
+source="https://download.gnome.org/sources/libsoup/${pkgver%.*}/libsoup-$pkgver.tar.xz"
+optsflags=" -O3 -Os -fdata-sections -ffat-lto-objects -ffunction-sections -flto=auto -fno-semantic-interposition "
+
+prepare() {
+	cd libsoup-$pkgver
+
+	#  Fix the installation path of API documentation
+	sed 's/apiversion/soup_version/' -i docs/reference/meson.build 
+}
+
+build() {
+    
+  local meson_options=(
+    -D autobahn=disabled
+    -D gssapi="$(scratch isinstalled krb5 && echo "enabled" || echo "disabled")"
+    -D sysprof=disabled 
+    -D ntlm="$(scratch isinstalled samba && echo "enabled" || echo "disabled")"
+    -D docs=disabled 
+  )
+
+  arch-meson libsoup-$pkgver build "${meson_options[@]}"
+  meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

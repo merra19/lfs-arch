@@ -1,0 +1,20 @@
+# description	: Library to parse gdb mi output and interact with gdb subprocesses
+# depends	: python3 python3-gpep517 python3-setuptools python3-wheel
+
+pkgname=python3-pygdbmi
+pkgver=0.11.0.0
+pkgrel=1
+source="https://files.pythonhosted.org/packages/source/p/pygdbmi/pygdbmi-$pkgver.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd pygdbmi-$pkgver
+    
+	python3 setup.py build
+}
+
+package() {
+    cd pygdbmi-$pkgver
+
+    python3 setup.py install --root=$pkgdir --skip-build
+}

@@ -1,0 +1,34 @@
+# description	: An interface for filesystems implemented in userspace
+# depends	: glibc pkgconf
+
+pkgname=fuse2
+pkgver=2.9.9
+pkgrel=5
+source="https://github.com/libfuse/libfuse/releases/download/fuse-$pkgver/fuse-$pkgver.tar.gz
+            conditionally-define-closefrom.patch"
+
+prepare() {
+  cd fuse-$pkgver
+  patch -Np1 -i ${srcdir}/conditionally-define-closefrom.patch
+  autoreconf -i
+}
+
+build() {
+    cd fuse-$pkgver
+
+    UDEV_RULES_PATH=/usr/lib/udev/rules.d MOUNT_FUSE_PATH=/usr/bin ./configure --prefix=/usr --libdir=/usr/lib --enable-lib --enable-util --disable-example
+    make
+}
+
+package() {
+    cd fuse-$pkgver
+
+    make DESTDIR="${pkgdir}" install
+
+    # Remove init script in wrong path
+    # Don't add our own for now, as fusectl fs oopses on 2.6.18
+    rm -r "${pkgdir}"/etc/init.d
+
+    # static device nodes are handled by udev
+    rm -r "${pkgdir}"/dev
+}

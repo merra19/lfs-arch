@@ -1,0 +1,25 @@
+# description	: Installer, launcher and supplementary files for Valve's Steam client
+# depends	: glibc xorg-proto xcb-proto libxau libx11 libdrm xz icu 
+# depends	: libxshmfence mesa xdg-user-dirs lsof tar bash fontconfig 
+# depends	: libglvnd ttf-dejavu at-spi2-core bzip2 ibus gcc
+# depends	: libxkbcommon vulkan-loader alsa-plugins-32 libx11-32
+# depends	: fontconfig-32 libgpg-error-32 libva-32 libxcrypt-32
+# depends	: libxinerama-32 nss-32 pipewire-32 mesa-32 udev-32
+# depends	: vulkan-loader-32 libxscrnsaver-32 networkmanager-32
+
+# dev-libs/libatomic_ops media-libs/flac media-libs/libva media-libs/libvorbis media-libs/opus
+# media-sound/lame media-sound/mpg123-base x11-libs/xcb-util-keysyms
+
+pkgname=steam
+pkgver=1.0.0.83
+pkgrel=1
+source="http://repo.steampowered.com/$pkgname/pool/$pkgname/s/$pkgname/${pkgname}_$pkgver.tar.gz"
+
+package() {
+	cd $pkgname-launcher
+
+	make DESTDIR="$pkgdir" install
+
+	# blank steamdeps because apt-get
+	ln -sf /bin/true "$pkgdir"/usr/bin/steamdeps
+}

@@ -1,0 +1,10 @@
+# description	: init service scripts for wpa_supplicant
+
+pkgname=wpa_supplicant-init
+pkgver=1.0
+pkgrel=1
+source="wpa"
+
+package() {
+    install -Dm 754 wpa  "$pkgdir"/lib/services/wpa
+}

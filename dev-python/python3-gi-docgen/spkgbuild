@@ -1,0 +1,24 @@
+# description	: A documentation generator for GObject-based libraries
+# depends	: python3 python3-wheel python3-gpep517 python3-setuptools 
+# depends	: python3-flit-core python3-jinja python3-markdown 
+# depends	: python3-markupsafe python3-packaging python3-pygments 
+# depends	: python3-typogrify
+
+pkgname=python3-gi-docgen
+pkgver=2025.3
+pkgrel=1
+source="https://files.pythonhosted.org/packages/source/g/gi-docgen/gi_docgen-2025.3.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd gi_docgen-$pkgver
+    
+    arch-meson output
+	meson compile -C output
+}
+
+package() {
+	cd gi_docgen-$pkgver
+
+	DESTDIR="$pkgdir" meson install --no-rebuild -C output
+}

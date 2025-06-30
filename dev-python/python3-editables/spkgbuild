@@ -1,0 +1,21 @@
+# description	: A Python library for creating 'editable wheels'
+# depends	: python3 python3-wheel python3-gpep517 python3-setuptools 
+# depends	: python3-flit-core
+
+pkgname=python3-editables
+pkgver=0.5
+pkgrel=1
+source="https://files.pythonhosted.org/packages/source/e/editables/editables-$pkgver.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd editables-$pkgver
+    
+    gpep517 build-wheel --wheel-dir .dist --output-fd 3 3>&1 >&2
+}
+
+package() {
+	cd editables-$pkgver
+
+	python3 -m installer -d "$pkgdir" .dist/*.whl
+}

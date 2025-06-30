@@ -1,0 +1,28 @@
+# description	: C++ crypto library
+# depends	: sqlite xz python3 zlib bzip2 ninja boost
+
+pkgname=botan
+pkgver=3.8.1
+pkgrel=1
+source="https://botan.randombit.net/releases/Botan-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd Botan-$pkgver
+
+    ./configure.py \
+        --prefix=/usr \
+        --with-bzip \
+        --with-lzma \
+        --with-zlib \
+        --with-boost \
+        --with-sqlite3 \
+        --with-os-feature=getrandom
+    make
+}
+
+package() {
+    cd Botan-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

@@ -1,0 +1,107 @@
+# description	: Various useful Linux utilities
+# depends	: libxcrypt pcre2 ncurses zlib readline udev glibc
+
+pkgname=util-linux
+pkgver=2.41
+pkgrel=1
+options="strip"
+source="$pkgname-$pkgver.zip::https://github.com/util-linux/util-linux/archive/refs/heads/stable/v$pkgver.zip
+        pam-login pam-common pam-remote pam-runuser pam-su util-linux.sysusers
+        60-rfkill.rules
+        0001-sysusers-and-tmpfiles-no-systemd.patch"
+optsflags=" -O3 -Os -fdata-sections -ffat-lto-objects -ffunction-sections -flto=auto -fno-semantic-interposition "
+backup="etc/pam.d/chfn
+          etc/pam.d/chsh
+          etc/pam.d/login
+          etc/pam.d/remote
+          etc/pam.d/runuser
+          etc/pam.d/runuser-l
+          etc/pam.d/su
+          etc/pam.d/su-l"
+
+prepare() {
+    cd $pkgname-stable-v$pkgver
+
+    # create fully locked system accout
+    patch -Np1 -i ../0001-sysusers-and-tmpfiles-no-systemd.patch
+
+    # create fully locked system accout
+    sed -i '/^u /s|u|u!|' misc-utils/uuidd-sysusers.conf.in
+
+    # do not mark dirty
+    sed -i '/dirty=/c dirty=' tools/git-version-gen
+}   
+
+build() {
+    local _meson_options=(
+        -D systemd=disabled
+        -D fs-search-path=/usr/bin:/usr/local/bin
+
+        -D libuser=disabled
+        -D libutempter=disabled
+        -D ncurses=disabled
+        -D ncursesw=enabled
+        -D econf=disabled
+
+        -D build-chfn-chsh=enabled
+        -D build-line=disabled
+        -D build-mesg=enabled
+        -D build-newgrp=enabled
+        -D build-vipw=enabled
+        -D build-write=enabled
+
+        -D sysusersdir=/usr/lib/sysusers.d
+        -D tmpfilesdir=/usr/lib/tmpfiles.d
+
+        -D build-setpriv=disabled
+        -D cryptsetup="$(scratch isinstalled cryptsetup && echo "enabled" || echo "disabled")"
+    )
+
+    arch-meson util-linux-stable-v$pkgver build "${_meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    _python_stdlib="$(python -c 'import sysconfig; print(sysconfig.get_paths()["stdlib"])')"
+
+    DESTDIR="${pkgdir}" meson install -C build
+
+    # remove static libraries
+    rm "${pkgdir}"/usr/lib/lib*.a*
+
+    # setuid chfn and chsh
+    chmod 4755 "${pkgdir}"/usr/bin/{newgrp,ch{sh,fn}}
+
+    # install PAM files for login-utils
+    install -Dm0644 pam-common "${pkgdir}/etc/pam.d/chfn"
+    install -m0644 pam-common "${pkgdir}/etc/pam.d/chsh"
+    install -m0644 pam-login "${pkgdir}/etc/pam.d/login"
+    install -m0644 pam-remote "${pkgdir}/etc/pam.d/remote"
+    install -m0644 pam-runuser "${pkgdir}/etc/pam.d/runuser"
+    install -m0644 pam-runuser "${pkgdir}/etc/pam.d/runuser-l"
+    install -m0644 pam-su "${pkgdir}/etc/pam.d/su"
+    install -m0644 pam-su "${pkgdir}/etc/pam.d/su-l"
+
+    # runtime libs are shipped as part of util-linux-libs
+    install -d -m0755 util-linux-libs/lib/
+    mv "$pkgdir"/usr/lib/lib*.so* util-linux-libs/lib/
+    mv "$pkgdir"/usr/lib/pkgconfig util-linux-libs/lib/pkgconfig
+    mv "$pkgdir"/usr/include util-linux-libs/include
+    mv "$pkgdir"/"${_python_stdlib}"/site-packages util-linux-libs/site-packages
+    rmdir "$pkgdir"/"${_python_stdlib}"
+    #mv "$pkgdir"/usr/share/man/man3 util-linux-libs/man3
+
+    install -Dm0644 60-rfkill.rules \
+        "${pkgdir}/usr/lib/udev/rules.d/60-rfkill.rules"
+
+    # util-linux-libs
+
+    _python_stdlib="$(python -c 'import sysconfig; print(sysconfig.get_paths()["stdlib"])')"
+
+    install -d -m0755 "$pkgdir"/{"${_python_stdlib}",usr/share/man/} "$pkgdir"/usr/lib/
+    mv util-linux-libs/lib/* "$pkgdir"/usr/lib/
+    mv util-linux-libs/include "$pkgdir"/usr/include
+    mv util-linux-libs/site-packages "$pkgdir"/"${_python_stdlib}"/site-packages
+    #mv util-linux-libs/man3 "$pkgdir"/usr/share/man/man3
+}
+

@@ -1,0 +1,22 @@
+# description	: A set of tools that use the proc filesystem
+# depends	: ncurses
+
+pkgname=psmisc
+pkgver=23.7
+pkgrel=1
+source="https://sourceforge.net/projects/psmisc/files/psmisc/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    ./configure \
+        --prefix=/usr
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

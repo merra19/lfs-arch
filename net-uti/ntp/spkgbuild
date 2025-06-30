@@ -1,0 +1,42 @@
+# description	: Network Time Protocol suite/programs
+# depends	: libevent readline libcap openssl perl-io-socket-ssl
+
+pkgname=ntp
+pkgver=4.2.8p18
+pkgrel=1
+options="!emptydirs"
+source="https://www.eecis.udel.edu/~ntp/ntp_spool/ntp4/ntp-${pkgver%.*}/$pkgname-$pkgver.tar.gz
+        ntp-4.2.8.p18-fix-build.patch
+        ntp.conf ntp.sysusers"
+backup="etc/ntp.conf"
+
+build() {
+    cd $pkgname-$pkgver
+
+    patch -Np1 < ../ntp-4.2.8.p18-fix-build.patch
+	autoreconf -fiv
+
+    # avoid libmd5/libelf
+	export ac_cv_search_MD5Init=no ac_cv_header_md5_h=no
+
+    ./configure \
+        --prefix=/usr \
+        --prefix=/usr \
+        --libexecdir=/usr/lib \
+        --enable-linuxcaps \
+        --enable-ntp-signd \
+        --with-lineeditlibs=readline 
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+
+	install -Dm644 ../ntp.conf "${pkgdir}"/etc/ntp.conf
+	install -Dm644 ../ntp.sysusers "${pkgdir}"/usr/lib/sysusers.d/ntp.conf
+
+	install -d -o 87 "${pkgdir}"/var/lib/ntp
+	echo > "${pkgdir}/var/lib/ntp/.placeholder"
+}

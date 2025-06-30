@@ -1,0 +1,20 @@
+# description	: A Python to C compiler
+# depends	: python3 python3-wheel python3-gpep517 python3-setuptools
+
+pkgname=python3-cython
+pkgver=3.1.2
+pkgrel=1
+source="https://github.com/cython/cython/releases/download/$pkgver/cython-$pkgver.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd cython-$pkgver
+
+    gpep517 build-wheel --wheel-dir .dist --output-fd 3 3>&1 >&2
+}
+
+package() {
+	cd cython-$pkgver
+
+	python3 -m installer -d "$pkgdir" .dist/*.whl
+}

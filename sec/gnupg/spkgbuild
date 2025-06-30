@@ -1,0 +1,64 @@
+# description	: The GNU Privacy Guard, a GPL OpenPGP implementation
+# depends	: libassuan libgcrypt libgpg-error libksba npth pinentry 
+# depends	: gnutls curl zlib bzip2 sqlite readline libusb pcsclite
+
+pkgname=gnupg
+pkgver=2.4.8
+pkgrel=1
+source="https://gnupg.org/ftp/gcrypt/$pkgname/$pkgname-$pkgver.tar.bz2
+        $pkgname-2.4-avoid_beta_warning.patch
+        0001-gpg-accept-subkeys-with-a-good-revocation-but-no-sel.patch
+        0002-gpg-allow-import-of-previously-known-keys-even-witho.patch
+        0003-tests-add-test-cases-for-import-without-uid.patch
+        0004-gpg-drop-import-clean-from-default-keyserver-import-.patch
+        0005-avoid-systemd-deprecation-warning.patch
+        0006-Add-systemd-support-for-keyboxd.patch
+        0007-Ship-sample-systemd-unit-files.patch
+        0008-gpg-default-El-Gamal-to-3072-bit-keys.patch
+        0009-gpg-Always-support-and-default-to-using-SHA-512.patch
+        0010-gpg-Prefer-SHA-512-and-SHA-384-in-personal-digest-pr.patch
+        0011-Avoid-simple-memory-dumps-via-ptrace.patch
+        0013-ssh-agent-emulation-under-systemd-inject-SSH_AUTH_SO.patch
+        0014-gpg-Sync-compliance-mode-cleanup-with-master.patch
+        0015-gpg-emit-RSA-pubkey-algorithm-when-in-compatibility-.patch
+        0016-gpg-Reintroduce-openpgp-as-distinct-from-rfc4880.patch
+        0017-gpg-Emit-LibrePGP-material-only-in-compliance-gnupg.patch
+        0018-gpg-gpgconf-list-report-actual-compliance-mode.patch
+        0019-gpg-Default-to-compliance-openpgp.patch
+        0020-gpg-Fix-newlines-in-Cleartext-Signature-Framework-CS.patch
+        0021-Add-keyboxd-systemd-support.patch"
+optsflags=" -O3 -ffat-lto-objects -flto=auto -fstack-protector-strong -fzero-call-used-regs=used "
+
+build() {
+	cd $pkgname-$pkgver
+
+    local src
+    for src in $source; do
+        src="${src%%::*}"
+        src="${src##*/}"
+        [[ $src = *.patch ]] || continue
+        echo "Applying patch $src..."
+        patch -Np1 < "../$src"
+    done
+
+
+	mkdir build &&
+	cd    build &&
+
+	../configure \
+        --prefix=/usr \
+        --sbindir=/usr/bin \
+        --libexecdir=/usr/lib/gnupg \
+		--localstatedir=/var \
+		--sysconfdir=/etc 
+	make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+	make DESTDIR="$pkgdir" -C build install
+
+    ln -s gpg "$pkgdir"/usr/bin/gpg2
+    ln -s gpgv "$pkgdir"/usr/bin/gpgv2
+}

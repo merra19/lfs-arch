@@ -1,0 +1,22 @@
+# description	: Super-useful stream editor
+# depends	: acl
+
+pkgname=sed
+pkgver=4.9
+pkgrel=1
+source="https://ftp.gnu.org/gnu/sed/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -Os -fdata-sections -ffat-lto-objects -ffunction-sections -flto=auto -fno-semantic-interposition "
+
+build() {
+    cd $pkgname-$pkgver
+
+    ./configure \
+        --prefix=/usr
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

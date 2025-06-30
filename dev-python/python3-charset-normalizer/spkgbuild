@@ -1,0 +1,20 @@
+# description	: The Real First Universal Charset Detector
+# depends	: python3 python3-gpep517 python3-setuptools python3-wheel
+
+pkgname=python3-charset-normalizer
+pkgver=3.4.1
+pkgrel=1
+source="https://files.pythonhosted.org/packages/source/c/charset-normalizer/charset_normalizer-$pkgver.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd charset_normalizer-$pkgver
+
+	gpep517 build-wheel --wheel-dir .dist --output-fd 3 3>&1 >&2
+}
+
+package() {
+	cd charset_normalizer-$pkgver
+
+	python3 -m installer -d "$pkgdir" .dist/*.whl
+}

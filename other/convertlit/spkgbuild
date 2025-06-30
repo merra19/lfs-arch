@@ -1,0 +1,33 @@
+# description	: CLit converts MS ebook .lit files to .opf (xml+html+png+jpg)
+# depends	: glibc libtommath dos2unix
+
+pkgname=convertlit
+pkgver=1.8
+pkgrel=12
+source="http://www.convertlit.com/clit18src.zip
+        Wformat-security.patch"
+
+prepare() {
+    # source code is ending with CRLF, convert patch from LF to CRLF
+    unix2dos -n Wformat-security.patch Wformat-security-crlf.patch
+    # Fix build with -Wformat-security (Gentoo)
+    patch -p1 --binary < Wformat-security-crlf.patch
+    # Link to shared libtommath and use system LDFLAGS
+    sed -e 's|../libtommath-0.30/libtommath.a|/usr/lib/libtommath.so ${LDFLAGS}|' -i clit18/Makefile
+    # Use system CFLAGS
+    sed -e 's|CFLAGS=-O3 -Wall|CFLAGS+=|' -i lib/Makefile
+    sed -e 's|CFLAGS=-funsigned-char -Wall -O2|CFLAGS+=|' -i clit18/Makefile
+}
+
+build() {
+    export CFLAGS+=" -Wno-implicit-function-declaration"
+
+    cd lib && make
+    cd ../clit18 && make
+}
+
+package() {
+    cd clit18
+
+    install -Dm755 clit -t "$pkgdir"/usr/bin
+}

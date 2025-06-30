@@ -1,0 +1,48 @@
+# description	: A Client that groks URL
+# depends	: p11-kit openssl zlib zstd perl nghttp2 libpsl c-ares 
+# depends	: dbus libidn2 libssh2 glibc
+# optional	: krb5!!openldap
+
+pkgname=curl
+pkgver=8.14.1
+pkgrel=1
+options="!lto"
+source="https://curl.se/download/$pkgname-$pkgver.tar.xz"
+optsflags=" -Os -fdata-sections -ffunction-sections -fno-lto -fno-semantic-interposition -fstack-protector-strong -fzero-call-used-regs=used "
+
+build() {
+    cd $pkgname-$pkgver
+
+    scratch isinstalled openldap && OPT_LDAP='--with-gssapi' ||  OPT_LDAP='--disable-ldap'
+
+    # Fix a regression that causes crashes in some applications due to issues with eventfd
+    sed -i '198,200d' lib/asyn-thread.c
+
+    autoreconf -fiv
+    
+    ./configure \
+        --prefix=/usr \
+        --disable-ldap \
+        --disable-ldaps \
+        --disable-manual \
+        --enable-ipv6 \
+        --enable-threaded-resolver \
+        --enable-websockets \
+        --with-gssapi \
+        --with-libssh2 \
+        --enable-versioned-symbols \
+        --with-fish-functions-dir=/usr/share/fish/vendor_completions.d/ \
+        --with-openssl \
+        --with-openssl-quic \
+        --with-zsh-functions-dir=/usr/share/zsh/site-functions/ \
+        --with-ca-path=/etc/ssl/certs \
+        $OPT_LDAP
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

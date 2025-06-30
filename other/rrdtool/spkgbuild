@@ -1,0 +1,47 @@
+# description	: A data logging and graphing system for time series data
+# depends	: lua libxml2 pango ttf-dejavu intltool python3-setuptools
+# depends	: udev perl tcl
+
+pkgname=rrdtool
+pkgver=1.9.0
+pkgrel=6
+options="!emptydirs !makeflags"
+source="https://github.com/oetiker/rrdtool-1.x/releases/download/v$pkgver/$pkgname-$pkgver.tar.gz"
+optsflags=" -fno-lto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    # fix FS#28521 make ruby install to vendor_ruby instead of site_ruby
+    sed -e 's/$(RUBY) ${abs_srcdir}\/ruby\/extconf.rb/& --vendor/' -i bindings/Makefile.am
+
+    # https://github.com/oetiker/rrdtool-1.x/issues/1135
+    #autoreconf -vi
+    libtoolize --force && aclocal && autoconf --force && automake --add-missing
+
+    LUA=/usr/bin/lua \
+        LUA_CFLAGS="-I/usr/include -llua" LUA_INSTALL_CMOD="/usr/lib/lua/5.4" \
+        CFLAGS+=" -Wno-incompatible-pointer-types" \
+        ./configure \
+            --prefix=/usr \
+            --localstatedir=/var \
+            --disable-rpath \
+            --enable-perl \
+            --enable-perl-site-install \
+            --with-perl-options='INSTALLDIRS=vendor' \
+            --disable-ruby \
+            --enable-ruby-site-install \
+            --enable-python \
+            --enable-lua \
+            --enable-lua-site-install \
+            --enable-tcl \
+            --disable-libwrap \
+            --disable-docs
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" includedir=/usr/include install
+}

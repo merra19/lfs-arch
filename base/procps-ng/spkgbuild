@@ -1,0 +1,37 @@
+# description	: Standard informational utilities and process-handling tools
+# depends	: ncurses elogind
+
+pkgname=procps-ng
+pkgver=4.0.5
+pkgrel=1
+options="!lto !emptydirs"
+source="https://sourceforge.net/projects/procps-ng/files/Production/$pkgname-$pkgver.tar.xz
+        pgrep.patch"
+optsflags=" -Os -fdata-sections -ffunction-sections -fno-lto -fno-semantic-interposition -fstack-protector-strong -fzero-call-used-regs=used "
+
+build() {
+    cd $pkgname-$pkgver
+
+    patch -Np0 -i ../pgrep.patch
+
+    autoreconf -fiv
+
+    ./configure \
+        --prefix=/usr \
+        --exec-prefix=/ \
+        --sysconfdir=/etc \
+        --libdir=/usr/lib \
+        --bindir=/usr/bin \
+        --sbindir=/usr/bin \
+        --enable-watch8bit \
+        --with-elogind \
+        --disable-modern-top \
+        --disable-kill 
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

@@ -1,0 +1,23 @@
+# description	: Provides settings to X11 applications via the XSETTINGS specification
+# depends	: libx11 
+
+pkgname=xsettingsd
+pkgver=1.0.2
+pkgrel=3
+source="https://github.com/derat/xsettingsd/archive/v$pkgver/$pkgname-$pkgver.tar.gz"
+
+build() {
+    cd $pkgname-$pkgver
+
+    cmake -B build \
+        -D CMAKE_INSTALL_PREFIX=/usr
+    make -C build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" -C build install
+
+    rm -r $pkgdir/usr/lib/systemd
+}

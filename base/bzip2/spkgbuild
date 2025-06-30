@@ -1,0 +1,78 @@
+# description	: A high-quality data compressor
+# depends	: glibc
+
+pkgname=bzip2
+pkgver=1.0.8
+pkgrel=1
+source="https://www.sourceware.org/pub/bzip2/$pkgname-$pkgver.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    export CFLAGS_GENERATE="$CFLAGS -fprofile-generate -fprofile-update=atomic "
+    export FCFLAGS_GENERATE="$FCFLAGS -fprofile-generate -fprofile-update=atomic "
+    export FFLAGS_GENERATE="$FFLAGS -fprofile-generate -fprofile-update=atomic "
+    export CXXFLAGS_GENERATE="$CXXFLAGS -fprofile-generate -fprofile-update=atomic "
+    export LDFLAGS_GENERATE="$LDFLAGS -fprofile-generate -fprofile-update=atomic "
+    export CFLAGS_USE="$CFLAGS -fprofile-use -fprofile-correction "
+    export FCFLAGS_USE="$FCFLAGS -fprofile-use -fprofile-correction "
+    export FFLAGS_USE="$FFLAGS -fprofile-use -fprofile-correction "
+    export CXXFLAGS_USE="$CXXFLAGS -fprofile-use -fprofile-correction "
+    export LDFLAGS_USE="$LDFLAGS -fprofile-use -fprofile-correction "
+
+    CFLAGS="${CFLAGS_GENERATE} " CXXFLAGS="${CXXFLAGS_GENERATE}" FFLAGS="${FFLAGS_GENERATE}" \
+    FCFLAGS="${FCFLAGS_GENERATE}" LDFLAGS="${LDFLAGS_GENERATE}" \
+    make -f Makefile-libbz2_so
+    make clean
+    CFLAGS="${CFLAGS_GENERATE} " CXXFLAGS="${CXXFLAGS_GENERATE}" FFLAGS="${FFLAGS_GENERATE}" \
+    FCFLAGS="${FCFLAGS_GENERATE}" LDFLAGS="${LDFLAGS_GENERATE}" \
+    make
+    make check
+
+    if [ -f /usr/bin/x86_64-pc-linux-gnu-gcc ] ;then
+        cp /usr/bin/x86_64-pc-linux-gnu-gcc .
+    else
+        cp /tools/bin/x86_64-pc-linux-gnu-gcc .
+    fi
+    
+    LD_LIBRARY_PATH=. ./bzip2 -9 manual.ps
+    LD_LIBRARY_PATH=. ./bzip2 -9 README
+    LD_LIBRARY_PATH=. ./bzip2 x86_64-pc-linux-gnu-gcc
+    LD_LIBRARY_PATH=. ./bzip2 -d manual.ps.bz2
+    LD_LIBRARY_PATH=. ./bzip2 -d README.bz2
+    LD_LIBRARY_PATH=. ./bzip2 -d x86_64-pc-linux-gnu-gcc.bz2
+
+    make clean
+    unset LD_LIBRARY_PATH
+
+    CFLAGS="${CFLAGS_USE}" CXXFLAGS="${CXXFLAGS_USE}" FFLAGS="${FFLAGS_USE}" \
+    FCFLAGS="${FCFLAGS_USE}" LDFLAGS="${LDFLAGS_USE}" \
+    make -f Makefile-libbz2_so
+    make clean
+    CFLAGS="${CFLAGS_USE}" CXXFLAGS="${CXXFLAGS_USE}" FFLAGS="${FFLAGS_USE}" \
+    FCFLAGS="${FCFLAGS_USE}" LDFLAGS="${LDFLAGS_USE}" \
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    install -dm755 "$pkgdir"/usr/{bin,lib,include,share/man/man1}
+
+    install -m755 bzip2-shared "$pkgdir"/usr/bin/bzip2
+    install -m755 bzip2recover bzdiff bzgrep bzmore "$pkgdir"/usr/bin
+    ln -sf bzip2 "$pkgdir"/usr/bin/bunzip2
+    ln -sf bzip2 "$pkgdir"/usr/bin/bzcat
+
+    cp -a libbz2.so* "$pkgdir"/usr/lib
+    ln -s libbz2.so.$pkgver "$pkgdir"/usr/lib/libbz2.so
+    ln -s libbz2.so.$pkgver "$pkgdir"/usr/lib/libbz2.so.1 # For compatibility with some other distros
+
+    install -m644 bzlib.h "$pkgdir"/usr/include/
+
+    install -m644 bzip2.1 "$pkgdir"/usr/share/man/man1/
+    ln -sf bzip2.1 "$pkgdir"/usr/share/man/man1/bunzip2.1
+    ln -sf bzip2.1 "$pkgdir"/usr/share/man/man1/bzcat.1
+    ln -sf bzip2.1 "$pkgdir"/usr/share/man/man1/bzip2recover.1
+}

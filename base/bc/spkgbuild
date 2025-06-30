@@ -1,0 +1,23 @@
+# description	: Implementation of POSIX bc with GNU extensions
+# depends	: readline ncurses
+
+pkgname=bc
+pkgver=7.0.3
+pkgrel=1
+options="lto !makeflags"
+source="https://github.com/gavinhoward/bc/releases/download/$pkgver/$pkgname-$pkgver.tar.xz"
+
+build() {
+    cd $pkgname-$pkgver
+
+    export LDFLAGS="$LDFLAGS -Wl,-z,pack-relative-relocs"
+
+    CC='gcc -std=c99' ./configure --prefix=/usr -pGNU -l -G -O3 -r -sbc.banner -sdc.tty_mode
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

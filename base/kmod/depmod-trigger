@@ -1,0 +1,17 @@
+#!/bin/sh
+
+# PostTransaction
+# Operation Install
+# Operation Upgrade
+# Operation Remove
+
+find /usr/lib/modules -maxdepth 1 -mindepth 1 -type d  | while read -r f; do
+  if [[ -e ${f}/modules.order ]]; then
+    depmod $(basename "$f")
+  elif [[ -d $f ]]; then
+    rm -f "${f}"/modules.{alias,alias.bin,builtin.alias.bin,builtin.bin} \
+          "${f}"/modules.{dep,dep.bin,devname,softdep,symbols,symbols.bin} \
+          "${f}"/modules.weakdep
+    rmdir --ignore-fail-on-non-empty "$f"
+  fi
+done

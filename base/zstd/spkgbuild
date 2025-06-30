@@ -1,0 +1,41 @@
+# description	: zstd fast compression library
+# depends	: glibc zlib xz lz4 meson
+
+pkgname=zstd
+pkgver=1.5.7
+pkgrel=1
+source="https://github.com/facebook/zstd/releases/download/v$pkgver/$pkgname-$pkgver.tar.gz
+        https://github.com/facebook/zstd/commit/6af3842118ea5325480b403213b2a9fbed3d3d74.patch"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    CFLAGS="-O2 -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector --param=ssp-buffer-size=32 -Wformat -Wformat-security -Wno-error -Wl,-z,max-page-size=0x4000 -march=$MMARCH"
+    CXXFLAGS=$CFLAGS
+    FFLAGS="-O2 -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector --param=ssp-buffer-size=32 -Wno-error -Wl,-z,max-page-size=0x4000 -march=$MMARCH"
+    FCFLAGS=$FFLAGS
+
+    CFLAGS="$CFLAGS -O3 -ffat-lto-objects -flto=auto "
+    FCFLAGS="$FFLAGS -O3 -ffat-lto-objects -flto=auto "
+    FFLAGS="$FFLAGS -O3 -ffat-lto-objects -flto=auto "
+    CXXFLAGS="$CXXFLAGS -O3 -ffat-lto-objects -flto=auto "
+
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    CFLAGS="-O2 -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector --param=ssp-buffer-size=32 -Wformat -Wformat-security -Wno-error -Wl,-z,max-page-size=0x4000 -march=$MMARCH"
+    CXXFLAGS=$CFLAGS
+    FFLAGS="-O2 -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector --param=ssp-buffer-size=32 -Wno-error -Wl,-z,max-page-size=0x4000 -march=$MMARCH"
+    FCFLAGS=$FFLAGS
+
+    CFLAGS="$CFLAGS -O3 -ffat-lto-objects -flto=auto "
+    FCFLAGS="$FFLAGS -O3 -ffat-lto-objects -flto=auto "
+    FFLAGS="$FFLAGS -O3 -ffat-lto-objects -flto=auto "
+    CXXFLAGS="$CXXFLAGS -O3 -ffat-lto-objects -flto=auto "
+
+    make PREFIX=/usr DESTDIR="${pkgdir}" install 
+}

@@ -1,0 +1,42 @@
+# description	: A fully featured, yet light weight RFC2131 compliant DHCP client
+# depends	: glibc ntp udev
+
+pkgname=dhcpcd
+pkgver=10.2.4
+pkgrel=1
+options="emptydirs"
+source="https://github.com/NetworkConfiguration/dhcpcd/releases/download/v$pkgver/$pkgname-$pkgver.tar.xz
+        dhcpcd dhcpcd.sysusers dhcpcd.tmpfiles"
+backup=(etc/dhcpcd.conf)
+
+
+build() {
+	cd $pkgname-$pkgver
+
+	./configure \
+        --prefix=/usr \
+        --sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--libexecdir=/usr/lib/dhcpcd \
+		--dbdir=/var/lib/dhcpcd \
+		--runstatedir=/run \
+		--privsepuser=dhcpcd
+	make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+
+    cd $srcdir
+    install -Dm644 $pkgname.sysusers "$pkgdir/usr/lib/sysusers.d/$pkgname.conf"
+    install -Dm644 $pkgname.tmpfiles "$pkgdir/usr/lib/tmpfiles.d/$pkgname.conf"
+
+    # strip files that somehow won't get stripped automatically
+    strip "$pkgdir/usr/bin/$pkgname"
+    strip "$pkgdir/usr/lib/$pkgname/dev/udev.so"
+
+    # Dinit
+    install -Dm644 dhcpcd "$pkgdir/etc/dinit.d/dhcpcd"
+}

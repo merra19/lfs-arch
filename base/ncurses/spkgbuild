@@ -1,0 +1,64 @@
+# description	: Console display library
+# depends	: glibc
+
+pkgname=ncurses
+pkgver=6.5_20250531
+_pkgver=${pkgver/_/-}
+pkgrel=1
+source="https://invisible-mirror.net/archives/ncurses/$pkgname-$_pkgver.tar.gz
+        ncurses-6.3-libs.patch ncurses-6.3-pkgconfig.patch"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$_pkgver
+
+    patch -Np1 < ../ncurses-6.3-libs.patch
+    patch -Np1 < ../ncurses-6.3-pkgconfig.patch
+
+    ./configure \
+        --prefix=/usr \
+        --disable-root-access \
+        --disable-root-environ \
+        --disable-setuid-environ \
+        --enable-widec \
+        --enable-pc-files \
+        --mandir=/usr/share/man \
+        --with-cxx-binding \
+        --with-cxx-shared \
+        --with-manpage-format=normal \
+        --with-pkg-config-libdir=/usr/lib/pkgconfig \
+        --with-shared \
+        --with-versioned-syms \
+        --with-xterm-kbs=del \
+        --without-ada
+    make
+}
+
+package() {
+    cd $pkgname-$_pkgver
+
+    local _pkgver=${pkgver/_*/}
+
+    make DESTDIR="$pkgdir" install
+
+    # fool packages looking to link to non-wide-character ncurses libraries
+    for lib in ncurses ncurses++ form panel menu; do
+        printf "INPUT(-l%sw)\n" "${lib}" > "$pkgdir/usr/lib/lib${lib}.so"
+        ln -sv ${lib}w.pc "$pkgdir/usr/lib/pkgconfig/${lib}.pc"
+    done
+
+    # some packages look for -lcurses during build
+    printf 'INPUT(-lncursesw)\n' > "$pkgdir/usr/lib/libcursesw.so"
+    ln -sv libncurses.so "$pkgdir/usr/lib/libcurses.so"
+
+    # tic and ticinfo functionality is built in by default
+    # make sure that anything linking against it links against libncursesw.so instead
+    for lib in tic tinfo; do
+        printf "INPUT(libncursesw.so.%s)\n" "${_pkgver:0:1}" > "$pkgdir/usr/lib/lib${lib}.so"
+        ln -sv libncursesw.so.${pkgver:0:1} "$pkgdir/usr/lib/lib${lib}.so.${_pkgver:0:1}"
+        ln -sv ncursesw.pc "$pkgdir/usr/lib/pkgconfig/${lib}.pc"
+    done
+
+    install -d -m755 "$pkgdir"/usr/share/doc/$pkgname
+    cp -v -R doc -T "$pkgdir"/usr/share/doc/$pkgname
+}

@@ -1,0 +1,20 @@
+# description	: Convert DOS or MAC text files to UNIX format or vice versa
+# depends	: glibc perl
+
+pkgname=dos2unix
+pkgver=7.5.2
+pkgrel=2
+source="https://waterlan.home.xs4all.nl/$pkgname/$pkgname-$pkgver.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+    
+    make LDFLAGS_USER="${LDFLAGS}"
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

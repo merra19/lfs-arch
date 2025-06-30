@@ -1,0 +1,36 @@
+# description	: A free, cross-platform, open source, audio I/O library
+# depends	:  glibc alsa-lib cmake
+
+pkgname=portaudio
+pkgver=19.7.0
+pkgrel=3
+epoch=1
+source="https://github.com/portaudio/portaudio//archive/v$pkgver/$pkgname-v$pkgver.tar.gz"
+
+prepare() {
+    cd $pkgname-$pkgver
+    (
+    cd bindings/cpp
+    autoreconf -fiv
+    )
+    autoreconf -fiv
+}
+
+build() {
+    local configure_options=(
+        --prefix=/usr
+        --enable-cxx
+    )
+
+    cd $pkgname-$pkgver
+    ./configure "${configure_options[@]}"
+    # build breaks with multiple jobs when building C++ bindings:
+    # https://github.com/PortAudio/portaudio/issues/540
+    make -j1
+}
+
+package() {
+    cd $pkgname-$pkgver
+    
+    make DESTDIR="$pkgdir" install
+}

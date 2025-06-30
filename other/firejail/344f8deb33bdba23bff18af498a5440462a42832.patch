@@ -1,0 +1,63 @@
+From 344f8deb33bdba23bff18af498a5440462a42832 Mon Sep 17 00:00:00 2001
+From: "Kelvin M. Klann" <kmk3.code@protonmail.com>
+Date: Mon, 9 Jun 2025 16:44:37 -0300
+Subject: [PATCH] profiles: wusc: add /usr/share/xkeyboard-config-2
+
+With xkeyboard-config 2.45, many programs fail to start, such as:
+Firefox, Thunderbird, Gajim, KeepassXC, GoldenDict, and Zathura.
+Example[1]:
+
+    Reading profile /etc/firejail/zathura.profile
+    [...]
+    Reading profile /etc/firejail/whitelist-usr-share-common.inc
+    Reading profile /etc/firejail/whitelist-var-common.inc
+    firejail version 0.9.75
+
+    [...]
+    Child process initialized in 197.83 ms
+    xkbcommon: ERROR: failed to add default include path /usr/share/X11/xkb
+    xkbcommon: ERROR: failed to add default include path /usr/share/X11/xkb
+
+    Parent is shutting down, bye...
+
+It seems that in xkeyboard-config 2.45 the path was changed from:
+
+* /usr/share/X11/xkb
+
+To:
+
+* /usr/share/xkeyboard-config-2
+
+With the former now being a symlink to the latter and with the goal of
+using a versioning scheme for the directories, in order to introduce new
+file formats with breaking changes while keeping backwards compatibility
+in the current file format[2] [3].
+
+Fixes #6773.
+
+Thanks to @oddfellow for finding the root cause and the relevant commit.
+
+[1] https://github.com/netblue30/firejail/issues/6773#issue-3130459006
+[2] https://github.com/netblue30/firejail/issues/6773#issuecomment-2956384127
+[3] https://gitlab.freedesktop.org/xkeyboard-config/xkeyboard-config/-/commit/fd1d8d2d4f07ac494109b1a9e72d7fe777f6757a
+
+Reported-by: @myrslint
+Reported-by: @aminvakil
+Reported-by: @oddfellow
+Reported-by: @reagentoo
+---
+ etc/inc/whitelist-usr-share-common.inc | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/etc/inc/whitelist-usr-share-common.inc b/etc/inc/whitelist-usr-share-common.inc
+index 03653cc1673..ed5367208e0 100644
+--- a/etc/inc/whitelist-usr-share-common.inc
++++ b/etc/inc/whitelist-usr-share-common.inc
+@@ -70,6 +70,7 @@ whitelist /usr/share/thumbnail.so
+ whitelist /usr/share/uim
+ whitelist /usr/share/vulkan
+ whitelist /usr/share/X11
++whitelist /usr/share/xkeyboard-config-2
+ whitelist /usr/share/xml
+ whitelist /usr/share/zenity
+ whitelist /usr/share/zoneinfo

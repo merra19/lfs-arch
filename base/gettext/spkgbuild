@@ -1,0 +1,33 @@
+# description	: GNU locale utilities
+# depends	: glibc ncurses acl libxml2 expat xz
+
+pkgname=gettext
+pkgver=0.25
+pkgrel=1
+options="!docs"
+source="https://ftp.gnu.org/gnu/gettext/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    ./configure \
+        --prefix=/usr \
+        --libexecdir=/usr/lib \
+        --enable-csharp \
+        --enable-nls \
+        --with-xz \
+        --without-included-gettext \
+        --without-included-libunistring \
+        --docdir=/usr/share/doc/$pkgname
+    sed -e 's/ -shared / -Wl,-O1,--as-needed\0/g' \
+      -i gettext-{tools,runtime,runtime/libasprintf}/libtool
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+    chmod -v 0755 "$pkgdir"/usr/lib/preloadable_libintl.so
+}

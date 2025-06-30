@@ -1,0 +1,49 @@
+# description	: Allows users or groups to run commands as other users
+# depends	: zlib pam openssl libxcrypt libgcrypt
+# optional	: openldap
+
+pkgname=sudo
+pkgver=1.9.17
+pkgrel=1
+source="https://www.sudo.ws/dist/sudo-$pkgver.tar.gz
+        00-sudo sudo.pam"
+backup="etc/pam.d/sudo etc/sudo.conf etc/sudo_logsrvd.conf etc/sudoers"
+optsflags=" -O3 -ffat-lto-objects -flto=auto -fstack-protector-strong -fzero-call-used-regs=used "
+
+build() {
+    cd $pkgname-$pkgver
+
+    OPT_LDAP='-without-ldap'
+    scratch isinstalled openldap && OPT_LDAP='--with-ldap --with-ldap-conf-file=/etc/openldap/ldap.conf ' 
+
+    ./configure \
+        --prefix=/usr \
+        --sbindir=/usr/bin \
+        --libexecdir=/usr/lib \
+        --with-rundir=/run/sudo \
+        --with-vardir=/var/db/sudo \
+        --with-logfac=auth \
+        --enable-tmpfiles.d \
+        --with-pam \
+        --with-sssd \
+        --with-env-editor \
+        --with-passprompt="[sudo] password for %p: " \
+        --with-secure-path-value=/usr/local/sbin:/usr/local/bin:/usr/bin \
+        --with-all-insults \
+        $OPT_LDAP
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+
+    # Remove /run/sudo directory; we create it using tmpfiles
+    rmdir "$pkgdir/run/sudo"
+    rmdir "$pkgdir/run"
+
+    install -Dm 644 ../00-sudo "$pkgdir"/etc/sudoers.d/00-sudo
+    install -Dm 644 ../sudo.pam "$pkgdir"/etc/pam.d/sudo
+    install -dm 755 "$pkgdir"/etc/sudoers.d/
+}

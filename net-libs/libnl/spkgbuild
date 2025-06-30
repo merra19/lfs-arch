@@ -1,0 +1,27 @@
+# description	: Libraries providing APIs to netlink protocol based Linux kernel interfaces
+# depends	: python3 swig glibc
+
+pkgname=libnl
+pkgver=3.11.0
+_pkgver=$(echo $pkgver | sed 's/\./_/g')
+pkgrel=1
+source="https://github.com/thom311/libnl/releases/download/libnl${_pkgver}/$pkgname-$pkgver.tar.gz"
+backup="etc/libnl/classid etc/libnl/pktloc"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd $pkgname-$pkgver
+
+	./configure \
+        --prefix=/usr \
+		--sysconfdir=/etc \
+        --sbindir=/usr/bin \
+		--disable-static
+	make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

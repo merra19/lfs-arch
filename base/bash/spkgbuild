@@ -1,0 +1,52 @@
+# description	: The standard GNU Bourne again shell
+# depends	: ncurses readline bison
+
+pkgname=bash
+pkgver=5.3_rc2
+_pkgver=${pkgver/_/-}
+pkgrel=1
+options="!lto"
+source="https://ftp.gnu.org/gnu/bash/$pkgname-$_pkgver.tar.gz
+        dot_bash_profile dot_profile dot_bashrc dot_bash_logout
+        bashrc bash_logout"
+optsflags=" -Os -fdata-sections -ffunction-sections -fno-lto -fno-semantic-interposition "
+
+build() {
+    cd $pkgname-$_pkgver
+
+    _bashconfig=(-DDEFAULT_PATH_VALUE=\'\"/usr/local/sbin:/usr/local/bin:/usr/bin\"\'
+                -DSTANDARD_UTILS_PATH=\'\"/usr/bin\"\'
+                -DSYS_BASHRC=\'\"/etc/bash.bashrc\"\'
+                -DSYS_BASH_LOGOUT=\'\"/etc/bash.bash_logout\"\'
+                -DNON_INTERACTIVE_LOGIN_SHELLS)
+    export CFLAGS="${CFLAGS} ${_bashconfig[@]}"
+
+    ./configure \
+        --prefix=/usr \
+        --with-curses \
+        --enable-readline \
+        --without-bash-malloc \
+        --with-installed-readline \
+        --docdir=/usr/share/doc/$pkgname
+    make
+}
+
+package() {
+    cd $pkgname-$_pkgver
+
+    make DESTDIR="$pkgdir" install
+
+    ln -sv bash "$pkgdir"/usr/bin/sh
+
+    cd $srcdir
+    
+    install -Dm 0644 bashrc  "$pkgdir"/etc/bashrc
+    install -Dm 0644 bash_logout "${pkgdir}/etc/bash.bash_logout"
+
+    # user configuration file skeletons
+    
+    install -dm755 "${pkgdir}/etc/skel/"
+    install -m644 dot_bashrc "${pkgdir}/etc/skel/.bashrc"
+    install -m644 dot_bash_profile "${pkgdir}/etc/skel/.bash_profile"
+    install -m644 dot_bash_logout "${pkgdir}/etc/skel/.bash_logout"
+}

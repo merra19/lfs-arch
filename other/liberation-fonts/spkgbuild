@@ -1,0 +1,22 @@
+# description	: A Helvetica/Times/Courier replacement TrueType font set, courtesy of Red Hat
+# depends	: fontconfig python3 python3-fonttools fontforge
+
+pkgname=liberation-fonts
+pkgver=2.1.5
+pkgrel=2
+options="!lto"
+source="https://github.com/liberationfonts/liberation-fonts/archive/$pkgver/$pkgname-$pkgver.tar.gz"
+optsflags=" -fno-lto "
+
+build() {
+	cd $pkgname-$pkgver
+
+	make build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+	install -Dm644 -t "$pkgdir"/usr/share/fonts/liberation \
+   	liberation-fonts-ttf-$pkgver/*.ttf
+}

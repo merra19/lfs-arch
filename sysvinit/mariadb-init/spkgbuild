@@ -1,0 +1,25 @@
+# description	: init service scripts for mariadb
+
+pkgname=mariadb-init
+pkgver=1.0
+pkgrel=1
+source="mariadb"
+
+package() {
+    install -d "$pkgdir"/etc/rc.d/init.d/
+    ln -sfn  rc.d/init.d "$pkgdir"/etc/init.d
+    install -Dm 754 mariadb "$pkgdir"/etc/rc.d/init.d/mariadb
+
+    for i in 0 1 2 3 4 5 6;do
+        install -d "$pkgdir"/etc/rc.d/rc$i.d
+    done
+
+	ln -sf  ../init.d/mariadb "$pkgdir"/etc/rc.d/rc0.d/K26mariadb
+	ln -sf  ../init.d/mariadb "$pkgdir"/etc/rc.d/rc1.d/K26mariadb
+	ln -sf  ../init.d/mariadb "$pkgdir"/etc/rc.d/rc2.d/S34mariadb
+	ln -sf  ../init.d/mariadb "$pkgdir"/etc/rc.d/rc3.d/S34mariadb
+	ln -sf  ../init.d/mariadb "$pkgdir"/etc/rc.d/rc4.d/S34mariadb
+	ln -sf  ../init.d/mariadb "$pkgdir"/etc/rc.d/rc5.d/S34mariadb
+	ln -sf  ../init.d/mariadb "$pkgdir"/etc/rc.d/rc6.d/K26mariadb
+    rm -rf "$pkgdir"/etc/init.d
+}

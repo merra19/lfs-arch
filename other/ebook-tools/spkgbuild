@@ -1,0 +1,24 @@
+# description	: Tools for accessing and converting various ebook file formats
+# depends	: convertlit glibc libxml2 libzip bash
+
+pkgname=ebook-tools
+pkgver=0.2.2
+pkgrel=9
+source="https://downloads.sourceforge.net/$pkgname/$pkgname-$pkgver.tar.gz
+        crash-fix.patch"
+
+prepare() {
+    cd $pkgname-$pkgver
+    patch -p2 -i ../crash-fix.patch # https://sourceforge.net/p/ebook-tools/bugs/8/
+}
+
+build() {
+    cmake -B build -S $pkgname-$pkgver \
+        -D CMAKE_INSTALL_PREFIX=/usr \
+        -D CMAKE_POLICY_VERSION_MINIMUM=3.5
+    cmake --build build
+}
+
+package() {
+    DESTDIR="$pkgdir" cmake --install build
+}

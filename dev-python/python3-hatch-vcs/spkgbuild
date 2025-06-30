@@ -1,0 +1,21 @@
+# description	: Hatch plugin for versioning with your preferred VCS
+# depends	: python3 python3-wheel python3-hatchling 
+# depends	: python3-setuptools-scm
+
+pkgname=python3-hatch-vcs
+pkgver=0.4.0
+pkgrel=1
+source="https://files.pythonhosted.org/packages/source/h/hatch-vcs/hatch_vcs-$pkgver.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd hatch_vcs-$pkgver
+
+    gpep517 build-wheel --wheel-dir .dist --output-fd 3 3>&1 >&2
+}
+
+package() {
+	cd hatch_vcs-$pkgver
+
+	python3 -m installer -d "$pkgdir" .dist/*.whl
+}

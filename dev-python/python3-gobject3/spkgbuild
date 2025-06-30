@@ -1,0 +1,30 @@
+# description	: Python bindings for GObject Introspection
+# depends	: python3-setuptools gobject-introspection glib
+# depends	: python3-cairo
+
+pkgname=python3-gobject3
+pkgver=3.52.3
+pkgrel=1
+source="https://download.gnome.org/sources/pygobject/${pkgver%.*}/pygobject-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd pygobject-$pkgver
+
+    # Remove two faulty tests:
+    mv -v tests/test_gdbus.py{,.nouse}
+    mv -v tests/test_overrides_gtk.py{,.nouse}
+
+    meson setup \
+        --prefix=/usr \
+        --buildtype=plain \
+        -D pycairo=enabled \
+        build 
+    ninja -C build
+}
+
+package() {
+    cd pygobject-$pkgver
+
+    DESTDIR="$pkgdir" ninja -C build install
+}

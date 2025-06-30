@@ -1,0 +1,51 @@
+# description	: Linux-PAM (Pluggable Authentication Modules)
+# depends	: flex bison libxcrypt autoconf automake meson ninja glibc
+# depends	: docbook-xsl libnsl libtirpc rpcsvc-proto
+
+pkgname=pam
+pkgver=1.7.1
+pkgrel=1
+options="!emptydirs"
+source="https://github.com/linux-pam/linux-pam/releases/download/v$pkgver/Linux-PAM-$pkgver.tar.xz
+        https://anduin.linuxfromscratch.org/BLFS/Linux-PAM/Linux-PAM-$pkgver-docs.tar.xz
+	    system-auth system-local-login system-login system-remote-login system-services
+        other pam.tmpfiles"
+backup="etc/security/access.conf etc/security/faillock.conf etc/security/group.conf etc/security/limits.conf etc/security/namespace.conf 
+        etc/security/namespace.init etc/security/pwhistory.conf etc/security/pam_env.conf etc/security/time.conf etc/environment
+        etc/pam.d/system-auth etc/pam.d/system-local-login etc/pam.d/system-login etc/pam.d/system-remote-login
+        etc/pam.d/system-services etc/pam.d/other"
+noextract="Linux-PAM-$pkgver-docs.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto -fstack-protector-strong -fzero-call-used-regs=used "
+
+build() {
+    cd Linux-PAM-$pkgver
+
+    arch-meson \
+        -D logind=disabled \
+        -D elogind="$(scratch isinstalled elogind && echo "enabled" || echo "disabled")" \
+        -D econf=disabled \
+        -D selinux=disabled \
+        -D pam_userdb=disabled \
+        -D audit=disabled \
+        -D docs=disabled \
+        build
+    meson compile -C build
+}
+
+package() {
+    cd Linux-PAM-$pkgver  
+
+    meson install -C build --destdir "$pkgdir"
+
+    # set unix_chkpwd uid
+    chmod +s "$pkgdir"/usr/bin/unix_chkpwd
+
+    tar -C "$pkgdir" -xvf "$srcdir"/Linux-PAM-$pkgver-docs.tar.xz
+
+	# install our pam.d files from pambase
+    cd "$srcdir" 
+    
+    mkdir -p "$pkgdir"/etc/pam.d
+    install -Dm 644 pam.tmpfiles "$pkgdir"/usr/lib/tmpfiles.d/pam.conf
+    install -m 0644 system-auth system-local-login system-login system-remote-login system-services other "$pkgdir"/etc/pam.d/
+}

@@ -1,0 +1,26 @@
+# description	: GNU regular expression matche
+# depends	: glibc pcre2
+
+pkgname=grep
+pkgver=3.12
+pkgrel=1
+source="https://ftp.gnu.org/gnu/grep/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition "
+
+build() {
+    cd $pkgname-$pkgver
+
+    # First, remove a warning about using egrep and fgrep that makes tests
+    # on some packages fail
+    sed -i "s/echo/#echo/" src/egrep.sh
+
+    ./configure \
+        --prefix=/usr
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

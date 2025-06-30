@@ -1,0 +1,21 @@
+# description	: Filters for web typography, supporting Django & Jinja templates
+# depends	: python3 python3-gpep517 python3-setuptools python3-wheel 
+# depends	: python3-flit-core
+
+pkgname=python3-typogrify
+pkgver=2.1.0
+pkgrel=1
+source="https://files.pythonhosted.org/packages/source/t/typogrify/typogrify-$pkgver.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd typogrify-$pkgver
+    
+    gpep517 build-wheel --wheel-dir .dist --output-fd 3 3>&1 >&2
+}
+
+package() {
+	cd typogrify-$pkgver
+
+	python3 -m installer -d "$pkgdir" .dist/typogrify-$pkgver-*-none-any.whl
+}

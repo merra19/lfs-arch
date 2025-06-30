@@ -1,0 +1,28 @@
+# description	: a portable, high level programming interface to various calling conventions
+# depends	: glibc
+
+pkgname=libffi
+pkgver=3.5.1
+pkgrel=1
+options="!lto"
+source="https://github.com/libffi/libffi/releases/download/v$pkgver/$pkgname-$pkgver.tar.gz"
+optsflags=" -falign-functions=32 -fno-lto -fno-semantic-interposition "
+
+build() {
+    cd $pkgname-$pkgver
+
+    ./configure \
+        --prefix=/usr \
+        --disable-static \
+        --disable-exec-static-tramp \
+        --disable-multi-os-directory \
+        --enable-pax_emutramp \
+        --with-gcc-arch=$MMARCH
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

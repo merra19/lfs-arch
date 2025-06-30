@@ -1,0 +1,41 @@
+# description	: Policy framework for controlling privileges for system-wide services
+# depends	: glib duktape pam gobject-introspection expat elogind
+
+pkgname=polkit
+pkgver=126
+pkgrel=1
+source="https://github.com/polkit-org/polkit/archive/$pkgver/$pkgname-$pkgver.tar.gz
+        0001-meson-Support-explicit-GID.patch
+        0002-meson-Detect-Arch-Linux-and-set-the-UID-and-GID.patch
+        99-artix.rules turnstile.patch 0003-meson-elogind-build-fix.patch"
+optsflags=" -O3 -Os -fdata-sections -ffat-lto-objects -ffunction-sections -flto=auto -fno-semantic-interposition "
+
+build() {
+    cd $pkgname-$pkgver
+
+    patch -Np1 -i ../0001-meson-Support-explicit-GID.patch
+    patch -Np1 -i ../0002-meson-Detect-Arch-Linux-and-set-the-UID-and-GID.patch
+    patch -Np1 -i ../0003-meson-elogind-build-fix.patch
+    patch -Np1 -i ../turnstile.patch
+  
+    local meson_options=(
+        -D examples=true
+        -D gettext=true
+        -D gtk_doc=false
+        -D man=true
+        -D tests=true
+        -D polkitd_user=polkitd
+        -D session_tracking=elogind
+    )
+
+    arch-meson build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+	DESTDIR="$pkgdir" ninja -C build install
+
+    install -m0644 "${srcdir}"/99-artix.rules "${pkgdir}"/etc/polkit-1/rules.d; rm -r $pkgdir/usr/lib/systemd
+}

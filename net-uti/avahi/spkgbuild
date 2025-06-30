@@ -1,0 +1,62 @@
+# description	: System which facilitates service discovery on a local network
+# depends	: libdaemon libevent expat glib dbus libcap python3-dbus
+# depends	: gobject-introspection python3-gobject3 gdbm
+
+pkgname=avahi
+pkgver=0.8
+pkgrel=1
+options="!makeflags"
+source="https://github.com/lathiat/avahi/releases/download/v$pkgver/$pkgname-$pkgver.tar.gz
+        https://www.linuxfromscratch.org/patches/blfs/svn/avahi-0.8-ipv6_race_condition_fix-1.patch
+        0001-HACK-Install-fixes.patch"
+backup="etc/avahi/hosts etc/avahi/avahi-daemon.conf etc/avahi/avahi-autoipd.action etc/avahi/avahi-dnsconfd.action"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd $pkgname-$pkgver
+
+    patch -Np1 -i ../avahi-0.8-ipv6_race_condition_fix-1.patch
+    patch -Np1 -i ../0001-HACK-Install-fixes.patch
+
+    #Fix a security vulnerability in avahi-daemon:
+
+    sed -i '426a if (events & AVAHI_WATCH_HUP) { \
+    client_free(c); \
+    return; \
+    }' avahi-daemon/simple-protocol.c
+
+    autoreconf -fiv
+
+    scratch isinstalled gtk3 ||  OPT_AVAHI="-disable-gtk3"
+    scratch isinstalled qt5 ||  OPT_AVAHI="$OPT_AVAHI -disable-qt5"
+
+	./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --localstatedir=/var \
+        --disable-mono \
+        --disable-monodoc \
+        --disable-python \
+        --disable-qt3 \
+        --disable-qt4 \
+        --enable-core-docs \
+        --enable-compat-libdns_sd \
+        --with-autoipd-group=avahi \
+        --with-autoipd-user=avahi \
+        --with-avahi-priv-access-group=network \
+        --with-distro=archlinux   \
+        --with-systemdsystemunitdir=no \
+        with_dbus_sys=/usr/share/dbus-1/system.d \
+        $OPT_AVAHI
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+	make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+
+    install -d "$pkgdir"/usr/lib/sysusers.d/
+    echo 'u avahi - "Avahi mDNS/DNS-SD daemon"' > "$pkgdir/usr/lib/sysusers.d/$pkgname.conf"
+}

@@ -1,0 +1,25 @@
+# description	: Access control list utilities, libraries, and headers
+# depends	: attr glibc
+
+pkgname=acl
+pkgver=2.3.2
+pkgrel=1
+source="https://download.savannah.gnu.org/releases/acl/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -Os -fdata-sections -ffat-lto-objects -ffunction-sections -flto=auto -fno-semantic-interposition "
+
+build() {
+    cd $pkgname-$pkgver
+
+    ./configure \
+        --prefix=/usr \
+        --libdir=/usr/lib \
+        --libexecdir=/usr/lib 
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

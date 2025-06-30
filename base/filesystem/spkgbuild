@@ -1,0 +1,100 @@
+# description	: System files
+
+pkgname=filesystem
+pkgver=35
+pkgrel=1
+source="crypttab fstab group gshadow issue host.conf
+        hosts ld.so.conf locale.sh maxuse.conf noclear.conf
+        nsswitch.conf os-release resolv.conf os-release passwd 
+        profile securetty shadow shells subuid subgid sysctl.conf 
+        sysusers tmpfiles arch-release locale.conf"
+backup="etc/systemd/coredump.conf.d/maxuse.conf
+        etc/systemd/system/getty@tty1.service.d/noclear.conf
+        etc/crypttab etc/fstab etc/group etc/gshadow etc/host.conf
+        etc/hosts etc/issue etc/ld.so.conf etc/nsswitch.conf
+        etc/passwd etc/profile etc/resolv.conf etc/securetty
+        etc/shadow etc/shells etc/subgid etc/subuid etc/locale.conf"
+
+package() {
+    install --directory --mode=0755  "$pkgdir"/etc/profile.d
+    install --directory --mode=0755  "$pkgdir"/etc/bash_completion.d
+    install --directory --mode=0755  "$pkgdir"/etc/skel/
+    install --directory --mode=0755  "$pkgdir"/etc/profile.d
+
+    install -dm 0750 "$pkgdir"/root 
+    
+    install -m 0644 profile "$pkgdir"/etc/profile
+    install -m 0644 nsswitch.conf locale.conf resolv.conf hosts  "$pkgdir"/etc/
+    install -m 0644 shells "$pkgdir"/etc/
+
+    # os-release lsb-release
+    install -Dm 644 os-release "$pkgdir"/usr/lib/os-release
+
+    install -Dm 644 sysctl.conf "$pkgdir"/etc/sysctl.conf
+
+    mkdir -pv  "$pkgdir"/{boot,home,mnt,opt,srv,run}
+
+    mkdir -pv  "$pkgdir"/etc/{opt,sysconfig}
+    mkdir -pv  "$pkgdir"/usr/lib/firmware
+    mkdir -pv  "$pkgdir"/media/{floppy,cdrom}
+    mkdir -pv  "$pkgdir"/usr/{,local/}{include,src}
+    mkdir -pv  "$pkgdir"/usr/lib/locale
+    mkdir -pv  "$pkgdir"/usr/local/{bin,lib,sbin}
+    mkdir -pv  "$pkgdir"/usr/{,local/}share/{color,dict,doc,info,locale,man}
+    mkdir -pv  "$pkgdir"/usr/{,local/}share/{misc,terminfo,zoneinfo}
+    mkdir -pv  "$pkgdir"/usr/{,local/}share/man/man{1..8}
+    mkdir -pv  "$pkgdir"/var/{cache,local,log,mail,opt,spool}
+    mkdir -pv  "$pkgdir"/var/lib/{color,misc,locate}
+
+    ln -sfv ../run  "$pkgdir"/var/run
+    ln -sfv ../run/lock  "$pkgdir"/var/lock
+
+    #echo r12.2-96 > "$pkgdir"/etc/lfs-release
+
+    mkdir -p "$pkgdir"/boot/efi 
+
+    install -Dm 644 noclear.conf "$pkgdir"/etc/systemd/system/getty@tty1.service.d/noclear.conf
+    install -Dm 644 maxuse.conf "$pkgdir"/etc/systemd/coredump.conf.d/maxuse.conf
+
+    #install -Dm 644 sysusers "$pkgdir"/usr/lib/sysusers.d/arch.conf
+    install -Dm 644 tmpfiles "$pkgdir"/usr/lib/tmpfiles.d/arch.conf
+
+    install -Dm 0600 crypttab "$pkgdir"/etc/crypttab
+    install -Dm 0644 fstab "$pkgdir"/etc/fstab
+    install -Dm 0644 group "$pkgdir"/etc/group
+    install -Dm 0600 gshadow "$pkgdir"/etc/gshadow
+    install -Dm 0644 host.conf "$pkgdir"/etc/host.conf
+    install -Dm 0644 issue "$pkgdir"/etc/issue
+    install -Dm 0644 ld.so.conf "$pkgdir"/etc/ld.so.conf
+    install -Dm 0644 passwd "$pkgdir"/etc/passwd
+    install -Dm 0600 shadow "$pkgdir"/etc/shadow
+    install -Dm 0644 subuid "$pkgdir"/etc/subuid
+    install -Dm 0644 subgid "$pkgdir"/etc/subgid
+    install -Dm 0644 securetty "$pkgdir"/etc/securetty
+
+    # factory
+    install -Dm 0644 arch-release "$pkgdir"/usr/share/factory/etc/arch-release
+    install -Dm 0600 crypttab "$pkgdir"/usr/share/factory/etc/crypttab
+    install -Dm 0644 fstab "$pkgdir"/usr/share/factory/etc/fstab
+    install -Dm 0644 group "$pkgdir"/usr/share/factory/etc/group
+    install -Dm 0600 gshadow "$pkgdir"/usr/share/factory/etc/gshadow
+    install -Dm 0644 host.conf "$pkgdir"/usr/share/factory/etc/host.conf
+    install -Dm 0644 hosts "$pkgdir"/usr/share/factory/etc/hosts
+    install -Dm 0644 issue "$pkgdir"/usr/share/factory/etc/issue
+    install -Dm 0644 ld.so.conf "$pkgdir"/usr/share/factory/etc/ld.so.conf
+    install -Dm 0644 nsswitch.conf "$pkgdir"/usr/share/factory/etc/nsswitch.conf
+    install -Dm 0644 passwd "$pkgdir"/usr/share/factory/etc/passwd
+    install -Dm 0644 profile "$pkgdir"/usr/share/factory/etc/profile
+    install -Dm 0644 locale.sh "$pkgdir"/usr/share/factory/etc/profile.d/locale.sh
+    install -Dm 0644 resolv.conf "$pkgdir"/usr/share/factory/etc/resolv.conf
+    install -Dm 0644 securetty "$pkgdir"/usr/share/factory/etc/securetty
+    install -Dm 0600 shadow "$pkgdir"/usr/share/factory/etc/shadow
+    install -Dm 0644 shells "$pkgdir"/usr/share/factory/etc/shells
+    install -Dm 0644 subuid "$pkgdir"/usr/share/factory/etc/subuid
+    install -Dm 0644 subgid "$pkgdir"/usr/share/factory/etc/subgid
+
+    #touch "$pkgdir"/var/log/{btmp,lastlog,faillog,wtmp}
+    #chgrp -v utmp "$pkgdir"/var/log/lastlog
+    #chmod -v 664  "$pkgdir"/var/log/lastlog
+    #chmod -v 600  "$pkgdir"/var/log/btmp
+}

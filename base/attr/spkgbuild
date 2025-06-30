@@ -1,0 +1,29 @@
+# description	: Extended attributes tools
+# depends	: glibc
+
+pkgname=attr
+pkgver=2.5.2
+pkgrel=1
+options="!lto"
+source="https://download.savannah.gnu.org/releases/attr/$pkgname-$pkgver.tar.gz"
+backup="etc/xattr.conf"
+optsflags=" -Os -fdata-sections -ffunction-sections -fno-lto -fno-semantic-interposition "
+
+build() {
+    cd $pkgname-$pkgver
+
+    sed -i '/nfs/d' xattr.conf
+
+    ./configure \
+        --prefix=/usr \
+        --libdir=/usr/lib \
+        --libexecdir=/usr/lib \
+        --sysconfdir=/etc 
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

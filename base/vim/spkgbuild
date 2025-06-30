@@ -1,0 +1,50 @@
+# description	: Vim, an improved vi-style text editor
+# depends	: acl gettext ncurses gpm lua perl xorg-proto libxt tcl
+
+pkgname=vim
+pkgver=9.1.1418
+pkgrel=1
+options="!lto"
+source="https://github.com/vim/vim/archive/v$pkgver/$pkgname-$pkgver.tar.gz
+        vimrc"
+backup="etc/vimrc"
+optsflags=" -fno-lto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    # define the place for the global (g)vimrc file (set to /etc/vimrc)
+    sed -E 's|^.*(#define SYS_.*VIMRC_FILE.*").*$|\1|g' -i src/feature.h
+    sed -E 's|^.*(#define VIMRC_FILE.*").*$|\1|g' -i src/feature.h
+
+    ./configure \
+        --prefix=/usr \
+        --localstatedir=/var/lib/vim \
+        --with-features=huge \
+        --enable-gpm \
+        --enable-acl \
+        --with-x=no \
+        --disable-gui \
+        --enable-multibyte \
+        --enable-cscope \
+        --enable-netbeans \
+        --enable-perlinterp=dynamic \
+        --enable-python3interp=dynamic \
+        --enable-rubyinterp=dynamic \
+        --enable-luainterp=dynamic \
+        --enable-tclinterp=dynamic \
+        --disable-canberra
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make -j1 VIMRCLOC=/etc DESTDIR="$pkgdir" install
+
+    install -Dm 644 "$srcdir"/vimrc "$pkgdir"/etc/vimrc
+
+    _ver="$(echo $pkgver | awk -F '.' '{print $1$2}')"
+    mkdir -pv "$pkgdir"/usr/share/doc/$pkgname
+    ln -sv ../../vim/vim$_ver/doc "$pkgdir"/usr/share/doc/$pkgname
+}

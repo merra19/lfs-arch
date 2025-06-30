@@ -1,0 +1,48 @@
+# description	: Standard EXT2/EXT3/EXT4 filesystem utilities
+# depends	: util-linux texinfo fuse
+
+pkgname=e2fsprogs
+pkgver=1.47.2
+pkgrel=1
+source="https://downloads.sourceforge.net/project/e2fsprogs/e2fsprogs/v$pkgver/e2fsprogs-$pkgver.tar.gz"
+optsflags=" -O3 -Os -fdata-sections -ffat-lto-objects -ffunction-sections -flto=auto -fno-semantic-interposition "
+backup="etc/mke2fs.conf etc/e2scrub.conf"
+
+build() {
+    cd e2fsprogs-$pkgver
+
+    mkdir -v build 
+    cd       build
+    
+    ../configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --with-root-prefix='' \
+        --libdir=/usr/lib \
+        --libexecdir=/usr/lib \
+        --sbindir=/usr/bin \
+        --disable-fsck \
+        --disable-libblkid \
+        --disable-uuidd \
+        --disable-libuuid \
+        --enable-elf-shlibs
+    make
+}
+
+
+package() {
+  unset MAKEFLAGS
+
+  cd e2fsprogs-$pkgver/build
+
+  make DESTDIR="${pkgdir}" install install-libs
+
+  sed -i -e 's/^AWK=.*/AWK=awk/' "${pkgdir}/usr/bin/compile_et"
+
+  # remove references to build directory
+  sed -i -e 's#^DIR=.*#DIR="/usr/share/ss"#' "${pkgdir}/usr/bin/mk_cmds"
+  sed -i -e 's#^DIR=.*#DIR="/usr/share/et"#' "${pkgdir}/usr/bin/compile_et"
+
+  # remove static libraries with a shared counterpart
+  rm "${pkgdir}"/usr/lib/lib{com_err,e2p,ext2fs,ss}.a
+}

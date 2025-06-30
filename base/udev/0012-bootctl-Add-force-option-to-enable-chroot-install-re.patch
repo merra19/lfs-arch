@@ -1,0 +1,97 @@
+From 4cbc4d97c21c7dca75fdf0d9f65ecacec72a5069 Mon Sep 17 00:00:00 2001
+From: Ikey Doherty <michael.i.doherty@intel.com>
+Date: Wed, 23 Sep 2015 03:36:36 +0100
+Subject: [PATCH 12/38] bootctl: Add --force option to enable chroot
+ install/remove of sd-boot
+
+This change enables the force-installation, removal, and update of
+the systemd EFI boot binaries and supporting assets, without requiring
+verification of the ESP.
+
+Prior to this change it is assumed the target path is an ESP that can
+be probed, however this requires several virtual filesystems to be
+present and mounted, which may not be possible during filesystem image
+generation, or even for use within eltorito alt sections of an ISO.
+
+Given that an image invocation of bootctl may involve a host that has
+older, or even absent files required by bootctl (such as EFI files),
+it is not always safe to assume one can use the --path option. This
+change ensures that the utility can be used in a consistent manner,
+in a bare chroot (no virtual filesystems), without the need for custom
+systemd-boot installation routines currently seen in many places;
+i.e bootctl both sets and enforces the standard for its installation,
+configuration and layout.
+---
+ src/boot/bootctl.c | 13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
+
+--- systemd-stable-255.2/src/bootctl/bootctl.c~	2023-12-24 09:00:51.000000000 +0000
++++ systemd-stable-255.2/src/bootctl/bootctl.c	2024-01-02 15:24:35.045286845 +0000
+@@ -63,6 +63,8 @@
+ STATIC_DESTRUCTOR_REGISTER(arg_efi_boot_option_description, freep);
+ STATIC_DESTRUCTOR_REGISTER(arg_image_policy, image_policy_freep);
+ 
++bool arg_force = false;
++
+ int acquire_esp(
+                 int unprivileged_mode,
+                 bool graceful,
+@@ -213,6 +215,8 @@
+         enum {
+                 ARG_ESP_PATH = 0x100,
+                 ARG_BOOT_PATH,
++		ARG_PRINT_BOOT_PATH,
++		ARG_FORCE,
+                 ARG_ROOT,
+                 ARG_IMAGE,
+                 ARG_IMAGE_POLICY,
+@@ -233,6 +237,7 @@
+                 { "help",                        no_argument,       NULL, 'h'                             },
+                 { "version",                     no_argument,       NULL, ARG_VERSION                     },
+                 { "esp-path",                    required_argument, NULL, ARG_ESP_PATH                    },
++		{ "force", 			 no_argument,       NULL, ARG_FORCE                     },
+                 { "path",                        required_argument, NULL, ARG_ESP_PATH                    }, /* Compatibility alias */
+                 { "boot-path",                   required_argument, NULL, ARG_BOOT_PATH                   },
+                 { "root",                        required_argument, NULL, ARG_ROOT                        },
+@@ -327,6 +332,10 @@
+                         arg_print_root_device ++;
+                         break;
+ 
++		case ARG_FORCE:
++                        arg_force = true;
++                        break;
++
+                 case ARG_NO_VARIABLES:
+                         arg_touch_variables = false;
+                         break;
+--- systemd-stable-255.2/src/bootctl/bootctl-install.c~	2023-12-24 09:00:51.000000000 +0000
++++ systemd-stable-255.2/src/bootctl/bootctl-install.c	2024-01-02 15:26:49.626342750 +0000
+@@ -23,6 +23,10 @@
+ #include "umask-util.h"
+ #include "utf8.h"
+ 
++
++
++extern bool arg_force;
++
+ static int load_etc_machine_id(void) {
+         int r;
+ 
+@@ -815,7 +819,7 @@
+ 
+         (void) sync_everything();
+ 
+-        if (!arg_touch_variables)
++        if (!arg_touch_variables || arg_force)
+                 return 0;
+ 
+         if (arg_arch_all) {
+@@ -1056,7 +1060,7 @@
+ 
+         (void) sync_everything();
+ 
+-        if (!arg_touch_variables)
++        if (!arg_touch_variables || arg_force)
+                 return r;
+ 
+         if (arg_arch_all) {

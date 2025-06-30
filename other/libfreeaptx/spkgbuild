@@ -1,0 +1,21 @@
+# description	: Reverse-engineered aptX and aptX HD library (fork of libopenaptx)
+# depends	: glibc
+
+pkgname=libfreeaptx
+pkgver=0.2.2
+pkgrel=1
+source="$pkgname-$pkgver.tar.gz::https://github.com/regularhunter/libfreeaptx/archive/refs/tags/$pkgver.tar.gz"
+
+build() {
+    cd $pkgname-$pkgver
+
+    make CPPFLAGS="$CPPFLAGS" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" \
+        PREFIX=/usr 
+}
+
+package() {
+    cd  $pkgname-$pkgver
+
+    make CPPFLAGS="$CPPFLAGS" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" \
+        PREFIX=/usr DESTDIR="$pkgdir" install
+}

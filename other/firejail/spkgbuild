@@ -1,0 +1,26 @@
+# description	: Security sandbox for any type of processes
+# depends	: libseccomp
+
+pkgname=firejail
+pkgver=0.9.74
+pkgrel=2
+source="https://github.com/netblue30/firejail/releases/download/$pkgver/$pkgname-$pkgver.tar.xz
+        344f8deb33bdba23bff18af498a5440462a42832.patch"
+backup="etc/firejail/firecfg.config etc/firejail/firejail.config etc/firejail/login.users"
+
+build() {
+	cd $pkgname-$pkgver
+
+    patch -Np1 -i ../344f8deb33bdba23bff18af498a5440462a42832.patch
+	
+	./configure \
+		--prefix=/usr \
+		--disable-apparmor
+	make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+	make DESTDIR="$pkgdir" install
+}

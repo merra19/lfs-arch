@@ -1,0 +1,79 @@
+# description	: IEEE 802.1X/WPA supplicant for secure wireless transfers
+# depends	: libnl dbus openssl ncurses readline desktop-file-utils
+# depends	: pcsclite
+
+pkgname=wpa_supplicant
+pkgver=2.11
+pkgrel=1
+options="!lto"
+source="https://w1.fi/releases/$pkgname-$pkgver.tar.gz
+        wpa_supplicant_config
+        0001-Enable-TLSv1.0-by-default.patch
+        0002-Disable-Werror-for-eapol_test.patch
+        0003-Allow-legacy-renegotiation-to-fix-PEAP-issues-with-s.patch
+        0004-Tweak-D-Bus-systemd-service-activation-configuration.patch
+        0005-Add-IgnoreOnIsolate-yes-to-keep-wpa-supplicant-runni.patch
+        0006-Add-reload-support-to-the-systemd-unit-files.patch
+        0007-nl80211-add-extra-ies-only-if-allowed-by-driver.patch"
+optsflags=" -fno-lto -fstack-protector-strong -fzero-call-used-regs=used "
+
+prepare() {
+    cd $pkgname-$pkgver
+
+    # More permissive TLS fallback
+    patch -Np1 -i ../0001-Enable-TLSv1.0-by-default.patch
+    # https://salsa.debian.org/debian/wpa/-/commit/13e1d28e4f987a220c546df94df86bb9b2371874
+    patch -Np1 -i ../0002-Disable-Werror-for-eapol_test.patch
+    # https://lists.infradead.org/pipermail/hostap/2022-May/040511.html
+    # https://bugs.archlinux.org/task/76474
+    patch -Np1 -i ../0003-Allow-legacy-renegotiation-to-fix-PEAP-issues-with-s.patch
+    # Unit improvements from Ubuntu
+    patch -Np1 -i ../0004-Tweak-D-Bus-systemd-service-activation-configuration.patch
+    patch -Np1 -i ../0005-Add-IgnoreOnIsolate-yes-to-keep-wpa-supplicant-runni.patch
+    # More unit improvements from Debian
+    patch -Np1 -i ../0006-Add-reload-support-to-the-systemd-unit-files.patch
+    # https://lists.infradead.org/pipermail/hostap/2022-January/040178.html
+    patch -Np1 -i ../0007-nl80211-add-extra-ies-only-if-allowed-by-driver.patch
+
+    cp ../wpa_supplicant_config wpa_supplicant/.config
+}
+
+_make() {
+    local make_options=(
+        BINDIR=/usr/bin
+        LIBDIR=/usr/lib
+        "$@"
+    )
+
+    make "${make_options[@]}"
+}
+
+
+build() {
+	cd $pkgname-$pkgver/wpa_supplicant 
+
+    _make
+    _make eapol_test
+    #_make -C doc/docbook man
+}
+
+package() {
+    cd $pkgname-$pkgver/wpa_supplicant 
+
+    _make DESTDIR="$pkgdir" install
+
+    install -Dm755 eapol_test "$pkgdir/usr/bin/eapol_test"
+
+    install -dm755 "$pkgdir/etc/wpa_supplicant"
+    install -Dm644 wpa_supplicant.conf -t "$pkgdir/usr/share/doc/wpa_supplicant"
+
+    install -Dm644 dbus/fi.w1.wpa_supplicant1.service \
+        -t "$pkgdir/usr/share/dbus-1/system-services"
+
+    install -Dm644 dbus/dbus-wpa_supplicant.conf \
+        "$pkgdir/usr/share/dbus-1/system.d/wpa_supplicant.conf"
+
+    install -Dm644 doc/docbook/*.5 -t "$pkgdir/usr/share/man/man5"
+    install -Dm644 doc/docbook/*.8 -t "$pkgdir/usr/share/man/man8"
+    rm "$pkgdir"/usr/share/man/man8/wpa_{priv,gui}.8
+}

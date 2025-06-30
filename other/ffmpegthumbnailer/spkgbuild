@@ -1,0 +1,19 @@
+# description	: Lightweight video thumbnailer that can be used by file managers
+# depends	: ffmpeg libjpeg-turbo libpng cmake gvfs
+
+pkgname=ffmpegthumbnailer
+pkgver=2.2.3
+pkgrel=3
+source="https://github.com/dirkvdb/$pkgname/archive/$pkgver/$pkgname-$pkgver.tar.gz"
+
+build() {
+	cmake -B build -S $pkgname-$pkgver \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DENABLE_GIO=ON \
+		-DENABLE_THUMBNAILER=ON
+	cmake --build build
+}
+
+package() {
+    DESTDIR="${pkgdir}" cmake --install build
+}

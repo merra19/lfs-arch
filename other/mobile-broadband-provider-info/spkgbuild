@@ -1,0 +1,21 @@
+# description	: Mobile broadband settings for various service providers
+# depends	: libxml2 libxslt meson
+
+pkgname=mobile-broadband-provider-info
+pkgver=20250613
+pkgrel=1
+source="https://gitlab.gnome.org/GNOME/mobile-broadband-provider-info/-/archive/$pkgver/$pkgname-$pkgver.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+	arch-meson . build
+	meson compile -C build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+	meson install -C build --destdir "$pkgdir"
+}

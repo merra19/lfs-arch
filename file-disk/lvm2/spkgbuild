@@ -1,0 +1,41 @@
+# description	: User-land utilities for LVM2 (device-mapper) software
+# depends	: libaio udev readline util-linux
+
+pkgname=lvm2
+pkgver=2.03.32
+pkgrel=1
+source="$pkgname-$pkgver.tgz::https://sourceware.org/pub/lvm2/LVM2.$pkgver.tgz"
+backup="etc/lvm/lvm.conf etc/lvm/lvmlocal.conf"
+optsflags=" -O3 -Os -fdata-sections -ffat-lto-objects -ffunction-sections -flto=auto -fno-semantic-interposition -fstack-protector-strong -fzero-call-used-regs=used "
+
+build() {
+	cd LVM2.$pkgver
+
+    export CONFIG_SHELL=/bin/bash
+
+	PATH=:$PATH:/usr/sbin \
+	./configure \
+        CONFIG_SHELL=/bin/bash \
+        --prefix=/usr \
+        --sbindir=/usr/bin \
+		--enable-cmdlib \
+		--enable-pkgconfig \
+        --enable-readline \
+        --enable-udev_rules \
+        --enable-udev_sync \
+        --with-default-dm-run-dir=/run \
+        --with-default-locking-dir=/run/lock/lvm \
+        --with-default-pid-dir=/run \
+        --with-default-run-dir=/run/lvm \
+        --with-libexecdir=/usr/lib/lvm2 \
+        --with-systemdsystemunitdir=no
+        make
+}
+
+package() {
+    cd LVM2.$pkgver
+
+	make DESTDIR="$pkgdir" install
+
+    #sed -e '/locking_dir =/{s/#//;s/var/run/}' -i "$pkgdir"/etc/lvm/lvm.conf
+}

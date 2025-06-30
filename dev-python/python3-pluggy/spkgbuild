@@ -1,0 +1,22 @@
+# description	: Plugin and hook calling mechanisms for Python
+# depends	: python3 python3-gpep517 python3-wheel 
+# depends	: python3-setuptools-scm
+
+pkgname=python3-pluggy
+pkgver=1.5.0
+pkgrel=1
+options="!lto"
+source="https://files.pythonhosted.org/packages/source/p/pluggy/pluggy-$pkgver.tar.gz"
+optsflags=" -fno-lto "
+
+build() {
+    cd pluggy-$pkgver
+
+    gpep517 build-wheel --wheel-dir .dist --output-fd 3 3>&1 >&2
+}
+
+package() {
+	cd pluggy-$pkgver
+
+	python3 -m installer -d "$pkgdir" .dist/*.whl
+}
