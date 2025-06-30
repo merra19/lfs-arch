@@ -1,0 +1,210 @@
+# description	: Firefox Web Browser
+# depends	: pulseaudio at-spi2-core glib alsa-lib fontconfig freetype
+# depends	: dbus cairo libx11 libxcomposite libxcursor libxdamage
+# depends	: libxext libxfixes libxi libxrandr libxrender libxcb lld
+# depends	: pango gtk3 gdk-pixbuf shared-mime-info breeze-icons libxt
+# depends	: adwaita-icon-theme patchelf alsa-plugins bash ffmpeg
+# depends	: hicolor-icon-theme libxscrnsaver llvm mesa nasm yasm
+# depends	: mime-types nspr nss cbindgen diffutils nodejs libnotify
+# depends	: python3 rustc unzip zip xlibre-xserver networkmanager
+# depends	: xdg-desktop-portal speech-dispatcher
+## hunspell-en_US xorg-server
+
+pkgname=firefox
+pkgver=140.0
+pkgrel=1
+options="!lto !emptydirs !makeflags"
+source="https://archive.mozilla.org/pub/firefox/releases/${pkgver}esr/source/firefox-${pkgver}esr.source.tar.xz
+        firefox-symbolic.svg firefox.desktop org.mozilla.firefox.metainfo.xml"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+# Google API keys (see http://www.chromium.org/developers/how-tos/api-keys)
+# Note: These are for Arch Linux use ONLY. For your own distribution, please
+# get your own set of keys. Feel free to contact foutrelis@archlinux.org for
+# more information.
+_google_api_key=AIzaSyDwr302FpOSkGRpLlUpPThNTDPbXcIn_FM
+
+prepare() {
+    mkdir mozbuild
+    cd firefox-${pkgver}
+
+    echo -n "$_google_api_key" >google-api-key
+
+    cat >../mozconfig <<END
+ac_add_options --enable-application=browser
+mk_add_options MOZ_OBJDIR=${PWD@Q}/obj
+
+ac_add_options --prefix=/usr
+ac_add_options --enable-release
+ac_add_options --enable-hardening
+ac_add_options --enable-optimize
+ac_add_options --enable-rust-simd
+ac_add_options --enable-linker=lld
+ac_add_options --disable-elf-hack
+ac_add_options --disable-bootstrap
+#ac_add_options --with-wasi-sysroot=/usr/share/wasi-sysroot
+
+# Branding
+ac_add_options --enable-official-branding
+ac_add_options --enable-update-channel=release
+ac_add_options --with-distribution-id=org.archlinux
+ac_add_options --with-unsigned-addon-scopes=app,system
+ac_add_options --allow-addon-sideload
+ac_add_options --with-app-name=$pkgname
+export MOZILLA_OFFICIAL=1
+export MOZ_APP_REMOTINGNAME=$pkgname
+export MOZ_APP_PROFILE="mozilla/firefox-esr"
+
+# Keys
+ac_add_options --with-google-location-service-api-keyfile=${PWD@Q}/google-api-key
+ac_add_options --with-google-safebrowsing-api-keyfile=${PWD@Q}/google-api-key
+
+# System libraries
+ac_add_options --with-system-nspr
+ac_add_options --with-system-nss
+
+# Using sandboxed wasm libraries has been moved to all builds instead
+# of only mozilla automation builds. It requires extra llvm packages
+# and was reported to seriously slow the build. Disable it.
+ac_add_options --without-wasm-sandboxed-libraries
+
+# Features
+ac_add_options --enable-alsa
+ac_add_options --disable-jack
+ac_add_options --enable-crashreporter
+ac_add_options --disable-updater
+ac_add_options --disable-tests
+END
+}
+
+build() {
+    cd firefox-${pkgver}
+
+    export MACH_BUILD_PYTHON_NATIVE_PACKAGE_SOURCE=pip
+    export MOZBUILD_STATE_PATH="$srcdir/mozbuild"
+    export MOZ_BUILD_DATE="$(date -u${SOURCE_DATE_EPOCH:+d @$SOURCE_DATE_EPOCH} +%Y%m%d%H%M%S)"
+    export MOZ_NOSPAM=1
+    export MACH_BUILD_PYTHON_NATIVE_PACKAGE_SOURCE=none
+
+    #unset CFLAGS CXXFLAGS LDFLAGS
+
+    #export CFLAGS=" -O2 -feliminate-unused-debug-types -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 \
+    #        -fstack-protector --param=ssp-buffer-size=64 -Wformat -Wformat-security \
+    #        -ftree-vectorize -ftree-slp-vectorize -ftrivial-auto-var-init=zero  \
+    #    -ffunction-sections -m64 -march=$MMARCH -mtune=generic -fasynchronous-unwind-tables -Wp,-D_REENTRANT "
+    #export CXXFLAGS="$CFLAGS"
+    #export FFLAGS=" -O3 -feliminate-unused-debug-types -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -m64 \
+    #        -fasynchronous-unwind-tables -Wp,-D_REENTRANT -ftree-loop-distribute-patterns -Wl,-z,now -Wl,-z,relro \
+    #        -malign-data=abi -fno-semantic-interposition -ftree-vectorize -ftree-loop-vectorize "
+    #export FCFLAGS="$FFLAGS"
+
+    # malloc_usable_size is used in various parts of the codebase
+    #CFLAGS="${CFLAGS/_FORTIFY_SOURCE=3/_FORTIFY_SOURCE=2}"
+    #CXXFLAGS="${CXXFLAGS/_FORTIFY_SOURCE=3/_FORTIFY_SOURCE=2}"
+
+    #export CFLAGS CXXFLAGS FFLAGS FCFLAGS
+
+    cp ../mozconfig ./
+
+    # LTO needs more open files
+    #ulimit -n 8192
+
+    # malloc_usable_size is used in various parts of the codebase
+    CFLAGS="${CFLAGS/_FORTIFY_SOURCE=3/_FORTIFY_SOURCE=2}"
+    CXXFLAGS="${CXXFLAGS/_FORTIFY_SOURCE=3/_FORTIFY_SOURCE=2}"
+
+    # Breaks compilation since https://bugzilla.mozilla.org/show_bug.cgi?id=1896066
+    CFLAGS="${CFLAGS/-fexceptions/}"
+    CXXFLAGS="${CXXFLAGS/-fexceptions/}"
+
+    ./mach build --priority normal
+}
+
+package() {
+    cd firefox-${pkgver}
+
+    export MACH_BUILD_PYTHON_NATIVE_PACKAGE_SOURCE=none && DESTDIR="$pkgdir" ./mach install
+
+    unset MACH_BUILD_PYTHON_NATIVE_PACKAGE_SOURCE
+    unset MOZBUILD_STATE_PATH
+
+    local vendorjs="$pkgdir/usr/lib/$pkgname/browser/defaults/preferences/vendor.js"
+    install -Dvm644 /dev/stdin "$vendorjs" <<END
+// Use LANG environment variable to choose locale
+pref("intl.locale.requested", "");
+
+// Use system-provided dictionaries
+pref("spellchecker.dictionary_path", "/usr/share/hunspell");
+
+// Disable default browser checking.
+pref("browser.shell.checkDefaultBrowser", false);
+
+// Don't disable extensions in the application directory
+pref("extensions.autoDisableScopes", 11);
+
+// Enable GNOME Shell search provider
+pref("browser.gnome-search-provider.enabled", true);
+END
+
+    local distini="$pkgdir/usr/lib/$pkgname/distribution/distribution.ini"
+    install -Dvm644 /dev/stdin "$distini" <<END
+[Global]
+id=archlinux
+version=1.0
+about=Mozilla Firefox for Arch Linux
+
+[Preferences]
+app.distributor=archlinux
+app.distributor.channel=$pkgname
+app.partner.archlinux=archlinux
+END
+
+    local i theme=official
+    for i in 16 22 24 32 48 64 128 256; do
+        install -Dvm644 browser/branding/$theme/default$i.png \
+        "$pkgdir/usr/share/icons/hicolor/${i}x${i}/apps/$pkgname.png"
+    done
+    install -Dvm644 browser/branding/$theme/content/about-logo.png \
+        "$pkgdir/usr/share/icons/hicolor/192x192/apps/$pkgname.png"
+    install -Dvm644 browser/branding/$theme/content/about-logo@2x.png \
+        "$pkgdir/usr/share/icons/hicolor/384x384/apps/$pkgname.png"
+    install -Dvm644 browser/branding/$theme/content/about-logo.svg \
+        "$pkgdir/usr/share/icons/hicolor/scalable/apps/$pkgname.svg"
+
+    install -Dvm644 ../$pkgname-symbolic.svg -t "$pkgdir/usr/share/icons/hicolor/symbolic/apps"
+    install -Dvm644 ../$pkgname.desktop -t "$pkgdir/usr/share/applications"
+    install -Dvm644 ../org.mozilla.$pkgname.metainfo.xml -t "$pkgdir/usr/share/metainfo"
+
+    # Install a wrapper to avoid confusion about binary path
+    install -Dvm755 /dev/stdin "$pkgdir/usr/bin/$pkgname" <<END
+#!/bin/sh
+exec /usr/lib/$pkgname/firefox "\$@"
+END
+
+    # Replace duplicate binary with wrapper
+    # https://bugzilla.mozilla.org/show_bug.cgi?id=658850
+    ln -srfv "$pkgdir/usr/bin/$pkgname" "$pkgdir/usr/lib/$pkgname/firefox-bin"
+
+    install -d  "$pkgdir"/usr/share/pixmaps
+    ln -sfv /usr/lib/firefox/browser/chrome/icons/default/default128.png \
+        "$pkgdir"/usr/share/pixmaps/firefox.png
+
+    # Use system certificates
+    local nssckbi="$pkgdir/usr/lib/$pkgname/libnssckbi.so"
+    if [[ -e $nssckbi ]]; then
+        ln -srfv "$pkgdir/usr/lib/libnssckbi.so" "$nssckbi"
+    fi
+
+    # Add /usr/lib/samba paths to the default library search path
+    install -d "${pkgdir}"/etc/ld.so.conf.d
+    echo "/usr/lib/firefox" > "${pkgdir}"/etc/ld.so.conf.d/firefox.conf
+
+    local sprovider="$pkgdir/usr/share/gnome-shell/search-providers/$pkgname.search-provider.ini"
+    install -Dvm644 /dev/stdin "$sprovider" <<END
+[Shell Search Provider]
+DesktopId=$pkgname.desktop
+BusName=org.mozilla.${pkgname//-/_}.SearchProvider
+ObjectPath=/org/mozilla/${pkgname//-/_}/SearchProvider
+Version=2
+END
+}

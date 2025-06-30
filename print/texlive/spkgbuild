@@ -1,0 +1,86 @@
+# description	: A complete TeX distribution
+# depends	: bash cairo fontconfig freetype  glibc libgmp
+# depends	: icu libpng libunistring graphite2 harfbuzz libpaper
+# depends	: libx11 libxaw libxcrypt libxmu libxpm libxt libmpfr
+# depends	: ncurses perl pixman readline zlib clisp texlive-extra
+
+# ffcall gd libsynctex potrace zziplib   
+
+pkgname=texlive
+pkgver=20250308
+pkgrel=1
+options="!lto"
+source="https://ftp.math.utah.edu/pub/tex/historic/systems/texlive/2025/texlive-$pkgver-source.tar.xz
+        https://www.linuxfromscratch.org/patches/blfs/svn/texlive-20250308-source-upstream_fixes-1.patch"
+noextract="texlive-$pkgver-extra.tar.xz"
+
+prepare() {
+    cd $pkgname-$pkgver-source
+
+    patch -Np1 -i ../texlive-$pkgver-source-upstream_fixes-1.patch 
+
+	# bibtex-x needs kpathsea flags
+	sed -i '/AC_SEARCH_LIBS/a KPSE_KPATHSEA_FLAGS' texk/bibtex-x/configure.ac
+	(cd texk/bibtex-x && autoreconf)
+
+	# t4ht expects to be run as /usr/share/texmf/bin/t4ht
+	# (see https://bugs.archlinux.org/task/27251)
+	sed -i s/SELFAUTOPARENT/TEXMFROOT/ texk/tex4htk/t4ht.c
+}
+
+build() {
+    cd $pkgname-$pkgver-source
+
+    source /etc/profile.d/texlive.sh
+
+    mkdir texlive-build
+    cd    texlive-build
+
+    CFLAGS+=" -Wno-incompatible-pointer-types" \
+    ax_cv_c_float_words_bigendian=no \
+    ../configure -C  \
+        --prefix=$TEXLIVE_PREFIX \
+        --bindir=$TEXLIVE_PREFIX/bin/$TEXARCH \
+        --datarootdir=$TEXLIVE_PREFIX \
+        --includedir=$TEXLIVE_PREFIX/include \
+        --infodir=$TEXLIVE_PREFIX/texmf-dist/doc/info \
+        --libdir=$TEXLIVE_PREFIX/lib \
+        --mandir=$TEXLIVE_PREFIX/texmf-dist/doc/man \
+        --disable-native-texlive-build \
+        --disable-static --enable-shared \
+        --disable-dvisvgm \
+        --with-system-cairo \
+        --with-system-fontconfig \
+        --with-system-freetype2 \
+        --with-system-gmp \
+        --with-system-graphite2 \
+        --with-system-harfbuzz  \
+        --with-system-icu \
+        --with-system-libgs \
+        --with-system-libpaper  \
+        --with-system-libpng \
+        --with-system-mpfr \
+        --with-system-pixman \
+        --with-system-zlib \
+        --with-freetype2-libdir=/usr/lib \
+        --with-freetype2-include=/usr/include/freetype2 \
+        --with-banner-add=" - BLFS" 
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver-source
+
+    source /etc/profile.d/texlive.sh
+
+    cd texlive-build
+
+    make DESTDIR="$pkgdir" install-strip
+	export PATH="$pkgdir$TEXLIVE_PREFIX/bin/$TEXARCH:$PATH"
+	LD_LIBRARY_PATH="$pkgdir$TEXLIVE_PREFIX/usr/lib:$LD_LIBRARY_PATH"
+    make DESTDIR="$pkgdir" texlinks
+
+    mkdir -pv  $TEXLIVE_PREFIX/tlpkg/TeXLive
+    install -v -m644 ../texk/tests/TeXLive/* "$pkgdir"$TEXLIVE_PREFIX/tlpkg/TeXLive/
+}

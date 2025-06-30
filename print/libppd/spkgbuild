@@ -1,0 +1,26 @@
+# description	: Legacy library for PPD files, split out of cups-filters
+# depends	: libcupsfilters cups zlib ghostscript poppler
+
+pkgname=libppd
+pkgver=2.1.1
+pkgrel=1
+options="!lto"
+source="https://github.com/OpenPrinting/libppd/releases/download/$pkgver/$pkgname-$pkgver.tar.xz"
+
+build() {
+    cd $pkgname-$pkgver
+
+    ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --sbindir=/usr/bin \
+        --localstatedir=/var \
+        --disable-mutool 
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

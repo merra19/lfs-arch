@@ -1,0 +1,113 @@
+# description	: The Common Unix Printing System
+# depends	: libpaper zlib linux-api-headers acl attr dbus pam 
+# depends	: openssl libusb avahi gnutls
+
+pkgname=cups
+pkgver=2.4.12
+pkgrel=1
+options="!lto"
+source="https://github.com/OpenPrinting/cups/releases/download/v$pkgver/cups-$pkgver-source.tar.gz
+        cups.logrotate cups.pam cups.sysusers cups-2.4.0-statedir.patch
+        cups-freebind.patch guid.patch"
+optsflags=" -fno-lto "
+backup="etc/cups/cupsd.conf etc/cups/snmp.conf etc/cups/printers.conf
+            etc/cups/classes.conf etc/cups/cups-files.conf 
+            etc/cups/subscriptions.conf etc/logrotate.d/cups
+            etc/pam.d/cups"
+            
+build() {
+	cd cups-$pkgver
+
+    # move /var/run -> /run for pid file
+    patch -Np1 -i ../cups-2.4.0-statedir.patch
+
+    # bug fixes
+
+    # https://github.com/OpenPrinting/cups/issues/53
+    # use IP_FREEBIND, because cupsd cannot bind to not yet existing IP address
+    patch -Np1 -i ../cups-freebind.patch
+
+    # FS#56818 - https://github.com/apple/cups/issues/5236
+    patch -Np1 -i ../guid.patch
+
+    # Rebuild configure script
+    aclocal -I config-scripts
+    autoconf -I config-scripts
+
+    # The build system uses only DSOFLAGS but not LDFLAGS to build some libraries.
+    export DSOFLAGS=${LDFLAGS}
+
+    ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --localstatedir=/var \
+        --sbindir=/usr/bin \
+        --libdir=/usr/lib \
+        --with-logdir=/var/log/cups \
+        --with-docdir=/usr/share/cups/doc \
+        --with-exe-file-perm=0755 \
+        --with-cups-user=209 \
+        --with-cups-group=209 \
+        --with-max-log-size=0 \
+        --enable-pam=yes \
+        --enable-raw-printing \
+        --enable-dbus=yes \
+        --with-tls=gnutls \
+        --with-dbusdir=/usr/share/dbus-1 \
+        --enable-relro \
+        --enable-libpaper \
+        --with-docdir=/usr/share/cups/doc-$pkgver \
+        --with-optim="$CFLAGS" #--help
+    make
+}
+
+package() {
+    cd "${pkgname}"-${pkgver}
+
+    make BUILDROOT="${pkgdir}" install-data install-exec
+    make BUILDROOT="${pkgdir}" install-headers install-libs
+
+    # kill the sysv stuff
+    rm -rf "${pkgdir}"/etc/rc*.d
+    rm -rf "${pkgdir}"/etc/init.d
+    install -D -m644 ../cups.logrotate "${pkgdir}"/etc/logrotate.d/cups
+    install -D -m644 ../cups.pam "${pkgdir}"/etc/pam.d/cups
+
+    # fix perms on /var/spool and /etc
+    chmod 755 "${pkgdir}"/var/spool
+    chmod 755 "${pkgdir}"/etc
+
+    # use cups group FS#36769
+    install -Dm644 "$srcdir"/cups.sysusers "${pkgdir}/usr/lib/sysusers.d/cups.conf"
+    sed -i "s:#User 209:User 209:" "${pkgdir}"/etc/cups/cups-files.conf{,.default}
+    sed -i "s:#Group 209:Group 209:" "${pkgdir}"/etc/cups/cups-files.conf{,.default}
+
+    # install ssl directory where to store the certs, solves some samba issues
+    install -dm700 -g 209 "${pkgdir}"/etc/cups/ssl
+    # remove directory from package, it will be recreated at each server start
+    rm -rf "${pkgdir}"/run
+
+    # install some more configuration files that will get filled by cupsd
+    touch "${pkgdir}"/etc/cups/printers.conf
+    touch "${pkgdir}"/etc/cups/classes.conf
+    touch "${pkgdir}"/etc/cups/subscriptions.conf
+    chgrp -R 209 "${pkgdir}"/etc/cups
+
+    # fix .desktop file
+    sed -i 's|^Exec=htmlview http://localhost:631/|Exec=xdg-open http://localhost:631/|g' "${pkgdir}"/usr/share/applications/cups.desktop
+
+    # compress some driver files, adopted from Fedora
+    find "${pkgdir}"/usr/share/cups/model -name "*.ppd" | xargs gzip -n9f
+
+    # remove client.conf man page
+    rm -f "${pkgdir}"/usr/share/man/man5/client.conf.5
+
+    # comment out removed filters that are now part of cups-filters
+    perl -p -i -e 's:^(.*\s+bannertops\s*)$:#\1:' "$pkgdir"/usr/share/cups/mime/mime.convs
+
+    # comment out unnecessary PageLogFormat entry
+    sed -i -e 's:PageLogFormat:#PageLogFormat:' "$pkgdir"/etc/cups/cupsd.conf*
+
+    # no more xinetd support
+    rm -rf "${pkgdir}"/etc/xinetd.d
+}

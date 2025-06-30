@@ -1,0 +1,34 @@
+# description	: Friendly Interactive SHell
+# depends	: glibc ncurses pcre2 python3 groff mandoc wl-clipboard
+
+pkgname=fish
+pkgver=4.0.2
+pkgrel=1
+source="https://github.com/fish-shell/fish-shell/releases/download/$pkgver/$pkgname-$pkgver.tar.xz"
+backup="etc/fish/config.fish"
+
+build() {
+	cd $pkgname-$pkgver
+
+    export CXXFLAGS+=" ${CPPFLAGS}"
+
+    local cmake_options=(
+        -B build
+        -DCMAKE_INSTALL_PREFIX=/usr
+        -DCMAKE_INSTALL_SYSCONFDIR=/etc
+        -DCMAKE_BUILD_TYPE=Release
+        -DBUILD_DOCS=false
+        -DFISH_USE_SYSTEM_PCRE2=ON
+        -DWITH_GETTEXT=ON
+        -Wno-dev
+    )
+    cmake "${cmake_options[@]}"
+
+    make -C build VERBOSE=1
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

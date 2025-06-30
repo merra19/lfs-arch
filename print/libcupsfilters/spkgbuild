@@ -1,0 +1,27 @@
+# description	: ibrary for developing printing features, split out of cups-filters
+# depends	: qpdf fontconfig lcms2 cups libexif dbus libjpeg-turbo
+# depends	: mupdf ghostscript poppler libpng libtiff ttf-dejavu
+
+pkgname=libcupsfilters
+pkgver=2.1.1
+pkgrel=1
+options="!lto"
+source="https://github.com/OpenPrinting/libcupsfilters/releases/download/$pkgver/$pkgname-$pkgver.tar.xz"
+
+build() {
+    cd $pkgname-$pkgver
+
+    ./configure \
+        --sysconfdir=/etc \
+        --sbindir=/usr/bin \
+        --localstatedir=/var \
+        --disable-mutool
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

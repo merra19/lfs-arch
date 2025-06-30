@@ -1,0 +1,21 @@
+# description	: DSSSL Stylesheets for DocBook
+# depends	: sgml-common libarchive
+
+pkgname=docbook-dtd45
+pkgver=4.5
+pkgrel=1
+source="https://www.docbook.org/sgml/4.5/docbook-4.5.zip"
+
+build() {
+
+    sed -i -e '/ISO 8879/d' \
+       -e '/gml/d' docbook.cat
+}
+
+package() {
+
+    install -v -d "$pkgdir"/usr/share/sgml/docbook/sgml-dtd-4.5 &&
+
+    install -v docbook.cat "$pkgdir"/usr/share/sgml/docbook/sgml-dtd-4.5/catalog &&
+    cp -v -af *.dtd *.mod *.dcl "$pkgdir"/usr/share/sgml/docbook/sgml-dtd-4.5 
+}

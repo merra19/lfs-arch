@@ -1,0 +1,37 @@
+# description	: Translation tool for XML documents that uses gettext files and ITS rules
+# depends	: docbook-xml libxml2 python3
+
+pkgname=itstool
+pkgver=2.0.7
+pkgrel=1
+options="!lto"
+source="https://files.itstool.org/itstool/$pkgname-$pkgver.tar.bz2"
+
+build() {
+    cd $pkgname-$pkgver
+
+export CFLAGS="-O2 -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector --param=ssp-buffer-size=32 -Wformat -Wformat-security -Wno-error -Wl,-z,max-page-size=0x1000 -march$MMARCH -mtune=generic"
+export CXXFLAGS=$CFLAGS
+export FFLAGS="-O2 -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector --param=ssp-buffer-size=32 -Wno-error -Wl,-z,max-page-size=0x1000 -march$MMARCH -mtune=generic"
+export FCFLAGS=$FFLAGS
+unset LDFLAGS
+unset LDFLAGS
+export CFLAGS="$CFLAGS -fno-lto "
+export FCFLAGS="$FFLAGS -fno-lto "
+export FFLAGS="$FFLAGS -fno-lto "
+export CXXFLAGS="$CXXFLAGS -fno-lto "
+
+    # First, fix some compatibility problems with Python-3.12
+    sed -i 's/re.sub(/re.sub(r/'         itstool.in &&
+    sed -i 's/re.compile(/re.compile(r/' itstool.in
+
+    ./configure \
+        --prefix=/usr 
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

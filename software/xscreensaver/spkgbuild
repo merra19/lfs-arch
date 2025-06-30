@@ -1,0 +1,39 @@
+# description	: System service to accurately color manage input and output devices
+# depends	: libxml2 libx11 libxext libxi libxrandr libxxf86vm
+# depends	: libxt gdk-pixbuf gtk3 libjpeg-turbo glu mesa
+# depends	: pam libpng libxft libxinerama libgcrypt
+
+pkgname=xscreensaver
+pkgver=6.10.1
+pkgrel=1
+source="https://www.jwz.org/xscreensaver/$pkgname-$pkgver.tar.gz"
+
+build() {
+    cd $pkgname-$pkgver
+
+    ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --localstatedir=/var \
+        --libexecdir=/usr/lib \
+        --without-setuid-hacks \
+        --with-pam \
+        --with-login-manager \
+        --with-gtk \
+        --with-gl \
+        --without-gle \
+        --with-pixbuf \
+        --with-jpeg \
+        --enable-pam-check-account-type
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    mkdir -p "$pkgdir"/etc/pam.d
+
+	make install_prefix="$pkgdir" install
+
+    echo "NotShowIn=KDE;GNOME;" >> "$pkgdir/usr/share/applications/xscreensaver-settings.desktop"
+}

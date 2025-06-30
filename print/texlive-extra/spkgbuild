@@ -1,0 +1,62 @@
+# description	:  TeX extras
+# depends	: glibc
+
+pkgname=texlive-extra
+pkgver=20250308
+pkgrel=1
+options="!lto"
+source="
+        https://ftp.math.utah.edu/pub/tex/historic/systems/texlive/2025/texlive-$pkgver-texmf.tar.xz
+        https://ftp.math.utah.edu/pub/tex/historic/systems/texlive/2025/texlive-$pkgver-extra.tar.xz"
+noextract="texlive-$pkgver-extra.tar.xz"
+
+prepare() {
+TEXARCH=$(uname -m | sed -e 's/i.86/i386/' -e 's/$/-linux/')
+TEXLIVE_PREFIX=/opt/texlive/2025
+
+    cat > texlive.sh << "EOF"
+
+pathremove () {
+        local IFS=':'
+        local NEWPATH
+        local DIR
+        local PATHVARIABLE=${2:-PATH}
+        for DIR in ${!PATHVARIABLE} ; do
+                if [ "$DIR" != "$1" ] ; then
+                  NEWPATH=${NEWPATH:+$NEWPATH:}$DIR
+                fi
+        done
+        export $PATHVARIABLE="$NEWPATH"
+}
+
+pathappend () {
+        pathremove $1 $2
+        local PATHVARIABLE=${2:-PATH}
+        export $PATHVARIABLE="${!PATHVARIABLE:+${!PATHVARIABLE}:}$1"
+}
+
+
+# Begin texlive setup
+TEXLIVE_PREFIX=/opt/texlive/2025
+TEXARCH=$(uname -m | sed -e 's/i.86/i386/' -e 's/$/-linux/') 
+export TEXLIVE_PREFIX TEXARCH
+
+pathappend $TEXLIVE_PREFIX/texmf-dist/doc/info INFOPATH
+pathappend $TEXLIVE_PREFIX/bin/$TEXARCH
+
+TEXMFCNF=$TEXLIVE_PREFIX/texmf-dist/web2c
+export TEXMFCNF
+
+# End texlive setup
+EOF
+
+}
+
+
+package() {
+    mkdir -pv "$pkgdir"$TEXLIVE_PREFIX/tlpkg/TeXLive
+    tar -xf "$srcdir"/texlive-20250308-extra.tar.xz -C "$pkgdir"$TEXLIVE_PREFIX/tlpkg --strip-components=2
+    tar -xf "$srcdir"/texlive-20250308-texmf.tar.xz -C "$pkgdir"$TEXLIVE_PREFIX/ --strip-components=1
+
+    install -Dm 0755 "$srcdir"/texlive.sh "$pkgdir"/etc/profile.d/texlive.sh
+}

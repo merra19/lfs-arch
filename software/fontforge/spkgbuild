@@ -1,0 +1,42 @@
+# description	: postscript font editor and converter
+# depends	: giflib libtiff libtool libxml2 python3 glib cmake 
+# depends	: freetype libjpeg-turbo libpng readline xorg-proto libx11 
+# depends	: libxi cairo pango libspiro woff2
+
+pkgname=fontforge
+pkgver=20230101
+pkgrel=1
+options="!lto"
+source="https://github.com/$pkgname/$pkgname/releases/download/$pkgver/$pkgname-$pkgver.tar.xz
+        https://www.linuxfromscratch.org/patches/blfs/svn/fontforge-20230101-security_fixes-1.patch"
+optsflags=" -fno-lto -fstack-protector-strong -fzero-call-used-regs=used "
+
+build() {
+	cd $pkgname-$pkgver
+    
+    # Fix two security vulnerabilities in the Splinefont functionality:
+    patch -Np1 -i ../fontforge-20230101-security_fixes-1.patch
+
+    # Fix a problem with old translations exposed by gettext-0.22:
+    sed -i.orig 's/\(%[^%[:space:]]*\)hs/\1s/g' \
+    fontforgeexe/searchview.c po/de.po po/ca.po \
+    po/hr.po po/it.po po/pl.po po/uk.po po/en_GB.po \
+    po/fr.po po/vi.po po/ko.po po/ja.po
+
+	cmake -B build \
+		-D CMAKE_BUILD_TYPE=Release \
+		-D CMAKE_INSTALL_PREFIX=/usr \
+		-D ENABLE_MAINTAINER_TOOLS=TRUE \
+		-D ENABLE_FONTFORGE_EXTRAS=TRUE \
+		-D UNIX=TRUE \
+        -W no-dev
+	make -C build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" -C build install
+
+    #ln -sv fontforge "$pkgdir"/usr/share/doc/$pkgname
+}

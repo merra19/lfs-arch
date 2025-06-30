@@ -1,0 +1,79 @@
+# description	: Legacy library for PPD files, split out of cups-filters
+# depends	: libarchive freetype harfbuzz libpng openjpeg2 libglvnd
+# depends	: libjpeg-turbo curl openssl freeglut zlib libx11 libxext 
+# depends	: libxrandr xorg-proto libmupdf llvm
+
+pkgname=mupdf
+pkgver=1.26.2
+pkgrel=1
+options="staticlibs"
+source="https://www.mupdf.com/downloads/archive/mupdf-$pkgver-source.tar.gz
+        mupdf.desktop mupdf.xpm mupdf.pc
+        mupdf-1.23.9-cpp_ldflags.patch
+        mupdf-1.23.9-install_targets.patch"
+
+prepare() {
+    cd mupdf-$pkgver-source
+
+    sed -e "s/VERSION/$pkgver/" -i "$srcdir"/mupdf.pc
+
+    # use our LDFLAGS when building the C++ bindings to have full RELRO
+    patch -Np1 -i ../mupdf-1.23.9-cpp_ldflags.patch
+    # alter install-shared-* targets to not call one another (which fails on installing headers twice) and install libmupdfcpp.so with soname postfix
+    patch -Np1 -i ../mupdf-1.23.9-install_targets.patch
+
+    cat > user.make << "EOF"
+USE_SYSTEM_FREETYPE := yes
+USE_SYSTEM_HARFBUZZ := yes
+USE_SYSTEM_JBIG2DEC := no
+USE_SYSTEM_JPEGXR := no # not used without HAVE_JPEGXR
+USE_SYSTEM_LCMS2 := no # need lcms2-art fork
+USE_SYSTEM_LIBJPEG := yes
+USE_SYSTEM_MUJS := no # build needs source anyway
+USE_SYSTEM_OPENJPEG := yes
+USE_SYSTEM_ZLIB := yes
+USE_SYSTEM_GLUT := no # need freeglut2-art fork
+USE_SYSTEM_CURL := yes
+USE_SYSTEM_GUMBO := no
+EOF
+
+}
+
+
+build() {
+    cd mupdf-$pkgver-source
+
+    make -j1 VENV_FLAG= shared=yes build=release libs apps c++ python
+}
+
+package() {
+    cd mupdf-$pkgver-source
+    
+    make prefix=/usr DESTDIR="$pkgdir" SO_INSTALL_MODE=755 install-libs install-headers
+	install -m 644 platform/c++/include/mupdf/*.h "$pkgdir"/usr/include/mupdf
+	install -m 755 build/shared-release/libmupdfcpp.so.${pkgver#*.} "$pkgdir"/usr/lib/
+
+    install -vDm 0644 ../mupdf.pc -t "$pkgdir"/usr/lib/pkgconfig/
+
+    pydir="$(python -c "import sysconfig; print(sysconfig.get_path('platlib'))")"
+
+	install -vDm 755 build/shared-release/_mupdf.so -t "$pkgdir$pydir"/mupdf
+	install -vDm 644 build/shared-release/mupdf.py "$pkgdir$pydir"/mupdf/__init__.py   
+
+    install -vDm 0755 build/shared-release/mupdf-x11 "$pkgdir"/usr/bin/mupdf
+
+    install -vDm 0644 docs/man/mupdf.1 -t "$pkgdir"/usr/share/man/man1/
+
+    install -vDm 0644 ../mupdf.desktop -t "$pkgdir"/usr/share/applications/
+    install -vDm 0644 ../mupdf.xpm -t "$pkgdir"/usr/share/pixmaps/
+
+    install -vDm 0755 build/shared-release/mupdf-gl "$pkgdir"/usr/bin/mupdf
+
+    install -vDm 0644 docs/man/mupdf.1 -t "$pkgdir"/usr/share/man/man1/
+
+    install -vDm 0644 ../mupdf.desktop -t "$pkgdir"/usr/share/applications/
+    install -vDm 0644 ../mupdf.xpm -t "$pkgdir"/usr/share/pixmaps/
+
+    install -vDm 0755 build/shared-release/{mutool,muraster} -t "$pkgdir"/usr/bin/
+    install -vDm 0644 docs/man/mutool.1 -t "$pkgdir"/usr/share/man/man1/
+}

@@ -1,0 +1,76 @@
+# description	: Interpreter for the PostScript language and PDF
+# depends	: libpaper fontconfig freetype lcms2 libpng libjpeg-turbo 
+# depends	: openjpeg2 libtiff zlib dbus libxext libxt 
+# depends	: libidn cups poppler-data
+
+pkgname=ghostscript
+pkgver=10.05.1
+pkgrel=2
+options="!lto"
+source="https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs10040/ghostscript-$pkgver.tar.xz
+        https://downloads.sourceforge.net/gs-fonts/ghostscript-fonts-std-8.11.tar.gz
+        https://downloads.sourceforge.net/gs-fonts/gnu-gs-fonts-other-6.0.tar.gz
+        https://www.linuxfromscratch.org/patches/blfs/svn/ghostscript-10.05.1-gcc15_fixes-1.patch"
+noextract="ghostscript-fonts-std-8.11.tar.gz gnu-gs-fonts-other-6.0.tar.gz"
+
+build() {
+    cd ghostscript-$pkgver
+
+    # force it to use system-libs
+    rm -rf cups/libs freetype jpeg lcms2mt libpng tiff openjpeg zlib
+
+    # Remove internal CMaps (CMaps from poppler-data are used instead)
+    rm -r Resource/CMap
+
+    # Get the GCC version string (e.g., "gcc 15.1.0")
+    version_str=$(gcc -dumpversion)
+
+    # Extract the major version number
+    major_version=${version_str%%.*}
+
+    # Compare with 15
+    if (( major_version >= 15 )); then
+        # Fix building with GCC-15
+        patch -Np1 -i ../ghostscript-10.05.1-gcc15_fixes-1.patch
+    fi
+
+    # gcc14 buildfix
+    export CFLAGS+=" -Wno-incompatible-pointer-types -Wno-int-conversion"
+
+    ./configure \
+        --prefix=/usr \
+        --with-ijs \
+        --with-jbig2dec \
+        --with-x \
+        --with-drivers=ALL \
+        --with-fontpath=/usr/share/fonts/gsfonts \
+        --without-versioned-path \
+        --enable-fontconfig \
+        --enable-freetype \
+        --enable-openjpeg \
+        --with-system-libtiff \
+        --with-libpaper \
+        --disable-compile-inits 
+    make so all 
+}
+
+package() {
+    cd ghostscript-$pkgver
+
+    make -j1 DESTDIR="$pkgdir" install-so install
+
+    install -v -m644 base/*.h "$pkgdir"/usr/include/ghostscript &&
+    ln -sfvn ghostscript "$pkgdir"/usr/include/ps
+
+    # remove obsolete lpr bsd/Unix related files
+    rm -rv "${pkgdir}"/usr/bin/{lprsetup.sh,unix-lpr.sh}
+
+    # install the CMaps from poppler-data
+    ln -s /usr/share/poppler/cMap "${pkgdir}"/usr/share/ghostscript/Resource/CMap
+
+    install -d "$pkgdir"/usr/share/ghostscript 
+    tar -xvf "$srcdir"/ghostscript-fonts-std-8.11.tar.gz -C "$pkgdir"/usr/share/ghostscript --no-same-owner 
+
+    install -d "$pkgdir"/usr/share/ghostscript 
+    tar -xvf "$srcdir"/gnu-gs-fonts-other-6.0.tar.gz     -C "$pkgdir"/usr/share/ghostscript --no-same-owner
+}
