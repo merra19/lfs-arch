@@ -1,0 +1,31 @@
+# description	: Framework providing transparent file and data management
+# depends	: acl  glibc karchive kauth kbookmarks kcompletion
+# depends	: kcolorscheme kconfig kcoreaddons kcrash kdbusaddons
+# depends	: kguiaddons ki18n kiconthemes kitemviews kjobwidgets
+# depends	: kservice kwallet kwidgetsaddons kwindowsystem libxml2
+# depends	: libxslt qt6-base solid util-linux kded kdoctools
+# depends	: extra-cmake-modules qt6-tools
+
+pkgname=kio
+pkgver=6.13.0
+pkgrel=2
+source="https://download.kde.org/stable/frameworks/${pkgver%.*}/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+    
+    cmake -B build \
+        -D CMAKE_INSTALL_LIBEXECDIR=lib \
+        -D BUILD_TESTING=OFF \
+        -D BUILD_QCH=OFF \
+        -D CMAKE_DISABLE_FIND_PACKAGE_KF6Wallet="$(scratch isinstalled kwallet && echo "OFF" || echo "ON")" \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

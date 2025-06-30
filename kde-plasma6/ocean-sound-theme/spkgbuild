@@ -1,0 +1,23 @@
+# description	: Ocean Sound Theme for Plasma
+# depends	: extra-cmake-modules qt6-base
+
+pkgname=ocean-sound-theme
+pkgver=6.3.4
+pkgrel=1
+source="https://download.kde.org/stable/plasma/$pkgver/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    cmake -B build \
+        -D BUILD_QT5=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

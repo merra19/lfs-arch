@@ -1,0 +1,20 @@
+# description	: Address book API based on KDE Frameworks
+# depends	:  glibc kcodecs kconfig kcoreaddons ki18n
+# depends	: qt6-base extra-cmake-modules qt6-declarative qt6-tools
+
+pkgname=kcontacts
+pkgver=6.13.0
+pkgrel=1
+source="https://download.kde.org/stable/frameworks/${pkgver%.*}/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cmake -B build -S $pkgname-$pkgver \
+        -D BUILD_TESTING=OFF \
+        -D BUILD_QCH=OFF
+    cmake --build build
+}
+
+package() {
+    DESTDIR="$pkgdir" cmake --install build
+}

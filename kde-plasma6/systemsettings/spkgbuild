@@ -1,0 +1,27 @@
+# description	: KDE system manager for hardware, software, and workspaces
+# depends	:  glibc plasma-activities kauth kcmutils kconfig
+# depends	: kcolorscheme kconfigwidgets kcoreaddons kcrash kirigami
+# depends	: kdbusaddons ki18n kio kitemmodels kitemviews kjobwidgets
+# depends	: krunner kservice kwidgetsaddons kwindowsystem kxmlgui
+# depends	: qt6-base qt6-declarative extra-cmake-modules kdoctools
+
+pkgname=systemsettings
+pkgver=6.3.4
+pkgrel=1
+source="https://download.kde.org/stable/plasma/$pkgver/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    cmake -B build \
+        -D BUILD_TESTING=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

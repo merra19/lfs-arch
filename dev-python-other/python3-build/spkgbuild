@@ -1,0 +1,21 @@
+# description	    : A simple, correct PEP517 package builder
+# depends	: python3-packaging python3-wheel python3-pyproject_hooks 
+# depends	: python3-installer
+
+pkgname=python3-build
+pkgver=1.2.2
+pkgrel=1
+source="https://github.com/pypa/build/archive/refs/tags/$pkgver/py3-build-$pkgver.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd build-$pkgver
+    
+    gpep517 build-wheel --wheel-dir .dist --output-fd 3 3>&1 >&2
+}
+
+package() {
+    cd build-$pkgver
+     
+    python3 -m installer -d "$pkgdir" .dist/build*.whl
+}

@@ -1,0 +1,29 @@
+# description	: Multi-document editor with network transparency, Plasma integration and more
+# depends	:  glibc kbookmarks kcolorscheme kcompletion
+# depends	: kconfig kconfigwidgets kcoreaddons kcrash kdbusaddons
+# depends	: kguiaddons ki18n kiconthemes kio knewstuff kparts llvm
+# depends	: kservice ktexteditor kuserfeedback kwidgetsaddons rustc
+# depends	: kwindowsystem kxmlgui qt6-base syntax-highlighting
+# depends	: extra-cmake-modules kdoctools konsole qt6-declarative 
+## qtkeychain-qt6 texlab
+
+pkgname=kate
+pkgver=25.04.0
+pkgrel=1
+source="https://download.kde.org/stable/release-service/$pkgver/src/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd $pkgname-$pkgver
+
+    cmake -B build \
+        -D BUILD_TESTING=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

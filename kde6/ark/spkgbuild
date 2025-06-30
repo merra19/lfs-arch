@@ -1,0 +1,29 @@
+# description	: File archiver by KDE
+# depends	: breeze-icons  glibc kcolorscheme kcompletion
+# depends	: kconfig kconfigwidgets kcoreaddons kcrash kdbusaddons
+# depends	: kfilemetadata ki18n kio kjobwidgets kparts kpty kservice
+# depends	: kwidgetsaddons kwindowsystem kxmlgui libarchive qt6-base
+# depends	: bash zlib extra-cmake-modules kdoctools 7zip unrar
+# depends	: libzip
+## arj lrzip lzop unarchiver
+
+pkgname=ark
+pkgver=25.04.0
+pkgrel=1
+source="https://download.kde.org/stable/release-service/$pkgver/src/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd $pkgname-$pkgver
+
+    cmake -B build \
+        -D BUILD_TESTING=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

@@ -1,0 +1,33 @@
+# description	: Plasma filemanager focusing on usability
+# depends	: baloo baloo-widgets  glibc kbookmarks kcmutils
+# depends	: kcodecs kcolorscheme kcompletion kconfig kconfigwidgets 
+# depends	: kcoreaddons kcrash kdbusaddons kfilemetadata kguiaddons
+# depends	: ki18n kiconthemes kio kio-extras kjobwidgets knewstuff
+# depends	: knotifications kparts kservice ktextwidgets phonon
+# depends	: kuserfeedback kwidgetsaddons kwindowsystem kxmlgui 
+# depends	: qt6-base solid extra-cmake-modules kdoctools
+# depends	: kde-cli-tools konsole purpose
+## kdenetwork-filesharing kdegraphics-thumbnailers ffmpegthumbs kio-admin
+
+pkgname=dolphin
+pkgver=25.04.0
+pkgrel=1
+source="https://download.kde.org/stable/release-service/$pkgver/src/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd $pkgname-$pkgver
+
+    cmake -B build \
+        -D BUILD_TESTING=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+
+    rm -r $pkgdir/usr/lib/systemd
+}

@@ -1,0 +1,30 @@
+# description	: Qt Platform Theme integration plugins for the Plasma workspaces
+# depends	:  glibc kcolorscheme kcompletion kconfig ki18n
+# depends	: kcoreaddons kguiaddons kiconthemes kio kjobwidgets
+# depends	: kservice kstatusnotifieritem kwidgetsaddons libxcursor
+# depends	: kwindowsystem kxmlgui libxcb qqc2-breeze-style qt6-base
+# depends	: qqc2-desktop-style  qt6-declarative qt6-wayland wayland 
+# depends	: extra-cmake-modules plasma-wayland-protocols
+
+pkgname=plasma-integration
+pkgver=6.3.4
+pkgrel=1
+source="https://download.kde.org/stable/plasma/$pkgver/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    cmake -B build \
+        -D BUILD_TESTING=OFF \
+        -D BUILD_QT5=OFF \
+        -D CMAKE_DISABLE_FIND_PACKAGE_XDGDesktopPortalKDE="$(scratch isinstalled xdg-desktop-portal-kde && echo "OFF" || echo "ON")" \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

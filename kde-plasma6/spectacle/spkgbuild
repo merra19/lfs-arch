@@ -1,0 +1,31 @@
+# description	: Screenshot capture utility
+# depends	: glibc kconfig kconfigwidgets kcoreaddons kcrash ki18n
+# depends	: kdbusaddons kglobalaccel kguiaddons kirigami kjobwidgets
+# depends	: knotifications kpipewire kservice kstatusnotifieritem
+# depends	: kwidgetsaddons kwindowsystem kxmlgui layer-shell-qt kio
+# depends	: libxcb prison purpose qt6-base qt6-declarative wayland
+# depends	: qt6-imageformats qt6-multimedia qt6-wayland kdoctools
+# depends	: extra-cmake-modules xcb-util-cursor xcb-util-image 
+# depends	: xcb-util plasma-wayland-protocols
+## opencv
+
+pkgname=spectacle
+pkgver=6.3.4
+pkgrel=1
+source="https://download.kde.org/stable/plasma/$pkgver/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    cmake -B build \
+        -D BUILD_TESTING=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

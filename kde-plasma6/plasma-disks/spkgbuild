@@ -1,0 +1,26 @@
+# description	: Monitors S.M.A.R.T. capable devices for imminent failure
+# depends	:  glibc kauth kcmutils kconfig kcoreaddons ki18n
+# depends	: kdbusaddons kinfocenter kio kirigami knotifications 
+# depends	: kservice qt6-base qt6-declarative smartmontools solid
+# depends	: extra-cmake-modules
+
+pkgname=plasma-disks
+pkgver=6.3.4
+pkgrel=1
+source="https://download.kde.org/stable/plasma/$pkgver/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    cmake -B build \
+        -D BUILD_TESTING=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

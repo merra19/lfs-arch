@@ -1,0 +1,30 @@
+# description	: Task management and system monitoring library
+# depends	:  glibc plasma-activities kcmutils kcolorscheme
+# depends	: kconfig kcoreaddons kglobalaccel kguiaddons ki18n kio
+# depends	: kiconthemes kirigami knotifications kpackage ksvg libxcb
+# depends	: kwidgetsaddons kwindowsystem libglvnd libx11 qt6-5compat
+# depends	: qt6-base qt6-declarative qt6-wayland wayland
+# depends	: extra-cmake-modules kdoctools plasma-wayland-protocols
+# depends	: qt6-tools
+
+pkgname=libplasma
+pkgver=6.3.4
+pkgrel=1
+source="https://download.kde.org/stable/plasma/$pkgver/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    cmake -B build \
+        -D BUILD_TESTING=OFF \
+        -D BUILD_QCH=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

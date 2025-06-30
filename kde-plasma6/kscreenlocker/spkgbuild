@@ -1,0 +1,37 @@
+# description	: Implementation of ssh-askpass with KDE Wallet integration
+# depends	:  glibc kconfig kcoreaddons kcrash kdeclarative
+# depends	: kglobalaccel ki18n kidletime kio kirigami knotifications
+# depends	: kpackage ksvg kwindowsystem kxmlgui layer-shell-qt
+# depends	: libkscreen libx11 libxcb libxi pam libplasma qt6-base
+# depends	: qt6-declarative wayland xcb-util-keysyms kcmutils
+# depends	: extra-cmake-modules kdoctools
+
+pkgname=kscreenlocker
+pkgver=6.3.4
+pkgrel=1
+source="https://download.kde.org/stable/plasma/$pkgver/$pkgname-$pkgver.tar.xz
+        kde.pam
+        kde-fingerprint.pam 
+        kde-smartcard.pam"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+backup="etc/pam.d/kde etc/pam.d/kde-fingerprint etc/pam.d/kde-smartcard"
+
+build() {
+    cd $pkgname-$pkgver
+    
+    cmake -B build \
+        -D CMAKE_INSTALL_LIBEXECDIR=/usr/lib \
+        -D BUILD_TESTING=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+
+  install -Dm644 "$srcdir"/kde.pam "$pkgdir"/etc/pam.d/kde
+  install -Dm644 "$srcdir"/kde-fingerprint.pam "$pkgdir"/etc/pam.d/kde-fingerprint
+  install -Dm644 "$srcdir"/kde-smartcard.pam "$pkgdir"/etc/pam.d/kde-smartcard
+}

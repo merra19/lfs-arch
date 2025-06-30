@@ -1,0 +1,28 @@
+# description	: Task management and system monitoring library
+# depends	:  glibc kauth kconfig kcoreaddons kdeclarative
+# depends	: ki18n kirigami kitemmodels knewstuff kpackage kservice
+# depends	: kquickcharts libnl libpcap lm-sensors qt6-5compat
+# depends	: qt6-base qt6-declarative solid zlib extra-cmake-modules
+# depends	: qt6-tools  
+
+pkgname=libksysguard
+pkgver=6.3.4
+pkgrel=1
+source="https://download.kde.org/stable/plasma/$pkgver/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    cmake -B build \
+        -D CMAKE_INSTALL_LIBEXECDIR=lib \
+        -D BUILD_TESTING=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

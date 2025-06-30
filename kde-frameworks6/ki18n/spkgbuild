@@ -1,0 +1,25 @@
+# description	: Framework based on Gettext for internationalizing user interface text
+# depends	:  glibc iso-codes qt6-base python3 qt6-tools
+# depends	: extra-cmake-modules qt6-declarative
+
+pkgname=ki18n
+pkgver=6.13.0
+pkgrel=1
+source="https://download.kde.org/stable/frameworks/${pkgver%.*}/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+    
+    cmake -B build \
+        -D BUILD_TESTING=OFF \
+        -D BUILD_QCH=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

@@ -1,0 +1,31 @@
+# description	: Framework for providing spell-checking through abstraction of popular backends
+# depends	:  glibc qt6-base aspell qt6-tools qt6-declarative
+# depends	: extra-cmake-modules
+## libvoikko hspell hunspell
+
+pkgname=sonnet
+pkgver=6.13.0
+pkgrel=1
+source="https://download.kde.org/stable/frameworks/${pkgver%.*}/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    if (! scratch isinstalled hunspell ) && (! scratch isinstalled aspell ); then 
+        OPTS_BACKEND="-D SONNET_NO_BACKENDS=ON"
+    fi
+
+    cmake -B build \
+        -D BUILD_TESTING=OFF \
+        -D BUILD_QCH=OFF \
+        $OPTS_BACKEND \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

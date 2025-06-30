@@ -1,0 +1,24 @@
+# description	: QtQuick plugin providing high-performance charts
+# depends	:  glibc kirigami qt6-base qt6-declarative
+# depends	: extra-cmake-modules qt6-shadertools
+
+pkgname=kquickcharts
+pkgver=6.13.0
+pkgrel=1
+source="https://download.kde.org/stable/frameworks/${pkgver%.*}/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    cmake -B build \
+        -D BUILD_TESTING=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

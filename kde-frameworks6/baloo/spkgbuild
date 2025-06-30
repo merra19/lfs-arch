@@ -1,0 +1,30 @@
+# description	: Framework for searching and managing metadata
+# depends	:  glibc kconfig kcoreaddons kcrash kdbusaddons 
+# depends	: kfilemetadata ki18n kidletime kio lmdb qt6-base solid
+# depends	: extra-cmake-modules kdoctools qt6-tools qt6-declarative
+
+pkgname=baloo
+pkgver=6.13.0
+pkgrel=1
+source="https://download.kde.org/stable/frameworks/${pkgver%.*}/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+    
+    cmake -B build \
+        -D BUILD_TESTING=OFF \
+        -D CMAKE_INSTALL_LIBEXECDIR=lib \
+        -D BUILD_QCH=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+
+    #remove systemd service
+    rm -r $pkgdir/usr/lib/systemd
+}

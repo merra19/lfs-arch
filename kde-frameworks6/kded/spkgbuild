@@ -1,0 +1,27 @@
+# description	: Central daemon of KDE workspaces
+# depends	:  glibc kconfig kcoreaddons kcrash kdbusaddons
+# depends	: kservice qt6-base extra-cmake-modules kdoctools
+
+pkgname=kded
+pkgver=6.13.0
+pkgrel=1
+source="https://download.kde.org/stable/frameworks/${pkgver%.*}/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+    
+    cmake -B build \
+        -D BUILD_TESTING=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+
+  #remove systemd service
+  rm -r $pkgdir/usr/lib/systemd
+}

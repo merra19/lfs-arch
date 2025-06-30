@@ -1,0 +1,22 @@
+# description	: A straightforward binding of libsass for Python
+# depends	: python3 python3-gpep517 python3-setuptools python3-wheel
+# depends	: libsass
+
+pkgname=python3-libsass
+pkgver=0.23.0
+pkgrel=1
+source="https://github.com/sass/libsass-python/archive/$pkgver/py3-libsass-$pkgver.tar.gz"
+
+build() {
+	cd libsass-python-$pkgver
+
+    export SYSTEM_SASS="true"
+
+	gpep517 build-wheel --wheel-dir .dist --output-fd 3 3>&1 >&2
+}
+
+package() {
+	cd libsass-python-$pkgver
+
+	python3 -m installer -d "$pkgdir" .dist/*.whl
+}

@@ -1,0 +1,27 @@
+# description	: Add-ons for the Kirigami framework
+# depends	:   glibc kconfig kcoreaddons kglobalaccel ki18n
+# depends	: kguiaddons kirigami kitemmodels ksvg qt6-base sonnet
+# depends	: qt6-declarative qt6-multimedia extra-cmake-modules 
+
+pkgname=kirigami-addons
+pkgver=1.7.0
+pkgrel=1
+source="https://download.kde.org/stable/kirigami-addons/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd $pkgname-$pkgver
+
+    cmake -B build \
+        -D QT_MAJOR_VERSION=6 \
+        -D BUILD_TESTING=OFF \
+        -D BUILD_QCH=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

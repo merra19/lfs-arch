@@ -1,0 +1,28 @@
+# description	: Framework providing a full text editor component
+# depends	:  glibc karchive kauth kcodecs kcolorscheme
+# depends	: kcompletion kconfig kconfigwidgets kcoreaddons kxmlgui
+# depends	: kguiaddons ki18n kio kitemviews kparts kwidgetsaddons
+# depends	: qt6-declarative qt6-base qt6-speech sonnet qt6-tools
+# depends	: syntax-highlighting extra-cmake-modules
+
+pkgname=ktexteditor
+pkgver=6.13.0
+pkgrel=1
+source="https://download.kde.org/stable/frameworks/${pkgver%.*}/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    cmake -B build \
+        -D BUILD_TESTING=OFF \
+        -D BUILD_QCH=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

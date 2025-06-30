@@ -1,0 +1,21 @@
+# description	: Framework to collect user feedback for applications via telemetry and surveys
+# depends	: glibc qt6-base llvm extra-cmake-modules qt6-charts
+# depends	: qt6-declarative qt6-svg qt6-tools
+
+pkgname=kuserfeedback
+pkgver=6.13.0
+pkgrel=1
+source="https://download.kde.org/stable/frameworks/${pkgver%.*}/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    
+    cmake -B build -S $pkgname-$pkgver \
+        -D BUILD_TESTING=OFF
+    cmake --build build
+}
+
+package() {
+    DESTDIR="$pkgdir" cmake --install build
+}
+

@@ -1,0 +1,28 @@
+# description	: Framework to work with KDE System Settings modules
+# depends	:  glibc kconfig kconfigwidgets kcoreaddons
+# depends	: kguiaddons ki18n kio kirigami kitemviews kservice
+# depends	: kwidgetsaddons kxmlgui qt6-base qt6-declarative 
+# depends	: extra-cmake-modules qt6-tools
+
+pkgname=kcmutils
+pkgver=6.13.0
+pkgrel=1
+source="https://download.kde.org/stable/frameworks/${pkgver%.*}/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+    
+    cmake -B build \
+        -D CMAKE_INSTALL_LIBEXECDIR=lib \
+        -D BUILD_TESTING=OFF \
+        -D BUILD_QCH=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

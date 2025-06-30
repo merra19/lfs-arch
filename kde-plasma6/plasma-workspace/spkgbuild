@@ -1,0 +1,56 @@
+# description	: KDE Plasma Workspace
+# depends	: accountsservice appstream dbus fontconfig freetype
+# depends	:  glibc icu karchive kauth kactivitymanagerd
+# depends	: kbookmarks kcmutils kcolorscheme kcompletion kconfig
+# depends	: kconfigwidgets kcoreaddons kcrash kde-cli-tools kded
+# depends	: kdeclarative kdbusaddons kglobalaccel kguiaddons ki18n
+# depends	: kholidays kiconthemes kio kio-extras kio-fuse kirigami
+# depends	: kirigami-addons kitemmodels knewstuff kjobwidgets
+# depends	: knotifications knotifyconfig kpackage kparts kpipewire
+# depends	: krunner kquickcharts kscreenlocker kservice ksystemstats
+# depends	: kstatusnotifieritem ksvg ktexteditor libice ktextwidgets
+# depends	: kunitconversion kuserfeedback kwallet milou kwayland
+# depends	: kwidgetsaddons kwin kwindowsystem kxmlgui layer-shell-qt
+# depends	: libcanberra libkexiv2 libksysguard libxft libqalculate
+# depends	: libplasma libsm libx11 libxau libxcb libxcrypt libxfixes
+# depends	: libxcursor libxtst ocean-sound-theme phonon qt6-base
+# depends	: plasma-activities plasma-activities-stats qt6-5compat
+# depends	: plasma5support prison qt6-tools qt6-declarative qt6-svg 
+# depends	: qt6-positioning qt6-wayland qt6-virtualkeyboard bash
+# depends	: solid elogind wayland xcb-util xcb-util-cursor xrdb
+# depends	: xcb-util-image xmessage xwayland zlib baloo kdoctools
+# depends	: extra-cmake-modules networkmanager-qt qcoro6  
+# depends	: plasma-wayland-protocols discover xdg-desktop-portal-gtk
+## gpsd kdepim-addons appmenu-gtk-module kwayland-integration
+
+pkgname=plasma-workspace
+pkgver=6.3.4
+pkgrel=1
+source="https://download.kde.org/stable/plasma/${pkgver:0:5}/$pkgname-$pkgver.tar.xz
+        plasma-workspace-5.22.5-krunner-cwd-at-home.patch"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    patch -Np1 -i ../plasma-workspace-5.22.5-krunner-cwd-at-home.patch # TODO upstream: KDE-bug 432975, bug 767478
+
+    cmake -B build \
+        -D CMAKE_INSTALL_LIBEXECDIR=lib \
+        -D GLIBC_LOCALE_GEN=OFF \
+        -D BUILD_TESTING=OFF \
+        -D CMAKE_DISABLE_FIND_PACKAGE_AppStreamQt=ON \
+        -D CMAKE_DISABLE_FIND_PACKAGE_KF6NetworkManagerQt="$(scratch isinstalled networkmanager-qt6 && echo "OFF" || echo "ON")" \
+        -D CMAKE_DISABLE_FIND_PACKAGE_KF6UserFeedback="$(scratch isinstalled kuserfeedback && echo "OFF" || echo "ON")" \
+        -D CMAKE_DISABLE_FIND_PACKAGE_PackageKitQt6=ON \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+    
+    rm -rf $pkgdir/usr/lib/systemd
+}

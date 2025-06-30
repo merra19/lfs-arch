@@ -1,0 +1,33 @@
+# description	: Extra Plasma applets and engines
+# depends	:  glibc icu kauth kcmutils kconfig kcoreaddons
+# depends	: kdbusaddons kdeclarative kglobalaccel kholidays ki18n
+# depends	: kiconthemes kio kirigami kirigami-addons kitemmodels
+# depends	: kjobwidgets knewstuff knotifications kpackage krunner
+# depends	: kservice ksvg kunitconversion kwidgetsaddons kwin
+# depends	: kwindowsystem kxmlgui libplasma plasma-workspace sonnet
+# depends	: plasma5support qt6-5compat qt6-base qt6-declarative
+# depends	: qt6-quick3d extra-cmake-modules networkmanager-qt
+# depends	: qt6-webengine
+## qt6-webengine quota-tools
+
+pkgname=kdeplasma-addons
+pkgver=6.3.4
+pkgrel=1
+source="https://download.kde.org/stable/plasma/$pkgver/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    cmake -B build \
+        -D CMAKE_INSTALL_LIBEXECDIR=lib \
+        -D BUILD_TESTING=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

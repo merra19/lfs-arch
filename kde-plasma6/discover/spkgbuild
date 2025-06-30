@@ -1,0 +1,31 @@
+# description	: KDE Plasma resources management GUI
+# depends	: glib glibc kcmutils kconfig kcoreaddons kcrash attica
+# depends	: kdbusaddons ki18n kiconthemes kidletime kio kirigami
+# depends	: kirigami-addons kjobwidgets knewstuff knotifications
+# depends	: kservice kstatusnotifieritem kuserfeedback kwindowsystem
+# depends	: kwidgetsaddons purpose qcoro6 qqc2-desktop-style
+# depends	: qt6-base qt6-declarative extra-cmake-modules appstream
+# optional	: flatpak discount qt6-webview
+## archlinux-appstream-data
+
+pkgname=discover
+pkgver=6.3.4
+pkgrel=1
+source="https://download.kde.org/stable/plasma/$pkgver/$pkgname-$pkgver.tar.xz"
+optsflags=" -fno-lto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    cmake -B build \
+        -D CMAKE_INSTALL_LIBEXECDIR=lib \
+        -D BUILD_TESTING=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

@@ -1,0 +1,34 @@
+# description	: Image viewer by KDE
+# depends	: baloo exiv2  glibc kcolorscheme kio kcompletion
+# depends	: kconfig kconfigwidgets kcoreaddons kcrash kimageformats
+# depends	: kfilemetadata kguiaddons ki18n kiconthemes kitemmodels
+# depends	: kimageannotator kitemviews kjobwidgets kparts kservice
+# depends	: kwidgetsaddons kxmlgui lcms2 libjpeg-turbo libkdcraw
+# depends	: libpng libtiff libx11 phonon plasma-activities
+# depends	: purpose qt6-base qt6-svg qt6-wayland solid wayland
+# depends	: extra-cmake-modules kdoctools wayland-protocols 
+# depends	: qt6-imageformats
+## kamera cfitsio
+
+pkgname=gwenview
+pkgver=25.04.0
+pkgrel=1
+options="!lto"
+source="https://download.kde.org/stable/release-service/$pkgver/src/$pkgname-$pkgver.tar.xz"
+optsflags=" -fno-lto "
+
+build() {
+	cd $pkgname-$pkgver
+
+    cmake -B build \
+        -D GWENVIEW_SEMANTICINFO_BACKEND="Baloo" \
+        -D BUILD_TESTING=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

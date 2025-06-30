@@ -1,0 +1,26 @@
+# description	: Components for handling SVGs
+# depends	:  glibc karchive kcolorscheme kconfig kcoreaddons
+# depends	: kguiaddons qt6-base qt6-svg extra-cmake-modules
+# depends	: kirigami qt6-declarative qt6-tools
+
+pkgname=ksvg
+pkgver=6.13.0
+pkgrel=1
+source="https://download.kde.org/stable/frameworks/${pkgver%.*}/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    cmake -B build \
+        -D BUILD_TESTING=OFF \
+        -D BUILD_QCH=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

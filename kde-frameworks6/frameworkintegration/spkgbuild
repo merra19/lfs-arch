@@ -1,0 +1,28 @@
+# description	: Framework for integrating Qt applications with KDE Plasma workspaces
+# depends	: glibc kcolorscheme kconfig ki18n kiconthemes appstream
+# depends	: knewstuff knotifications kwidgetsaddons qt6-base 
+# depends	: extra-cmake-modules
+
+pkgname=frameworkintegration
+pkgver=6.13.0
+pkgrel=1
+source="https://download.kde.org/stable/frameworks/${pkgver%.*}/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+    
+    cmake -B build \
+        -D CMAKE_INSTALL_LIBEXECDIR=lib \
+        -D BUILD_TESTING=OFF \
+        -D CMAKE_DISABLE_FIND_PACKAGE_AppStreamQt=ON \
+        -D CMAKE_DISABLE_FIND_PACKAGE_packagekitqt6=ON \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

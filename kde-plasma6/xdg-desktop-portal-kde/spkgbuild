@@ -1,0 +1,32 @@
+# description	: A backend implementation for xdg-desktop-portal using Qt/KF5
+# depends	:  glibc kconfig kcoreaddons kcrash kglobalaccel
+# depends	: kiconthemes ki18n kio kio-fuse kirigami kitemviews
+# depends	: knotifications kpipewire kservice kstatusnotifieritem
+# depends	: kwayland kwindowsystem libxkbcommon plasma-workspace
+# depends	: qt6-base qt6-declarative qt6-wayland wayland 
+# depends	: xdg-desktop-portal extra-cmake-modules wayland-protocols  
+# depends	: plasma-wayland-protocols
+
+pkgname=xdg-desktop-portal-kde
+pkgver=6.3.4
+pkgrel=1
+source="https://download.kde.org/stable/plasma/$pkgver/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    cmake -B build \
+        -D CMAKE_INSTALL_LIBEXECDIR=lib \
+        -D BUILD_TESTING=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+
+    rm -r $pkgdir/usr/lib/systemd
+}

@@ -1,0 +1,24 @@
+# description	: KDE multimedia abstraction library
+# depends	:  glibc pulseaudio extra-cmake-modules qt6-5compat
+# depends	: qt6-base qt6-tools
+
+pkgname=phonon
+pkgver=4.12.0
+pkgrel=1
+source="https://download.kde.org/stable/phonon/$pkgver/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd $pkgname-$pkgver
+
+    cmake -B build6 \
+        -D CMAKE_BUILD_TYPE=None \
+        -D PHONON_BUILD_QT5=OFF
+    cmake --build build6
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build6
+}

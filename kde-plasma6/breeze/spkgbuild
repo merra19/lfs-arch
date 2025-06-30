@@ -1,0 +1,31 @@
+# description	: Breeze visual style for the Plasma desktop
+# depends	: extra-cmake-modules breeze-icons frameworkintegration 
+# depends	:  glibc kconfig kcmutils kcolorscheme kcoreaddons
+# depends	: kguiaddons kiconthemes kirigami kwidgetsaddons qt6-base
+# depends	: kwindowsystem qt6-declarative qt6-svg kdecoration ki18n
+
+pkgname=breeze
+pkgver=6.3.4
+pkgrel=1
+source="https://download.kde.org/stable/plasma/$pkgver/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    # Fix some build issues with qt-6.9.0 and later
+    sed -e '/QList/i #include <QDebug>' \
+               -i cursors/src/kcursorgen/kcursorgen.h
+
+    cmake -B build \
+        -D BUILD_QT5=OFF \
+        -D BUILD_TESTING=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

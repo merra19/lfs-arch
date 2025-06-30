@@ -1,0 +1,25 @@
+# description	: Weather forecast application for Plasma with flat and dynamic/animated views
+# depends	:  glibc kconfig kcoreaddons kcrash ki18n kirigami
+# depends	: kirigami-addons kweathercore libplasma qt6-base python3
+# depends	: qqc2-desktop-style qt6-charts qt6-declarative
+# depends	: extra-cmake-modules
+
+pkgname=kweather
+pkgver=25.04.0
+pkgrel=1
+source="https://download.kde.org/stable/release-service/$pkgver/src/$pkgname-$pkgver.tar.xz"
+
+build() {
+	cd $pkgname-$pkgver
+
+    cmake -B build \
+        -D BUILD_TESTING=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

@@ -1,0 +1,24 @@
+# description	: KDE Plasma daemon listening for wall and write messages
+# depends	:  glibc kcoreaddons kdbusaddons knotifications
+# depends	: kpty qt6-base extra-cmake-modules kdoctools
+
+pkgname=kwrited
+pkgver=6.3.4
+pkgrel=1
+source="https://download.kde.org/stable/plasma/$pkgver/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    cmake -B build \
+        -D BUILD_TESTING=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

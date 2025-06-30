@@ -1,0 +1,29 @@
+# description	: Oxygen visual style for the Plasma desktop
+
+# depends  : frameworkintegration  glibc kcmutils kcolorscheme
+# depends	: kcompletion kconfig kconfigwidgets kcoreaddons libxcb
+# depends	: kdecoration kguiaddons ki18n kwidgetsaddons qt6-base
+# depends	: kwindowsystem qt6-declarative extra-cmake-modules 
+# depends	: libplasma
+
+pkgname=oxygen
+pkgver=6.3.4
+pkgrel=1
+source="https://download.kde.org/stable/plasma/$pkgver/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    cmake -B build \
+        -D BUILD_TESTING=OFF \
+        -D BUILD_QT5=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

@@ -1,0 +1,40 @@
+# description	: Flexible, composited Window Manager for windowing systems on Linux
+# depends	: breeze  glibc plasma-activities kauth kcmutils
+# depends	: kcolorscheme kconfig kconfigwidgets kcoreaddons kcrash
+# depends	: kdbusaddons kdeclarative kdecoration kglobalaccel lcms2
+# depends	: kglobalacceld kguiaddons ki18n kidletime kirigami libdrm
+# depends	: kitemmodels knewstuff knotifications kpackage kxmlgui
+# depends	: kquickcharts kscreenlocker kservice ksvg kwayland libxi
+# depends	: kwidgetsaddons kwindowsystem libcanberra libdisplay-info 
+# depends	: libei libepoxy libinput pipewire libx11 libxcb libxcvt
+# depends	: libxkbcommon mesa libplasma qt6-tools xwayland python3
+# depends	: wireplumber qt6-5compat qt6-base qt6-svg qt6-sensors 
+# depends	: qt6-declarative qt6-multimedia xcb-util-cursor krunner
+# depends	: qt6-wayland elogind wayland wayland-protocols kdoctools
+# depends	: xcb-util-keysyms xcb-util-wm extra-cmake-modules 
+# depends	: plasma-wayland-protocols 
+## libqaccessibilityclient-qt6
+
+pkgname=kwin
+pkgver=6.3.4
+pkgrel=1
+source="https://download.kde.org/stable/plasma/$pkgver/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    cmake -B build \
+        -D CMAKE_INSTALL_LIBEXECDIR=lib \
+        -D BUILD_TESTING=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+
+    rm -r $pkgdir/usr/lib/systemd
+}

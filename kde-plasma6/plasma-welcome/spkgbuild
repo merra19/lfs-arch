@@ -1,0 +1,27 @@
+# description	: Friendly onboarding wizard for Plasma
+# depends	:  glibc kcmutils kconfig kcoreaddons kdbusaddons
+# depends	: ki18n kio kirigami kirigami-addons kjobwidgets knewstuff
+# depends	: kservice ksvg kuserfeedback kwindowsystem libplasma
+# depends	: plasma-nm plasma5support qt6-5compat qt6-base 
+# depends	: qt6-declarative extra-cmake-modules 
+
+pkgname=plasma-welcome
+pkgver=6.3.4
+pkgrel=1
+source="https://download.kde.org/stable/plasma/$pkgver/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    cmake -B build \
+        -D BUILD_TESTING=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

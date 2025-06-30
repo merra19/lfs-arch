@@ -1,0 +1,25 @@
+# description	: FUSE interface for KIO
+# depends	:  fuse glibc kcoreaddons kio qt6-base
+# depends	: extra-cmake-modules  
+
+pkgname=kio-fuse
+pkgver=5.1.0
+pkgrel=1
+source="https://download.kde.org/stable/$pkgname/$pkgname-$pkgver.tar.xz"
+
+build() {
+	cd $pkgname-$pkgver
+
+    cmake -B build \
+        -D CMAKE_INSTALL_LIBEXECDIR=lib \
+        -D BUILD_TESTING=OFF \
+        -D QT_MAJOR_VERSION=6 \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

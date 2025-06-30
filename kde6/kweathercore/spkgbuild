@@ -1,0 +1,24 @@
+# description	: Library for retrieval of weather information including forecasts and alerts
+# depends	:  glibc kholidays ki18n qt6-base qt6-positioning
+# depends	: qt6-declarative extra-cmake-modules qt6-tools
+
+pkgname=kweathercore
+pkgver=25.04.0
+pkgrel=1
+source="https://download.kde.org/stable/release-service/$pkgver/src/$pkgname-$pkgver.tar.xz"
+
+build() {
+	cd $pkgname-$pkgver
+
+    cmake -B build \
+        -D BUILD_TESTING=OFF \
+        -D BUILD_QCH=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

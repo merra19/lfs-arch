@@ -1,0 +1,19 @@
+# description	: Simulate keyboard input and mouse activity, move and resize windows
+# depends	: libx11 libxi libxinerama libxtst libxkbcommon
+
+pkgname=xdotool
+pkgver=3.20211022.1
+pkgrel=1
+source="https://github.com/jordansissel/xdotool/releases/download/v$pkgver/$pkgname-$pkgver.tar.gz"
+
+build() {
+    cd $pkgname-$pkgver
+
+    make WITHOUT_RPATH_FIX=1
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make PREFIX="${PKG}/usr" INSTALLMAN="${PKG}/usr/share/man" install
+}

@@ -1,0 +1,27 @@
+# description	: Tools based on KDE Frameworks 6 to better interact with the system
+# depends	:  glibc kcmutils kcompletion kconfig kcoreaddons
+# depends	: kdesu ki18n kiconthemes kio kparts kservice qt6-base 
+# depends	: kwidgetsaddons kwindowsystem qt6-svg bash kdoctools
+# depends	: extra-cmake-modules
+
+pkgname=kde-cli-tools
+pkgver=6.3.4
+pkgrel=1
+source="https://download.kde.org/stable/plasma/$pkgver/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    cmake -B build \
+        -D CMAKE_INSTALL_LIBEXECDIR=lib \
+        -D BUILD_TESTING=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

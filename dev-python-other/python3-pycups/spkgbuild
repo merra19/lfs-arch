@@ -1,0 +1,20 @@
+# description	: Core utilities for Python packages
+# depends	: python3-flit-core python3-gpep517 python3-setuptools
+
+pkgname=python3-pycups
+pkgver=2.0.4
+pkgrel=1
+source="https://files.pythonhosted.org/packages/source/p/pycups/pycups-$pkgver.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd pycups-$pkgver
+
+    gpep517 build-wheel --wheel-dir .dist --output-fd 3 3>&1 >&2
+}
+
+package() {
+	cd pycups-$pkgver
+
+	python3 -m installer -d "$pkgdir" .dist/*.whl
+}

@@ -1,0 +1,19 @@
+# description	: pure-Python library for analyzing ELF files and DWARF debugging information
+# depends	: python3 python3-gpep517 python3-setuptools python3-wheel
+
+pkgname=python3-pyelftools
+pkgver=0.32
+pkgrel=1
+source="$pkgname-$pkgver.tar.gz::https://github.com/eliben/pyelftools/archive/refs/tags/v$pkgver.tar.gz"
+
+build() {
+	cd pyelftools-$pkgver
+
+	gpep517 build-wheel --wheel-dir .dist --output-fd 3 3>&1 >&2
+}
+
+package() {
+	cd pyelftools-$pkgver
+
+	python3 -m installer -d "$pkgdir" .dist/*.whl
+}

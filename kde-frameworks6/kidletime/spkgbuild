@@ -1,0 +1,26 @@
+# description	: Framework for detection and notification of device idle time
+# depends	:  glibc qt6-base extra-cmake-modules libxscrnsaver
+# depends	: plasma-wayland-protocols qt6-tools qt6-wayland libx11
+# depends	: wayland-protocols libxcb libxext wayland
+
+pkgname=kidletime
+pkgver=6.13.0
+pkgrel=1
+source="https://download.kde.org/stable/frameworks/${pkgver%.*}/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+    
+    cmake -B build \
+        -D BUILD_TESTING=OFF \
+        -D BUILD_QCH=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

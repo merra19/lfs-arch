@@ -1,0 +1,26 @@
+# description	: Tool to manage the passwords on your system using KDE Wallet
+# depends	:  glibc karchive kauth kcmutils kcodecs kconfig
+# depends	: kconfigwidgets kcoreaddons kcrash kdbusaddons ki18n kio
+# depends	: kitemviews kservice kstatusnotifieritem kwallet kxmlgui
+# depends	: kwidgetsaddons kwindowsystem qt6-base kdoctools
+# depends	: extra-cmake-modules
+
+pkgname=kwalletmanager
+pkgver=25.04.0
+pkgrel=1
+source="https://download.kde.org/stable/release-service/$pkgver/src/$pkgname-$pkgver.tar.xz"
+
+build() {
+	cd $pkgname-$pkgver
+
+    cmake -B build \
+        -D BUILD_TESTING=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

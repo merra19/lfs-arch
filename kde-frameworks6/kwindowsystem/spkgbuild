@@ -1,0 +1,27 @@
+# description	: Framework providing access to properties and features of the window manager
+# depends	:  glibc libx11 libxcb libxfixes qt6-base
+# depends	: qt6-wayland wayland xcb-util-keysyms extra-cmake-modules 
+# depends	: plasma-wayland-protocols qt6-declarative qt6-tools
+# depends	: wayland-protocols
+
+pkgname=kwindowsystem
+pkgver=6.13.0
+pkgrel=1
+source="https://download.kde.org/stable/frameworks/${pkgver%.*}/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    cmake -B build \
+        -D BUILD_TESTING=OFF \
+        -D BUILD_QCH=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

@@ -1,0 +1,32 @@
+# description	: KDE's terminal emulator
+# depends	: glibc  icu kbookmarks kcolorscheme kconfig 
+# depends	: kconfigwidgets kcoreaddons kcrash kdbusaddons kguiaddons
+# depends	: kglobalaccel ki18n kiconthemes kio knewstuff kservice
+# depends	: knotifications knotifyconfig kparts kpty ktextwidgets
+# depends	: kwidgetsaddons kwindowsystem kxmlgui qt6-5compat bash
+# depends	: qt6-base qt6-multimedia extra-cmake-modules kdoctools
+## keditbookmarks
+
+pkgname=konsole
+pkgver=25.04.2
+pkgrel=1
+source="https://download.kde.org/stable/release-service/$pkgver/src/$pkgname-$pkgver.tar.xz
+        https://www.linuxfromscratch.org/patches/blfs/svn/konsole-adjust_scrollbar-1.patch"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd $pkgname-$pkgver
+
+    patch -Np1 -i ../konsole-adjust_scrollbar-1.patch
+
+    cmake -B build \
+        -D BUILD_TESTING=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

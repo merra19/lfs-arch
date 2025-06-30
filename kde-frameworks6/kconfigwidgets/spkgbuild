@@ -1,0 +1,26 @@
+# description	: Framework providing an assortment of configuration-related widgets
+# depends	:  glibc kcodecs kcolorscheme kconfig kcoreaddons
+# depends	: ki18n kwidgetsaddons qt6-base qt6-tools
+# depends	: extra-cmake-modules
+
+pkgname=kconfigwidgets
+pkgver=6.13.0
+pkgrel=1
+source="https://download.kde.org/stable/frameworks/${pkgver%.*}/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+    
+    cmake -B build \
+        -D BUILD_TESTING=OFF \
+        -D BUILD_QCH=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

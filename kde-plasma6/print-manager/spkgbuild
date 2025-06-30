@@ -1,0 +1,27 @@
+# description	: Manages the power consumption settings of a Plasma Shell
+# depends	:  glibc kcmutils kconfig kcoreaddons kdbusaddons
+# depends	: ki18n kiconthemes kio kirigami kitemmodels kwidgetsaddons
+# depends	: knotifications kwindowsystem cups libplasma qt6-base
+# depends	: qt6-declarative extra-cmake-modules kdoctools 
+# depends	: system-config-printer
+
+pkgname=print-manager
+pkgver=6.3.4
+pkgrel=1
+source="https://download.kde.org/stable/plasma/$pkgver/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+  
+    cmake -B build \
+        -D BUILD_TESTING=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

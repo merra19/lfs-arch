@@ -1,0 +1,41 @@
+# description	: KDE Plasma Desktop
+# depends	: attica baloo  glibc icu kauth kcodecs bluedevil
+# depends	: kbookmarks kcmutils kcompletion kconfig kconfigwidgets
+# depends	: kcoreaddons kcrash kdbusaddons kdeclarative kglobalaccel
+# depends	: kguiaddons ki18n kiconthemes kio kirigami kjobwidgets
+# depends	: kirigami-addons kitemmodels kitemviews kmenuedit krunner
+# depends	: knewstuff knotifications knotifyconfig kpackage kxmlgui
+# depends	: kpipewire kservice ksvg kwidgetsaddons kwindowsystem
+# depends	: libcanberra libksysguard libwacom libx11 libxcb libxi
+# depends	: libxcursor libxkbcommon libxkbfile libplasma powerdevil
+# depends	: plasma-activities plasma-activities-stats qt6-base solid
+# depends	: plasma-workspace plasma5support polkit-kde-agent-1
+# depends	: qt6-5compat qt6-declarative qt6-wayland sdl2 wayland
+# depends	: systemsettings xcb-util-keysyms xdg-user-dirs ibus
+# depends	: extra-cmake-modules intltool kscreen sonnet plasma-pa
+# depends	: kdoctools wayland-protocols plasma-nm glib
+# depends	: xlibre-xserver xlibre-xf86-input-libinput
+## kaccounts-integration libaccounts-qt noto-fonts-emoji scim
+## xorg-server xf86-input-libinput
+
+pkgname=plasma-desktop
+pkgver=6.3.4
+pkgrel=1
+source="https://download.kde.org/stable/plasma/$pkgver/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    cmake -B build \
+        -D CMAKE_INSTALL_LIBEXECDIR=lib \
+        -D BUILD_TESTING=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

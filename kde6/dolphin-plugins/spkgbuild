@@ -1,0 +1,25 @@
+# description	: Dolphin plugin for Git integration
+# depends	:  glibc dolphin kcompletion kconfig kcoreaddons
+# depends	: ki18n kio kjobwidgets kservice ktexteditor ktextwidgets
+# depends	: kwidgetsaddons kxmlgui qt6-base solid extra-cmake-modules  
+
+pkgname=dolphin-plugins
+pkgver=25.04.0
+pkgrel=1
+source="https://download.kde.org/stable/release-service/$pkgver/src/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd $pkgname-$pkgver
+
+    cmake -B build \
+        -D BUILD_TESTING=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

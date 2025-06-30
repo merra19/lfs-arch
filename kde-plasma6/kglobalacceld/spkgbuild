@@ -1,0 +1,29 @@
+# description	: Daemon providing Global Keyboard Shortcut (Accelerator) functionality
+# depends	:  glibc kconfig kcoreaddons kcrash kdbusaddons
+# depends	: kglobalaccel kio kjobwidgets kservice kwindowsystem
+# depends	: libx11 libxcb qt6-base xcb-util-keysyms
+# depends	: extra-cmake-modules
+
+pkgname=kglobalacceld
+pkgver=6.3.4
+pkgrel=1
+source="https://download.kde.org/stable/plasma/$pkgver/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    cmake -B build \
+        -D CMAKE_INSTALL_LIBEXECDIR=lib \
+        -D BUILD_TESTING=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+
+    rm -r $pkgdir/usr/lib/systemd
+}

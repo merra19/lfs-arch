@@ -1,0 +1,28 @@
+# description	: Extra modules and scripts for CMake
+# depends	:  cmake python3-requests qt6-tools python3-pyxdg
+# depends	:  python3-yaml
+
+pkgname=extra-cmake-modules
+pkgver=6.13.0
+pkgrel=1
+source="https://download.kde.org/stable/frameworks/${pkgver%.*}/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd $pkgname-$pkgver
+
+	sed -i '/"lib64"/s/64//' kde-modules/KDEInstallDirsCommon.cmake
+
+	cmake -B build \
+        -D CMAKE_INSTALL_PREFIX=/usr \
+        -D BUILD_HTML_DOCS=ON \
+        -D BUILD_QTHELP_DOCS=OFF \
+        -D BUILD_TESTING=OFF
+	cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

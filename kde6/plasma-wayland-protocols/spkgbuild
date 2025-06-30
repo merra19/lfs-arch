@@ -1,0 +1,21 @@
+# description	: Plasma Specific Protocols for Wayland
+# depends	: extra-cmake-modules qt6-base
+
+pkgname=plasma-wayland-protocols
+pkgver=1.18.0
+pkgrel=1
+source="https://download.kde.org/stable/plasma-wayland-protocols/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd $pkgname-$pkgver
+
+    cmake -B build 
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

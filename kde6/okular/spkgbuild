@@ -1,0 +1,36 @@
+# description	: Universal document viewer based on KDE Frameworks
+# depends	: freetype glibc karchive plasma-activities ebook-tools
+# depends	: kbookmarks kcolorscheme kcompletion kconfigwidgets unrar
+# depends	: kconfig kcoreaddons kcrash ki18n kwallet kiconthemes
+# depends	: kio kitemviews kparts kpty ktextwidgets kwidgetsaddons
+# depends	: kwindowsystem kxmlgui libkexiv2 libtiff poppler zlib
+# depends	: phonon purpose qt6-base qt6-svg qt6-speech threadweaver
+# depends	: qt6-declarative extra-cmake-modules kdoctools 
+## discount djvulibre libspectre unarchiver
+
+pkgname=okular
+pkgver=25.04.0
+pkgrel=1
+options="!zipman"
+source="https://download.kde.org/stable/release-service/$pkgver/src/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto -fstack-protector-strong -fzero-call-used-regs=used "
+
+build() {
+	cd $pkgname-$pkgver
+
+    #SKIP_OPTIONAL='Discount;DjVuLibre;EPub;LibSpectre;LibZip'
+    SKIP_OPTIONAL='Discount;DjVuLibre;LibSpectre'
+
+    cmake -B build \
+        -D BUILD_TESTING=OFF \
+        -D FORCE_NOT_REQUIRED_DEPENDENCIES="$SKIP_OPTIONAL" \
+        -D CMAKE_DISABLE_FIND_PACKAGE_Qt5TextToSpeech="$(scratch isinstalled qt5 && echo "OFF" || echo "ON")" \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}
