@@ -1,0 +1,24 @@
+# description	: Controls host and/or user access to a running X server
+# depends	: glibc libx11 libxmu util-macros
+
+pkgname=xhost
+pkgver=1.0.10
+pkgrel=1
+source="https://www.x.org/pub/individual/app/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd $pkgname-$pkgver
+
+    ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --localstatedir=/var 
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

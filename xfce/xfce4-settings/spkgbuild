@@ -1,0 +1,41 @@
+# description	: Configuration system for the Xfce desktop environment
+# depends	: glib fontconfig gtk3 libx11 libxi garcon exo libxfce4ui 
+# depends	: gettext pkgconf intltool xorg-proto libxfce4util xfconf 
+# depends	: xlibre-xf86-input-libinput libnotify upower libxklavier
+# depends	: libxcursor libxrandr wayland libcanberra colord
+## xf86-input-libinput
+
+pkgname=xfce4-settings
+pkgver=4.20.1
+pkgrel=1
+source="https://archive.xfce.org/src/xfce/xfce4-settings/${pkgver%.*}/$pkgname-$pkgver.tar.bz2
+        default-xsettings-xml.patch"
+
+build() {
+	cd $pkgname-$pkgver
+
+    # Enable Adwaita theme, elementary icon theme and font hinting by default
+    patch -Np1 -i ../default-xsettings-xml.patch
+
+    ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --localstatedir=/var \
+        --enable-x11 \
+        --enable-wayland \
+        --enable-xrandr \
+        --enable-xcursor \
+        --enable-libnotify \
+        --enable-libxklavier \
+        --enable-pluggable-dialogs \
+        --enable-sound-settings \
+        --disable-debug \
+        --enable-maintainer-mode
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

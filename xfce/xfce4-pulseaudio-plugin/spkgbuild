@@ -1,0 +1,19 @@
+# description	: A panel plug-in for PulseAudio volume control
+# depends	: glib pulseaudio gtk3 exo libxfce4ui libxfce4util xfconf 
+# depends	: xfce4-panel keybinder3 libwnck3 libcanberra libnotify 
+# depends	: libxfce4windowing
+
+pkgname=xfce4-pulseaudio-plugin
+pkgver=0.5.1
+pkgrel=1
+source="https://archive.xfce.org/src/panel-plugins/xfce4-pulseaudio-plugin/${pkgver%.*}/$pkgname-$pkgver.tar.xz"
+
+build() {
+    arch-meson $pkgname-$pkgver build \
+        --localstatedir=/var
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

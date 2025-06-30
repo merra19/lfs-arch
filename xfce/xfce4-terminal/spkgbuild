@@ -1,0 +1,20 @@
+# description	: A terminal emulator for the Xfce desktop environment
+# depends	: glib pcre2 gtk3 libx11 libxfce4ui vte3 xfconf intltool 
+# depends	: gtk-layer-shell
+
+pkgname=xfce4-terminal
+pkgver=1.1.5
+pkgrel=1
+source="https://archive.xfce.org/src/apps/xfce4-terminal/${pkgver%.*}/$pkgname-$pkgver.tar.xz"
+
+build() {
+    arch-meson $pkgname-$pkgver build \
+        --localstatedir=/var \
+        -D libutempter=disabled
+    meson compile -C build
+
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

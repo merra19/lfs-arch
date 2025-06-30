@@ -1,0 +1,32 @@
+# description	: File manager for the Xfce desktop environment
+# depends	: glib gdk-pixbuf gtk3 exo libxfce4ui libxfce4util xfconf 
+# depends	: libexif gobject-introspection libnotify pcre2 libgudev
+# depends	: xfce4-panel udisks2 gvfs 
+
+pkgname=thunar
+pkgver=4.20.3
+pkgrel=1
+source="https://archive.xfce.org/src/xfce/thunar/${pkgver%.*}/$pkgname-$pkgver.tar.bz2"
+
+build() {
+	cd $pkgname-$pkgver
+
+    ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --enable-gio-unix \
+        --enable-gudev \
+        --enable-notifications \
+        --enable-exif \
+        --disable-gtk-doc \
+        --disable-debug 
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+
+    rm -r $pkgdir/usr/lib/systemd
+}

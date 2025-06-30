@@ -1,0 +1,36 @@
+# description	: A session manager for the Xfce desktop environment
+# depends	: glib gtk3 libsm libwnck3 libx11 libxfce4ui libxfce4util 
+# depends	: xfconf pkgconf intltool polkit iceauth xrdb gettext 
+# depends	: libxfce4windowing xscreensaver
+
+pkgname=xfce4-session
+pkgver=4.20.2
+pkgrel=1
+source="https://archive.xfce.org/src/xfce/xfce4-session/${pkgver%.*}/$pkgname-$pkgver.tar.bz2
+        source-system-xinitrc-scripts.patch
+        xfce-polkit-gnome-authentication-agent-1.desktop"
+
+build() {
+	cd $pkgname-$pkgver
+
+    patch -Np1 -i ../source-system-xinitrc-scripts.patch
+
+    ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --enable-x11 \
+        --enable-wayland \
+        --disable-debug
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+
+    # Provide a default PolicyKit Authentication Agent (FS#42569)
+    install -d "$pkgdir/etc/xdg/autostart"
+    cp "$srcdir/xfce-polkit-gnome-authentication-agent-1.desktop" \
+        "$pkgdir/etc/xdg/autostart/"
+}
