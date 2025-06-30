@@ -1,0 +1,39 @@
+# description	: Netscape Portable Runtime
+# depends	: glibc
+
+pkgname=nspr
+pkgver=4.36
+pkgrel=1
+options="!lto"
+source="https://archive.mozilla.org/pub/$pkgname/releases/v$pkgver/src/$pkgname-$pkgver.tar.gz
+        0001-linux-prefer-GCC-provided-atomics-to-asssembly-imple.patch
+        0002-configure.in-Remove-assembly-files-from-build.patch"
+
+build() {
+	cd $pkgname-$pkgver/$pkgname
+
+    patch -Np1 -i "$srcdir"/0001-linux-prefer-GCC-provided-atomics-to-asssembly-imple.patch
+    patch -Np1 -i "$srcdir"/0002-configure.in-Remove-assembly-files-from-build.patch
+
+    autoreconf -fvi
+
+	./configure \
+        --prefix=/usr \
+        --libdir=/usr/lib \
+        --includedir=/usr/include/nspr  \
+        --enable-optimize \
+        --disable-debug \
+        --enable-64bit
+	make
+}
+
+package() {
+    cd "$srcdir"/$pkgname-$pkgver/$pkgname
+
+    make DESTDIR="$pkgdir" install
+
+    ln -s nspr.pc "$pkgdir/usr/lib/pkgconfig/mozilla-nspr.pc"
+
+    rm -r "$pkgdir"/usr/include/nspr/md
+    rm "$pkgdir"/usr/bin/{compile-et.pl,prerr.properties}
+}

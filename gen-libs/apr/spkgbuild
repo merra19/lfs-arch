@@ -1,0 +1,42 @@
+# description	: Apache Portable Runtime Library
+# depends	: util-linux
+
+pkgname=apr
+pkgver=1.7.6
+pkgrel=1
+source="https://archive.apache.org/dist/apr/$pkgname-$pkgver.tar.bz2
+        fix_apr-config.patch fix-apr.pc.patch ship_find_apr.m4.patch
+        omit_extra_libs.patch dont_override_external_buildflags"
+optsflags=" -O3 -Ofast -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition "
+
+prepare() {
+    cd $pkgname-$pkgver
+
+    patch -Np1 -i ../fix_apr-config.patch
+    patch -Np1 -i ../ship_find_apr.m4.patch
+    patch -Np1 -i ../fix-apr.pc.patch
+    patch -Np1 -i ../omit_extra_libs.patch
+    patch -Np1 -i ../dont_override_external_buildflags
+    # Make reproducible by removing hostname.
+    sed -i '/Libtool was configured on host/d' configure build/libtool.m4
+}
+
+build() {
+	cd $pkgname-$pkgver
+
+    ./configure \
+        --prefix=/usr \
+        --includedir=/usr/include/apr-1 \
+        --with-installbuilddir=/usr/share/apr-1/build \
+        --enable-nonportable-atomics \
+        --with-devrandom=/dev/urandom \
+        --disable-static
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

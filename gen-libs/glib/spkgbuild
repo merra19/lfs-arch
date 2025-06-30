@@ -1,0 +1,100 @@
+# description	: Binding to the GLIB library for Gtk2Hs
+# depends	: docbook-xml meson libxslt pcre2 python3-packaging 
+# depends	: libffi zlib util-linux attr elfutils glibc
+# depends	: python3-docutils
+
+pkgname=glib
+pkgver=2.84.3
+pkgrel=1
+pkgname2=gobject-introspection
+pkgver2=1.84.0
+source="https://download.gnome.org/sources/glib/${pkgver%.*}/glib-$pkgver.tar.xz
+        https://www.linuxfromscratch.org/patches/blfs/12.2/glib-skip_warnings-1.patch
+        https://download.gnome.org/sources/gobject-introspection/${pkgver2%.*}/$pkgname2-$pkgver2.tar.xz
+        gio-querymodules.hook glib-compile-schemas.hook"
+
+build() {
+	cd glib-$pkgver
+	
+	patch -Np1 -i ../glib-skip_warnings-1.patch
+
+    unset PATHFAKEROOT
+	if [ -n "$FAKEROOTKEY" ]; then
+        PATHFAKEROOT=/usr/lib/libfakeroot:/usr/lib32/libfakeroot
+	fi
+
+    local _prefix="$PWD/boostrap-glib"
+
+    meson setup \
+        --prefix="$_prefix" \
+        --buildtype=plain \
+        -D documentation=true \
+        -D libmount=disabled \
+        -D introspection=disabled \
+        -D man-pages=disabled \
+        -D tests=false \
+        -D nls=enabled \
+        build
+    ninja -C build
+    ninja -C build install
+
+    cd "$srcdir"/$pkgname2-$pkgver2
+
+    meson setup \
+        --prefix="$_prefix" \
+        --buildtype=plain \
+        --pkg-config-path="$_prefix"/lib/pkgconfig \
+        -D build_introspection_data=false \
+        -D cairo=disabled \
+        -D doctool=disabled \
+        -D gtk_doc=false \
+        build
+    ninja -C build
+    ninja -C build install
+
+    cd "$srcdir"/glib-$pkgver
+    
+    CFLAGS="$CFLAGS -O3 -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition -fstack-protector-strong -fzero-call-used-regs=used "
+    FCFLAGS="$FFLAGS -O3 -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition -fstack-protector-strong -fzero-call-used-regs=used "
+    FFLAGS="$FFLAGS -O3 -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition -fstack-protector-strong -fzero-call-used-regs=used "
+    CXXFLAGS="$CXXFLAGS -O3 -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition -fstack-protector-strong -fzero-call-used-regs=used " 
+
+    PATH="$_prefix/bin:$PATH" LD_LIBRARY_PATH="$_prefix/lib:$PATHFAKEROOT" \
+    meson setup build \
+        --reconfigure \
+        --pkg-config-path="$_prefix"/lib/pkgconfig \
+        --default-library both \
+        --prefix=/usr \
+        --libexecdir lib \
+        --sbindir bin \
+        --auto-features enabled \
+        --wrap-mode nodownload \
+        -D  b_pie=true \
+        -D  python.bytecompile=1 \
+        -D documentation="$(scratch isinstalled gtk-doc && echo "true" || echo "false")" \
+        -D dtrace=disabled \
+        -D glib_debug=disabled \
+        -D introspection=enabled \
+        -D man-pages=enabled \
+        -D selinux=disabled \
+        -D sysprof=disabled \
+        -D systemtap=disabled
+    PATH="$_prefix/bin:$PATH" LD_LIBRARY_PATH="$_prefix/lib:$PATHFAKEROOT" meson compile -C build
+}
+
+
+package() {
+    options+=" staticlibs"
+
+    cd glib-$pkgver
+
+    meson install -C build --destdir "$pkgdir"
+
+    #install -Dt "$pkgdir/usr/share/libalpm/hooks" -m644 "$srcdir"/*.hook
+    touch "$pkgdir/usr/lib/gio/modules/.keep"
+
+    python -m compileall -d /usr/share/glib-2.0/codegen \
+        "$pkgdir/usr/share/glib-2.0/codegen"
+    python -O -m compileall -d /usr/share/glib-2.0/codegen \
+        "$pkgdir/usr/share/glib-2.0/codegen"
+}

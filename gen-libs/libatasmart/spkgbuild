@@ -1,0 +1,32 @@
+# description	: A small and lightweight parser library for ATA S.M.A.R.T. hard disks
+# depends	: glibc udev
+
+pkgname=libatasmart
+pkgver=0.19
+pkgrel=1
+source="http://0pointer.de/public/$pkgname-$pkgver.tar.xz 
+        0001-Dont-test-undefined-bits.patch
+        0002-Drop-our-own-many-bad-sectors-heuristic.patch"
+optsflags=" -O3 -ffat-lto-objects -flto=4 "
+
+build() {
+	cd $pkgname-$pkgver
+
+    patch -Np1 -i ../0001-Dont-test-undefined-bits.patch
+    patch -Np1 -i ../0002-Drop-our-own-many-bad-sectors-heuristic.patch
+
+    autoreconf -fi
+
+	./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --localstatedir=/var \
+        --sbindir=/usr/bin
+	make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" docdir=/usr/share/doc/$pkgname install
+}

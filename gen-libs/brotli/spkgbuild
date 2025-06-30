@@ -1,0 +1,46 @@
+# description	: Generic-purpose lossless compression algorithm
+# depends	: cmake python3 python3-wheel ninja glibc
+
+pkgname=brotli
+pkgver=1.1.0
+pkgrel=2
+options="!lto"
+source="https://github.com/google/brotli/archive/v$pkgver/brotli-$pkgver.tar.gz"
+optsflags=" -fno-lto "
+
+build() {
+	cd brotli-$pkgver
+
+    (
+        export CFLAGS="$CFLAGS -O3 -ffat-lto-objects -flto=auto"
+        export CXXFLAGS="$CXXFLAGS -O3 -ffat-lto-objects -flto=auto"
+        export LDFLAGS="$LDFLAGS -O3 -ffat-lto-objects -flto=auto"
+        
+        gpep517 build-wheel --wheel-dir .dist --output-fd 3 3>&1 >&2
+    )
+
+    cmake -S . -B build \
+        -D CMAKE_BUILD_TYPE=Release \
+        -D CMAKE_INSTALL_PREFIX=/usr \
+        -D BUILD_SHARED_LIBS=True \
+        -D CMAKE_C_FLAGS="$CFLAGS "
+    cmake --build build -v
+}
+
+package() {
+    cd brotli-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+    local man
+    for man in docs/*.?; do
+        install -Dm 644 "$man" "$pkgdir/usr/share/man/man${man##*.}/${man##*/}"
+    done
+
+    (
+        export CFLAGS="$CFLAGS -O3 -ffat-lto-objects -flto=auto"
+        export CXXFLAGS="$CXXFLAGS -O3 -ffat-lto-objects -flto=auto"
+        export LDFLAGS="$LDFLAGS -O3 -ffat-lto-objects -flto=auto"
+        
+         python3 -m installer -d "$pkgdir" .dist/*.whl
+    )
+}

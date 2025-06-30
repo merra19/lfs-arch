@@ -1,0 +1,43 @@
+# description	: Open Source Graph Visualization Software
+# depends	: tcl libx11 xorg-proto groff gettext swig perl glib
+# depends	: flex python3 cairo expat libtool freetype libpng zlib
+# depends	: libjpeg-turbo pango
+
+#xxxxxx pango poppler  ghostscript  ruby librsvg  libwebp  
+
+pkgname=graphviz2
+pkgver=13.0.1
+pkgrel=1
+source="https://gitlab.com/graphviz/graphviz/-/archive/$pkgver/$pkgname-$pkgver.tar.bz2"
+KEEP_DOC="yes"
+optsflags=" -O3 -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition "
+
+build() {
+	cd $pkgname-$pkgver
+
+    sed -i '/LIBPOSTFIX="64"/s/64//' configure.ac &&
+
+    ./autogen.sh  
+    ./configure \
+        --prefix=/usr \
+        --enable-python3=yes \
+        --disable-python \
+        --enable-lefty
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool # Fix overlinking
+	make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+	make DESTDIR="${pkgdir}" install
+
+	# fix symlink to symlink that doesn't get picked up by makepkg's zipman
+	ln -s gv2gxl.1.gz "${pkgdir}"/usr/share/man/man1/dot2gxl.1.gz
+	rm "${pkgdir}"/usr/share/man/man1/dot2gxl.1
+
+	# Deduplicates TCL libraries
+	cd "${pkgdir}/usr/lib/tcl8.6"
+	rm -fr graphviz
+	ln -s ../graphviz/tcl graphviz
+}

@@ -1,0 +1,34 @@
+# description	: Apache Portable Runtime Utility Library
+# depends	: apr sqlite unixodbc gdbm openssl expat
+
+pkgname=apr-util
+pkgver=1.6.3
+pkgrel=1
+source="https://archive.apache.org/dist/apr/$pkgname-$pkgver.tar.bz2"
+
+build() {
+	cd $pkgname-$pkgver
+
+    export CFLAGS="$CFLAGS -std=gnu89"
+    ./configure \
+        --prefix=/usr \
+        --with-apr=/usr \
+        --with-ldap \
+        --with-crypto \
+        --with-gdbm=/usr \
+        --with-sqlite3=/usr \
+        --with-nss=/usr \
+        --with-odbc=/usr \
+        --with-pgsql=/usr \
+        --with-mysql=/usr \
+        --with-oracle=/usr \
+        --with-openssl=/usr \
+        "$(scratch isinstalled openldap && echo "--with-ldap" || echo "--without-ldap")"
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

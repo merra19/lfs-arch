@@ -1,0 +1,22 @@
+# description	: Mobile Broadband Interface Model (MBIM) modem protocol helper library
+# depends	: gobject-introspection help2man glib
+
+
+pkgname=libmbim
+pkgver=1.32.0
+pkgrel=1
+source="https://gitlab.freedesktop.org/mobile-broadband/libmbim/-/archive/$pkgver/$pkgname-$pkgver.tar.gz"
+optsflags=" -O3 -Os -fdata-sections -ffat-lto-objects -ffunction-sections -flto=auto -fno-semantic-interposition "
+
+build() {
+    local meson_options=(
+        -D gtk_doc=false
+    )
+
+    arch-meson libmbim-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

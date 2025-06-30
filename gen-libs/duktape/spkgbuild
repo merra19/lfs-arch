@@ -1,0 +1,30 @@
+# description	: Embeddable Javascript engine
+# depends	: glibc
+
+pkgname=duktape
+pkgver=2.7.0
+pkgrel=1
+source="https://duktape.org/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+prepare() {
+  cd $pkgname-$pkgver
+
+  # tools/configure.py needs Python 2
+  sed -i 's/^#undef DUK_USE_FASTINT$/#define DUK_USE_FASTINT/' src/duk_config.h
+
+  # Add missing NEEDED on libm.so
+  sed -i 's/duktape\.c/& -lm/' Makefile.sharedlibrary
+}
+
+build() {
+	cd $pkgname-$pkgver
+
+    make -f Makefile.sharedlibrary INSTALL_PREFIX=/usr
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir"  -f Makefile.sharedlibrary INSTALL_PREFIX=/usr install
+}

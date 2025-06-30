@@ -1,0 +1,21 @@
+# description	: Library for identifying Wacom tablets and their model-specific features
+# depends	: glibc glib libevdev libgudev libxml2
+
+pkgname=libwacom
+pkgver=2.16.1
+pkgrel=1
+source="https://github.com/linuxwacom/libwacom/releases/download/$pkgname-$pkgver/$pkgname-$pkgver.tar.xz"
+optsflags=" -Os -fdata-sections -ffunction-sections -fno-lto -fno-semantic-interposition "
+
+build() {
+    cd $pkgname-$pkgver
+
+    arch-meson build  -D tests=disabled
+    meson compile -C build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    meson install -C build --destdir "$pkgdir"
+}

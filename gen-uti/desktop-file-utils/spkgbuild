@@ -1,0 +1,25 @@
+# description	: Command line utilities to work with desktop menu entries
+# depends	: glib meson xz
+
+pkgname=desktop-file-utils
+pkgver=0.28
+pkgrel=1
+source="https://www.freedesktop.org/software/desktop-file-utils/releases/$pkgname-$pkgver.tar.xz
+        update-desktop-database.hook"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd $pkgname-$pkgver
+
+	arch-meson build
+	 meson compile -C build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+	meson install -C build --destdir "$pkgdir"
+	install -vdm755 "$pkgdir"/usr/share/applications
+
+    #install -Dt "$pkgdir/usr/share/libalpm/hooks" -m644 "$srcdir"/*.hook
+}

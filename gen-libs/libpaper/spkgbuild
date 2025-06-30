@@ -1,0 +1,40 @@
+# description	: Library for handling paper characteristics
+# depends	: glibc
+
+pkgname=libpaper
+pkgver=2.2.6
+pkgrel=1
+source="https://github.com/rrthomas/libpaper/releases/download/v$pkgver/$pkgname-$pkgver.tar.gz
+        localepaper.c"
+
+build() {
+	cd $pkgname-$pkgver
+
+    cp ../localepaper.c src/
+    
+	./configure \
+        --prefix=/usr  \
+		--sysconfdir=/etc \
+		--docdir=/usr/share/doc/$pkgname
+	make
+    pushd src 
+    gcc $CFLAGS $LDFLAGS -I.. -Ilibgnu -o localepaper localepaper.c libgnu/.libs/libgnupaper.a
+    popd
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+
+    # localepaper
+    install -Dt "$pkgdir/usr/lib" -m0755 src/localepaper 
+    
+
+    # add systemwide default papersize read by many office applications
+    install -dm 755 "$pkgdir"/etc
+    echo '# Simply write the paper name. See man 1 paper and "paper --no-size --all" for possible values' > "$pkgdir"/etc/papersize
+
+    # add libpaper.d directory other packages can use to store files
+    install -dm 755 "$pkgdir"/etc/libpaper.d
+}

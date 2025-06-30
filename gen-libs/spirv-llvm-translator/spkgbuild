@@ -1,0 +1,39 @@
+# description	: Bi-directional translator between SPIR-V and LLVM IR
+# depends	: llvm libxml2 spirv-tools spirv-headers 
+
+pkgname=spirv-llvm-translator
+pkgver=20.1.3
+pkgrel=1
+source="https://github.com/KhronosGroup/SPIRV-LLVM-Translator/archive/v$pkgver/SPIRV-LLVM-Translator-$pkgver.tar.gz"
+
+build() {
+    cd SPIRV-LLVM-Translator-$pkgver
+
+    CFLAGS="-O2 -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector --param=ssp-buffer-size=32 -Wformat -Wformat-security -Wno-error -Wl,-z,max-page-size=0x4000 -march=$MMARCH"
+    CXXFLAGS=$CFLAGS
+    FFLAGS="-O2 -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector --param=ssp-buffer-size=32 -Wno-error -Wl,-z,max-page-size=0x4000 -march=$MMARCH"
+    FCFLAGS=$FFLAGS
+    CFLAGS="$CFLAGS -fno-lto "
+    FCFLAGS="$FFLAGS -fno-lto "
+    FFLAGS="$FFLAGS -fno-lto "
+    CXXFLAGS="$CXXFLAGS -fno-lto "
+
+    cmake -B build \
+        -G 'Unix Makefiles' \
+        -D BUILD_SHARED_LIBS=ON \
+        -D CMAKE_BUILD_TYPE=Release \
+        -D CMAKE_INSTALL_PREFIX=/usr \
+        -D CMAKE_POSITION_INDEPENDENT_CODE=ON \
+        -D CMAKE_SKIP_RPATH=ON \
+        -D LLVM_INCLUDE_TESTS=ON \
+        -D LLVM_EXTERNAL_LIT=/usr/bin/lit \
+        -D LLVM_EXTERNAL_SPIRV_HEADERS_SOURCE_DIR=/usr/include/spirv/ \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    cd SPIRV-LLVM-Translator-$pkgver/
+
+    DESTDIR="$pkgdir" cmake --install build
+}

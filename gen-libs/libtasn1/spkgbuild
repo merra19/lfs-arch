@@ -1,0 +1,24 @@
+# description	: ASN.1 library
+# depends	: glibc bison
+
+pkgname=libtasn1
+pkgver=4.20.0
+pkgrel=1
+options="!lto"
+source="https://ftp.gnu.org/gnu/libtasn1/$pkgname-$pkgver.tar.gz"
+optsflags=" -fno-lto "
+
+build() {
+    cd $pkgname-$pkgver
+
+   ./configure \
+        --prefix=/usr 
+    CODE_COVERAGE_LDFLAGS=$LDFLAGS make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+    make -C doc/reference DESTDIR="${pkgdir}" install-data-local
+}

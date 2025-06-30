@@ -1,0 +1,26 @@
+# description	: GIO-style async APIs for most Flatpak portals
+# depends	: glibc gcc gjs glib gtk3 gtk4 meson qt5
+# depends	: qt6-base qt6-tools vala gobject-introspection
+# depends	: xdg-desktop-portal
+
+pkgname=libportal
+pkgver=0.9.1
+pkgrel=1
+source="https://github.com/flatpak/libportal/releases/download/$pkgver/libportal-$pkgver.tar.xz
+        qt-6.9.patch"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+prepare() {
+    cd libportal-$pkgver
+
+    patch -Np1 -i ../qt-6.9.patch
+}
+
+build() {
+    arch-meson libportal-$pkgver build -D docs=false 
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

@@ -1,0 +1,111 @@
+# description	: SpiderMonkey is Mozilla's JavaScript engine written in C and C++
+# depends	: llvm rustc icu nspr readline zlib which python3-six 
+# depends	: cbindgen gcc glibc lld zip
+
+pkgname=spidermonkey
+pkgver=128.11.0
+pkgrel=1
+options="!lto"
+source="https://archive.mozilla.org/pub/firefox/releases/${pkgver}esr/source/firefox-${pkgver}esr.source.tar.xz"
+
+# Make sure the duplication between bin and lib is found
+COMPRESSZST+=(--long)
+
+prepare() {
+    mkdir mozbuild
+
+    cd firefox-$pkgver
+
+  cat >../mozconfig <<END
+ac_add_options --enable-application=js
+mk_add_options MOZ_OBJDIR=${PWD@Q}/obj
+
+ac_add_options --prefix=/usr
+ac_add_options --enable-release
+ac_add_options --enable-hardening
+ac_add_options --enable-optimize
+ac_add_options --enable-rust-simd
+ac_add_options --enable-linker=lld
+ac_add_options --disable-bootstrap
+ac_add_options --disable-debug
+ac_add_options --disable-jemalloc
+ac_add_options --disable-strip
+
+# System libraries
+ac_add_options --with-system-zlib
+ac_add_options --without-system-icu
+
+# Features
+ac_add_options --enable-readline
+ac_add_options --enable-shared-js
+ac_add_options --enable-tests
+ac_add_options --with-intl-api
+
+ac_add_options --enable-optimize='-O3'
+END
+}
+
+build() {
+    cd firefox-$pkgver
+
+    #sed -i 's/icu-i18n/icu-uc &/' js/moz.configure
+
+    #  -fno-tree-vrp
+    #export CFLAGS="-Os -falign-functions=4 -fno-semantic-interposition -fno-signed-zeros -march=$MMARCH -fno-delete-null-pointer-checks -fno-strict-aliasing -fno-tree-vrp -g1 "
+    #export CXXFLAGS="-Os -falign-functions=4 -fno-semantic-interposition -fno-signed-zeros -march=$MMARCH  -fno-delete-null-pointer-checks -fno-strict-aliasing -fno-tree-vrp -g1 "
+
+    export MACH_BUILD_PYTHON_NATIVE_PACKAGE_SOURCE=pip
+    export MOZBUILD_STATE_PATH="$srcdir/mozbuild"
+    export MOZ_BUILD_DATE="$(date -u${SOURCE_DATE_EPOCH:+d @$SOURCE_DATE_EPOCH} +%Y%m%d%H%M%S)"
+    export MOZ_NOSPAM=1
+
+    # malloc_usable_size is used in various parts of the codebase
+    CFLAGS="${CFLAGS/_FORTIFY_SOURCE=3/_FORTIFY_SOURCE=2}"
+    CXXFLAGS="${CXXFLAGS/_FORTIFY_SOURCE=3/_FORTIFY_SOURCE=2}"
+
+    # Do 3-tier PGO
+    echo "Building instrumented JS..."
+    cat >.mozconfig ../mozconfig - <<END
+ac_add_options --enable-profile-generate
+END
+    ./mach build --priority normal
+
+    echo "Profiling instrumented JS..."
+    (
+        local js="$PWD/obj/dist/bin/js"
+        export LLVM_PROFILE_FILE="$PWD/js-%p-%m.profraw"
+
+        cd js/src/octane
+        "$js" run.js
+
+        cd ../../../third_party/webkit/PerformanceTests/ARES-6
+        "$js" cli.js
+
+        cd ../SunSpider/sunspider-0.9.1
+        "$js" sunspider-standalone-driver.js
+    )
+
+    llvm-profdata merge -o merged.profdata *.profraw
+
+    stat -c "Profile data found (%s bytes)" merged.profdata
+    test -s merged.profdata
+
+    echo "Removing instrumented JS..."
+    ./mach clobber objdir
+
+    echo "Building optimized JS..."
+    cat >.mozconfig ../mozconfig - <<END
+ac_add_options --enable-lto=full
+ac_add_options --enable-profile-use
+ac_add_options --with-pgo-profile-path=${PWD@Q}/merged.profdata
+END
+    ./mach build --priority normal
+}
+
+package() {
+    cd firefox-$pkgver/obj
+
+    make DESTDIR="$pkgdir" install
+    rm "$pkgdir"/usr/lib/*.ajs
+    find "$pkgdir"/usr/{lib/pkgconfig,include} -type f -exec chmod -c a-x {} +
+}

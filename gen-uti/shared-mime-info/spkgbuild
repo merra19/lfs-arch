@@ -1,0 +1,29 @@
+# description	: The Shared MIME-info Database specification
+# depends	: glib libxml2 xmlto docbook-xml 
+
+pkgname=shared-mime-info
+pkgver=2.4
+pkgrel=1
+options="!makeflags"
+source="https://gitlab.freedesktop.org/xdg/shared-mime-info/-/archive/$pkgver/$pkgname-$pkgver.tar.gz
+        update-mime-database.hook"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd $pkgname-$pkgver
+
+    #sed "s/'xmlto'/'xmlto2'/" -i meson.build
+
+	arch-meson \
+        -D update-mimedb=true \
+        build
+	ninja -C build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" ninja -C build install
+
+    #install -Dm644 "$srcdir"/update-mime-database.hook "$pkgdir"/usr/share/libalpm/hooks/30-update-mime-database.hook
+}

@@ -1,0 +1,23 @@
+# description	: Keymap handling library for toolkits and window systems
+# depends	: xkeyboard-config meson libxml2 wayland wayland-protocols 
+# depends	: libxcb glibc
+
+pkgname=libxkbcommon
+pkgver=1.10.0
+pkgrel=1
+source="https://anduin.linuxfromscratch.org/BLFS/libxkbcommon/libxkbcommon-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    local meson_options=(
+        -D enable-docs=false
+    )
+
+    arch-meson libxkbcommon-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}
+

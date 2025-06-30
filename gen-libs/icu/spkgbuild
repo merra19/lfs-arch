@@ -1,0 +1,31 @@
+# description	: International Components for Unicode
+# depends	: glibc
+
+pkgname=icu
+pkgver=77.1
+_pkgver=$(echo $pkgver | sed 's/\./_/g')
+_pkvers=$(echo $pkgver | sed 's/\./-/g')
+pkgrel=1
+source="https://github.com/unicode-org/icu/releases/download/release-${_pkvers}/icu4c-$_pkgver-src.tgz
+        ICU-22132.patch"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname/source
+
+    patch -Np1 < "../../ICU-22132.patch"
+
+    CC="gcc" CXX="g++" \
+    ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --mandir=/usr/share/man \
+        --sbindir=/usr/bin
+    make
+}
+
+package() {
+    cd "$srcdir"/$pkgname/source
+
+    make DESTDIR="$pkgdir" install
+}

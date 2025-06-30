@@ -1,0 +1,23 @@
+# description	: UTF-8 with C++ in a Portable Way
+# depends	: cmake
+
+pkgname=utfcpp
+pkgver=4.0.6
+pkgrel=1
+source="https://github.com/nemtrif/utfcpp/archive/v$pkgver/$pkgname-$pkgver.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd $pkgname-$pkgver
+
+    cmake -B build \
+        -D CMAKE_BUILD_TYPE=None \
+        -D CMAKE_INSTALL_PREFIX=/usr \
+        -D UTF8_TESTS=OFF
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" -C build install
+}

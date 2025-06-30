@@ -1,0 +1,73 @@
+# description	: High-performance, full-featured text search engine based off of lucene in C++
+# depends	: cmake ninja
+
+pkgname=clucene
+pkgver=2.3.3.4
+pkgrel=1
+options="!lto"
+source="https://downloads.sourceforge.net/clucene/clucene-core-$pkgver.tar.gz
+        https://www.linuxfromscratch.org/patches/blfs/svn/clucene-$pkgver-contribs_lib-1.patch
+        clucene-core-2.3.3.4-pkgconfig.patch
+        clucene-core-2.3.3.4-install_contribs_lib.patch
+        0001-Fix-missing-include-time.h.patch
+        fix_zlib_detections.diff
+        clucene-warnings.patch
+        clucene-gcc-atomics.patch
+        clucene-debug.patch
+        clucene-narrowing-conversions.patch
+        clucene-multimap-put.patch"
+
+prepare() {
+    cd $pkgname-core-$pkgver
+
+    # add missing contrib-libs needed by LibO 3.6, patch by FC
+    patch -Np1 -i "${srcdir}"/clucene-core-2.3.3.4-install_contribs_lib.patch
+    # pkgconfig file is missing clucene-shared (upstream ID: 3461512), patch by FC
+    patch -Np1 -i "${srcdir}"/clucene-core-2.3.3.4-pkgconfig.patch
+    # one upstream postrelease commit for proper zlib detection
+    patch -Np1 -i "${srcdir}"/fix_zlib_detections.diff
+    # LibreOffice patches http://cgit.freedesktop.org/libreoffice/core/tree/clucene/patches
+    patch -Np0 -i "${srcdir}"/clucene-warnings.patch
+    patch -Np0 -i "${srcdir}"/clucene-gcc-atomics.patch
+    patch -Np0 -i "${srcdir}"/clucene-debug.patch
+    patch -Np0 -i "${srcdir}"/clucene-narrowing-conversions.patch
+    patch -Np0 -i "${srcdir}"/clucene-multimap-put.patch
+
+    # FS#77036 / https://sourceforge.net/p/clucene/bugs/235/ 
+    patch -Np1 -i ../0001-Fix-missing-include-time.h.patch
+
+    # nuke bundled code
+    rm -rfv src/ext/{boost/,zlib/}
+
+    mkdir build
+}
+
+build() {
+	cd $pkgname-core-$pkgver
+
+    sed -i '/Misc.h/a #include <ctime>' src/core/CLucene/document/DateTools.cpp
+
+    pushd build
+    cmake .. \
+        -D CMAKE_BUILD_TYPE=Release \
+        -D CMAKE_INSTALL_PREFIX=/usr \
+        -D ENABLE_ASCII_MODE=OFF \
+        -D ENABLE_PACKAGING=OFF \
+        -D BUILD_CONTRIBS_LIB:BOOL=ON \
+        -D LIB_DESTINATION:PATH=/usr/lib \
+        -D LUCENE_SYS_INCLUDES:PATH=/usr/lib \
+        -D CMAKE_POLICY_VERSION_MINIMUM=3.5 \
+        -D DISABLE_MULTITHREADING=OFF
+    popd
+    make -C build
+}
+
+package() {
+    cd $pkgname-core-$pkgver
+
+    make DESTDIR="$pkgdir" install -C build
+    rm -rfv "$pkgdir"/usr/lib/CLuceneConfig.cmake
+    
+    cd "$pkgdir"/usr/include//CLucene
+    ln -s /usr/lib/CLucene/clucene-config.h .
+}

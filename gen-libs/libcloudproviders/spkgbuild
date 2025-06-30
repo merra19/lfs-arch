@@ -1,0 +1,25 @@
+# description	: DBus API that allows cloud storage sync clients to expose their services
+# depends	: glib gobject-introspection vala
+
+pkgname=libcloudproviders
+pkgver=0.3.6
+pkgrel=1
+source="https://download.gnome.org/sources/libcloudproviders/${pkgver%.*}/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd $pkgname-$pkgver
+   
+    local meson_options=(
+        -D enable-gtk-doc=false
+    )
+
+    arch-meson build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+	meson install -C build --destdir "$pkgdir"
+}

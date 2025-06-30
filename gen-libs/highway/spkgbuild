@@ -1,0 +1,23 @@
+# description	: Performance-portable, length-agnostic SIMD with runtime dispatch
+# depends	: glibc cmake
+
+pkgname=highway
+pkgver=1.2.0
+pkgrel=1
+source="https://github.com/google/highway/archive/$pkgver/$pkgname-$pkgver.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cmake -B build -S $pkgname-$pkgver \
+        -G 'Unix Makefiles' \
+        -D CMAKE_BUILD_TYPE:STRING='None' \
+        -D CMAKE_INSTALL_PREFIX:PATH='/usr' \
+        -D BUILD_SHARED_LIBS:BOOL='ON' \
+        -D BUILD_TESTING=OFF \
+        -Wno-dev
+    cmake --build build
+}
+
+package() {
+    DESTDIR="$pkgdir" cmake --install build
+}

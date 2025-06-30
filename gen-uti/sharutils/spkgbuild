@@ -1,0 +1,30 @@
+# description	: Tools to deal with shar archives
+# depends	: xz texinfo gettext
+
+pkgname=sharutils
+pkgver=4.15.2
+pkgrel=1
+source="https://ftp.gnu.org/gnu/sharutils/$pkgname-$pkgver.tar.xz"
+
+build() {
+	cd $pkgname-$pkgver
+
+    # Fix a heap buffer overflow, and an issue exposed by GCC-10
+    sed -i 's/BUFSIZ/rw_base_size/' src/unshar.c &&
+    sed -i '/program_name/s/^/extern /' src/*opts.h
+
+    sed -i 's/IO_ftrylockfile/IO_EOF_SEEN/' lib/*.c 
+    echo "#define _IO_IN_BACKUP 0x100" >> lib/stdio-impl.h &&
+
+    ./configure \
+		--prefix=/usr \
+		--mandir=/usr/share/man \
+		--infodir=/usr/share/info 
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

@@ -1,0 +1,24 @@
+# description	: inih (INI not invented here) simple .INI file parser
+# depends	: meson
+
+pkgname=inih
+pkgver=60
+pkgrel=1
+source="https://github.com/benhoyt/inih/archive/r$pkgver/$pkgname-r$pkgver.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd $pkgname-r$pkgver
+
+    arch-meson build \
+        -D default_library=shared \
+        -D distro_install=true \
+        -D with_INIReader=true
+    meson compile -C build
+}
+
+package() {
+    cd $pkgname-r$pkgver
+
+	DESTDIR="$pkgdir" meson install -C build
+}

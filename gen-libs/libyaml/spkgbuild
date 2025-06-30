@@ -1,0 +1,23 @@
+# description	: Low-level, streaming YAML interface
+# depends	: glibc
+
+pkgname=libyaml
+pkgver=0.2.5
+pkgrel=1
+options="!lto"
+source="https://github.com/yaml/libyaml/releases/download/0.2.5/yaml-$pkgver.tar.gz"
+optsflags=" -O3 -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition "
+
+build() {
+    cd yaml-$pkgver
+
+    ./configure \
+        --prefix=/usr 
+    make
+}
+
+package() {
+    cd yaml-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

@@ -1,0 +1,22 @@
+# description	: Spell check library for GTK+ applications
+# depends	: meson enchant glib gtk3 gobject-introspection icu 
+# depends	: libxml2 vala
+
+pkgname=gspell
+pkgver=1.14.0
+pkgrel=1
+source="https://download.gnome.org/sources/gspell/${pkgver%.*}/gspell-$pkgver.tar.xz"
+
+build() {
+    local meson_options=(
+        -D install_tests=false
+        -D gtk_doc=false
+    )
+
+    arch-meson gspell-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package(){
+    meson install -C build --destdir "$pkgdir"
+}

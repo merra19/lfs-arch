@@ -1,0 +1,32 @@
+# description	: Abseil Common Libraries (C++)
+# depends	: cmake python3
+
+pkgname=abseil-cpp
+pkgver=20250512.1
+pkgrel=1
+source="https://github.com/abseil/abseil-cpp/releases/download/$pkgver/$pkgname-$pkgver.tar.gz
+        scoped-mock-log.patch"
+
+build() {
+	cd $pkgname-$pkgver
+
+    #patch -p1 -i ../scoped-mock-log.patch
+
+    cmake -B build \
+        -D CMAKE_BUILD_TYPE=RelWithDebInfo \
+        -D CMAKE_CXX_FLAGS="${CXXFLAGS} -DNDEBUG" \
+        -D CMAKE_INSTALL_PREFIX=/usr \
+        -D CMAKE_CXX_STANDARD=17 \
+        -D BUILD_SHARED_LIBS=ON \
+        -D ABSL_USE_EXTERNAL_GOOGLETEST=OFF \
+        -D ABSL_BUILD_TEST_HELPERS=OFF \
+        -D ABSL_BUILD_TESTING=OFF
+    cd build
+    cmake --build . --target all
+}
+
+package() {
+    cd $pkgname-$pkgver/build
+
+    DESTDIR="$pkgdir" cmake --install .
+}

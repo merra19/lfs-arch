@@ -1,0 +1,28 @@
+# description	: Tool to help manage 'well known' user directories
+# depends	: bash docbook-xml
+
+pkgname=xdg-user-dirs
+pkgver=0.18
+pkgrel=1
+options="!emptydirs"
+source="https://user-dirs.freedesktop.org/releases/$pkgname-$pkgver.tar.gz
+        90-xdg-user-dirs"
+backup="etc/xdg/user-dirs.conf etc/xdg/user-dirs.defaults"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd $pkgname-$pkgver
+
+    ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --localstatedir=/var
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    install -Dm755 "${srcdir}"/90-xdg-user-dirs "${pkgdir}"/etc/X11/xinit/xinitrc.d/90-xdg-user-dirs.sh
+    make DESTDIR="$pkgdir" install
+}

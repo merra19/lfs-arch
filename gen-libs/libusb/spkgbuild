@@ -1,0 +1,25 @@
+# description	: Userspace access to USB devices
+# depends	: udev glibc
+
+pkgname=libusb
+pkgver=1.0.29
+pkgrel=1
+source="https://github.com/libusb/libusb/releases/download/v$pkgver/libusb-$pkgver.tar.bz2"
+optsflags=" -O3 -Os -fdata-sections -ffat-lto-objects -ffunction-sections -flto=auto -fno-semantic-interposition "
+
+build() {
+	cd $pkgname-$pkgver
+
+    autoreconf -fiv
+
+	./configure \
+        --prefix=/usr
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+	make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

@@ -1,0 +1,26 @@
+# description	: Provides GObjects and helper methods to read and write AppStream metadata
+# depends	: glib libarchive curl json-glib gdk-pixbuf gtk3 freetype
+# depends	: fontconfig libyaml libxml2 gperf gobject-introspection
+# depends	: pango libxslt util-linux
+
+pkgname=appstream-glib
+pkgver=0.8.3
+pkgrel=1
+source="http://people.freedesktop.org/~hughsient/appstream-glib/releases/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    local meson_options=(
+        -D alpm=false
+        -D gtk-doc=false
+        -D rpm=false
+    )
+
+    arch-meson $pkgname-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+    rm -r "$pkgdir/usr/share/installed-tests"
+}

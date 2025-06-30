@@ -1,0 +1,22 @@
+# description	: Qualcomm MSM (Mobile Station Modem) Interface (QMI) modem protocol
+# depends	: gobject-introspection glib libgudev libmbim help2man
+
+pkgname=libqmi
+pkgver=1.36.0
+pkgrel=1
+source="https://gitlab.freedesktop.org/mobile-broadband/libqmi/-/archive/$pkgver/libqmi-$pkgver.tar.gz"
+optsflags=" -O3 -Os -fdata-sections -ffat-lto-objects -ffunction-sections -flto=auto -fno-semantic-interposition "
+
+build() {
+  local meson_options=(
+    -D gtk_doc=false
+    -D qrtr=false 
+  )
+
+  arch-meson libqmi-$pkgver build "${meson_options[@]}"
+  meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

@@ -1,0 +1,23 @@
+# description	: C library for encoding, decoding and manipulating JSON data
+# depends	: glibc
+
+pkgname=jansson
+pkgver=2.14.1
+pkgrel=1
+options="staticlibs"
+source="https://github.com/akheron/jansson/releases/download/v$pkgver/$pkgname-$pkgver.tar.bz2"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd $pkgname-$pkgver
+
+    ./configure \
+        --prefix=/usr 
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

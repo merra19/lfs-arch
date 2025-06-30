@@ -1,0 +1,22 @@
+# description	: Tiny library providing a C 'class' for working with arbitrary big byte sizes
+# depends	: pcre2 python3-pygments python3-six libgmp libmpfr
+
+pkgname=libbytesize
+pkgver=2.11
+pkgrel=1
+source="https://github.com/storaged-project/$pkgname/releases/download/$pkgver/$pkgname-$pkgver.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd $pkgname-$pkgver
+
+	./configure \
+        --prefix=/usr 
+	make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

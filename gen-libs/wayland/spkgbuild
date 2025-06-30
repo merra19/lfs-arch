@@ -1,0 +1,22 @@
+# description	: Wayland protocol libraries
+# depends	: libffi meson glibc
+
+pkgname=wayland
+pkgver=1.23.0
+pkgrel=1
+source="https://gitlab.freedesktop.org/wayland/wayland/-/releases/$pkgver/downloads/wayland-$pkgver.tar.xz"
+optsflags=" -O3 -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition "
+
+build() {
+    cd wayland-$pkgver
+
+    arch-meson build \
+        -D documentation=false
+    meson compile -C build
+}
+
+package() {
+    cd wayland-$pkgver
+
+    meson install -C build --destdir "$pkgdir"
+}

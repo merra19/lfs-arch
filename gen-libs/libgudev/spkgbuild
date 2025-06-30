@@ -1,0 +1,26 @@
+# description	: GObject bindings for libude
+# depends	: glib gobject-introspection
+
+pkgname=libgudev
+pkgver=238
+pkgrel=1
+source="https://ftp.gnome.org/pub/gnome/sources/$pkgname/$pkgver/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd $pkgname-$pkgver
+
+    local meson_options=(
+        -D gtk_doc=false
+        -D tests=disabled
+    )
+
+    arch-meson build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    meson install -C build --destdir "$pkgdir"
+}

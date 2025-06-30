@@ -1,0 +1,29 @@
+# description	: Implementation of basic iCAL protocols
+# depends	: cmake ninja gobject-introspection vala icu perl glib
+
+pkgname=libical
+pkgver=3.0.20
+pkgrel=1
+source="https://github.com/libical/$pkgname/releases/download/v$pkgver/$pkgname-$pkgver.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd $pkgname-$pkgver
+
+	cmake -B build \
+        -D CMAKE_BUILD_TYPE=None \
+        -D CMAKE_INSTALL_PREFIX=/usr \
+        -D CMAKE_INSTALL_LIBEXECDIR=lib \
+        -D GOBJECT_INTROSPECTION=true \
+        -D ICAL_GLIB_VAPI=true \
+        -D SHARED_ONLY=true \
+        -D ENABLE_GTK_DOC=OFF \
+        -D CMAKE_DISABLE_FIND_PACKAGE_BerkeleyDB=true
+	cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

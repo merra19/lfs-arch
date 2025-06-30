@@ -1,0 +1,31 @@
+# description	: Cross-distro effort for providing metadata for software in the Linux ecosystem
+# depends	: zstd libxml2 glib libxmlb libyaml snowball curl itstool
+# depends	: gobject-introspection qt6-tools appstream-glib libxslt 
+
+pkgname=appstream
+pkgver=1.0.5
+pkgrel=1
+options="!lto"
+source="https://www.freedesktop.org/software/appstream/releases/AppStream-$pkgver.tar.xz
+        update-appstream-cache.hook metainfo"
+optsflags=" -fno-lto "
+
+build() {
+    meson build AppStream-$pkgver \
+        --prefix=/usr \
+        --libexecdir=lib \
+        -D qt=true \
+        -D qt-versions=6 \
+        -D vapi=true \
+        -D compose=false \
+        -D apidocs=false 
+    meson compile -C build
+}
+
+package() {
+    meson install --destdir "$pkgdir" -C build
+
+    #install -Dm644 update-appstream-cache.hook "$pkgdir"/usr/share/libalpm/hooks/90-update-appstream-cache.hook
+
+    install -Dm644 metainfo "$pkgdir"/usr/share/metainfo/org.linux.arch.xml 
+}

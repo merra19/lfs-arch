@@ -1,0 +1,21 @@
+# description	: Wayland protocol files
+# depends	: wayland
+
+pkgname=wayland-protocols
+pkgver=1.45
+pkgrel=1
+source="https://gitlab.freedesktop.org/wayland/wayland-protocols/-/releases/$pkgver/downloads/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    arch-meson build
+    meson compile -C build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    meson install -C build --destdir "$pkgdir"
+}

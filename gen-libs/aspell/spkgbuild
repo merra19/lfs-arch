@@ -1,0 +1,49 @@
+# description	: Free and Open Source spell checker designed to replace Ispell
+# depends	: which ncurses
+
+pkgname=aspell
+pkgver=0.60.8.1
+pkgrel=1
+source="https://ftp.gnu.org/gnu/aspell/$pkgname-$pkgver.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd $pkgname-$pkgver
+
+    # Get the GCC version string (e.g., "gcc 15.1.0")
+    version_str=$(gcc -dumpversion)
+
+    # Extract the major version number
+    major_version=${version_str%%.*}
+
+    # Compare with 15
+    if (( major_version >= 15 )); then
+        # Fix building with GCC-15
+        sed -e 's/; i.*size)/, e = end(); i != e; ++i, ++size_)/' -i modules/speller/default/vector_hash-t.hpp
+    fi
+	
+    ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+	make DESTDIR="$pkgdir" install
+    ln -svfn aspell-0.60 "$pkgdir"/usr/lib/aspell &&
+
+    install -v -m755 -d "$pkgdir"/usr/share/doc/$pkgname/aspell{,-dev}.html
+
+    install -v -m644 manual/aspell.html/* \
+        "$pkgdir"/usr/share/doc/$pkgname/aspell.html &&
+
+    install -v -m644 manual/aspell-dev.html/* \
+        "$pkgdir"/usr/share/doc/$pkgname/aspell-dev.html
+
+    # copy the wrapper script ispell and spell
+    install -v -m 755 scripts/ispell "$pkgdir"/usr/bin/
+    install -v -m 755 scripts/spell "$pkgdir"/usr/bin/
+}

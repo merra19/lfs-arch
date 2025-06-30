@@ -1,0 +1,23 @@
+# description	: Library for automatic proxy configuration management
+# depends	: curl glib gobject-introspection meson ninja vala duktape
+# depends	: python3-pygments python3-typogrify python3-smartypants
+# depends	: gsettings-desktop-schemas python3-markdown
+
+pkgname=libproxy
+pkgver=0.5.9
+pkgrel=1
+source="https://github.com/libproxy/libproxy/archive/$pkgver/libproxy-$pkgver.tar.gz"
+
+build() {
+    local meson_options=(
+        -D release=true
+        -D docs=false
+    )
+
+    arch-meson libproxy-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

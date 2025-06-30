@@ -1,0 +1,33 @@
+# description	: General purpose crypto library based on the code used in GnuPG
+# depends	: libgpg-error glibc
+
+pkgname=libgcrypt
+pkgver=1.11.1
+pkgrel=1
+options="!emptydirs"
+source="https://www.gnupg.org/ftp/gcrypt/libgcrypt/$pkgname-$pkgver.tar.bz2
+        noopt.patch"
+optsflags=" -O3 -Os -fdata-sections -ffat-lto-objects -ffunction-sections -flto=auto -fno-semantic-interposition "
+
+build() {
+    cd $pkgname-$pkgver
+
+    patch -Np1 -i ../noopt.patch
+
+    export LDFLAGS="$LDFLAGS -Wl,-z,max-page-size=0x1000 -Wl,--compress-debug-sections=zstd"
+
+	./configure \
+        --prefix=/usr \
+        --disable-static \
+        --enable-ciphers="cast5 aes twofish serpent rfc2268 seed camellia idea salsa20 gost28147 chacha20 des" \
+        --disable-large-data-tests \
+        --disable-O-flag-munging \
+        --disable-padlock-support
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install   
+}

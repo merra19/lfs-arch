@@ -1,0 +1,28 @@
+# description	: Introspection system for GObject-based libraries
+# depends	: glib meson shared-mime-info desktop-file-utils 
+# depends	: libffi bison flex python3-mako python3-markdown
+
+pkgname=gobject-introspection
+pkgver=1.84.0
+pkgrel=1
+source="https://download.gnome.org/sources/gobject-introspection/${pkgver%.*}/gobject-introspection-$pkgver.tar.xz"
+optsflags=" -O3 -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition "
+
+build() {
+
+    local meson_options=(
+        -D gtk_doc=false
+    )
+
+    arch-meson gobject-introspection-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+
+    cd "$pkgdir"
+
+    python -m compileall -d /usr/lib/$pkgname usr/lib/$pkgname
+    python -O -m compileall -d /usr/lib/$pkgname usr/lib/$pkgname
+}

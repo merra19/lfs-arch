@@ -1,0 +1,23 @@
+# description	: IPC library used by GnuPG and GPGME
+# depends	: libgpg-error
+
+pkgname=libassuan
+pkgver=3.0.2
+pkgrel=1
+options="!lto"
+source="https://www.gnupg.org/ftp/gcrypt/libassuan/$pkgname-$pkgver.tar.bz2"
+optsflags=" -fno-lto "
+
+build() {
+	cd $pkgname-$pkgver
+
+	./configure \
+        --prefix=/usr
+	make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+	make DESTDIR="$pkgdir" install
+}

@@ -1,0 +1,16 @@
+# description	: Filtering proxy for D-Bus connections
+# depends	: glib dbus
+
+pkgname=xdg-dbus-proxy
+pkgver=0.1.6
+pkgrel=1
+source="https://github.com/flatpak/xdg-dbus-proxy/releases/download/$pkgver/$pkgname-$pkgver.tar.xz"
+
+build() {
+    arch-meson $pkgname-$pkgver build
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

@@ -1,0 +1,25 @@
+# description	: Binary-decimal and decimal-binary conversion routines for IEEE doubles
+# depends	: glibc
+
+pkgname=double-conversion
+pkgver=3.3.1
+pkgrel=1
+source="https://github.com/google/double-conversion/archive/v$pkgver/$pkgname-$pkgver.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd $pkgname-$pkgver
+
+    cmake -B build \
+        -D CMAKE_INSTALL_PREFIX=/usr \
+        -D BUILD_SHARED_LIBS=ON \
+        -D CMAKE_POLICY_VERSION_MINIMUM=3.5 \
+        -D BUILD_TESTING=ON
+    cmake --build build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

@@ -1,0 +1,30 @@
+# description	: XML C parser and toolkit
+# depends	: glibc zlib xz readline python3 pkgconf icu
+
+pkgname=libxml2
+pkgver=2.14.4
+pkgrel=2
+source="https://download.gnome.org/sources/libxml2/${pkgver%.*}/libxml2-$pkgver.tar.xz"
+optsflags=" -O3 -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition -fstack-protector-strong -fzero-call-used-regs=used "
+
+build() {
+    cd libxml2-$pkgver
+
+    ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --disable-static \
+        --with-history \
+        --with-icu \
+        --with-http \
+        --with-legacy \
+        PYTHON=/usr/bin/python3 \
+        --docdir=/usr/share/doc/libxml2
+    make
+}
+
+package() {
+    cd libxml2-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

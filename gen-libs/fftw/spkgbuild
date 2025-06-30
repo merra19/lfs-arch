@@ -1,0 +1,69 @@
+# description	: Fast C library for the Discrete Fourier Transform
+# depends	: perl
+
+pkgname=fftw
+pkgver=3.3.10
+pkgrel=1
+source="https://www.fftw.org/$pkgname-$pkgver.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd $pkgname-$pkgver
+
+    mkdir double-build  single-build ldouble-build
+    cd double-build
+
+    ../configure \
+        --prefix=/usr \
+        --enable-shared \
+        --disable-static \
+        --enable-threads \
+        --enable-fortran \
+        --enable-openmp \
+        --enable-avx2 \
+        --enable-fma
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+    make
+
+    cd ../single-build 
+
+    ../configure \
+        --prefix=/usr \
+        --enable-shared  \
+        --disable-static \
+        --enable-threads \
+        --enable-fortran \
+        --enable-float \
+        --enable-openmp \
+        --enable-float \
+        --enable-avx2 \
+        --enable-fma
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+    make
+
+    cd ../ldouble-build
+
+    ../configure \
+        --prefix=/usr \
+        --enable-shared  \
+        --disable-static \
+        --enable-threads \
+        --enable-fortran \
+        --enable-long-double \
+        --enable-openmp
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    cd double-build
+    make DESTDIR="$pkgdir" install
+
+    cd ../single-build 
+    make DESTDIR="$pkgdir" install
+
+    cd ../ldouble-build
+    make DESTDIR="$pkgdir" install
+}

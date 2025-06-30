@@ -1,0 +1,30 @@
+# description	: Xapian Probabilistic Information Retrieval library
+# depends	: zlib util-linux bash gcc glibc
+
+pkgname=xapian-core
+pkgver=1.4.29
+pkgrel=1
+options="libtool"
+source="https://oligarchy.co.uk/xapian/$pkgver/$pkgname-$pkgver.tar.xz"
+
+prepare() {
+    cd $pkgname-$pkgver
+
+    autoreconf -vfi
+}
+
+build() {
+    cd $pkgname-$pkgver
+
+    # workaround for test failure in libzim
+    #   23/27 search_iterator  FAIL  0.47s  killed by signal 6 SIGABRT
+    CXXFLAGS=${CXXFLAGS/-Wp,-D_GLIBCXX_ASSERTIONS}
+
+    ./configure \
+        --prefix=/usr
+    make
+}
+
+package() {
+    make DESTDIR="${pkgdir}" install -C $pkgname-$pkgver
+}

@@ -1,0 +1,25 @@
+# description	: Implementation for atomic memory update operation
+# depends	: glibc
+
+pkgname=libatomic_ops
+pkgver=7.8.2
+pkgrel=1
+options="!lto !docs"
+source="https://github.com/ivmai/libatomic_ops/releases/download/v$pkgver/$pkgname-$pkgver.tar.gz"
+optsflags=" -falign-functions=32 -fno-lto -fno-semantic-interposition "
+
+build() {
+	cd $pkgname-$pkgver
+
+    ./configure \
+        --prefix=/usr \
+        --disable-static \
+        --enable-shared
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

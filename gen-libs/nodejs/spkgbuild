@@ -1,0 +1,39 @@
+# description	: A JavaScript runtime built on Chrome's V8 JavaScript engine
+# depends	: glibc brotli c-ares icu nghttp2 libuv openssl zlib
+# depends	: procps-ng python3
+
+pkgname=nodejs
+pkgver=22.17.0
+pkgrel=1
+options="!lto"
+source="https://nodejs.org/dist/v$pkgver/node-v$pkgver.tar.xz"
+optsflags=" -O3 -falign-functions=32 -fno-math-errno -fno-semantic-interposition -fno-trapping-math "
+
+build() {
+	cd node-v$pkgver
+
+    # /usr/lib/libnode.so uses malloc_usable_size, which is incompatible with fortification level 3
+    CFLAGS="${CFLAGS/_FORTIFY_SOURCE=3/_FORTIFY_SOURCE=2}"
+    CXXFLAGS="${CXXFLAGS/_FORTIFY_SOURCE=3/_FORTIFY_SOURCE=2}"
+
+    ./configure \
+        --prefix=/usr \
+        --shared-brotli \
+        --shared-cares \
+        --shared-libuv \
+        --shared-openssl \
+        --shared-nghttp2 \
+        --shared-zlib \
+        --with-intl=system-icu
+    make
+}
+
+package() {
+    cd node-v$pkgver
+
+    # /usr/lib/libnode.so uses malloc_usable_size, which is incompatible with fortification level 3
+    CFLAGS="${CFLAGS/_FORTIFY_SOURCE=3/_FORTIFY_SOURCE=2}"
+    CXXFLAGS="${CXXFLAGS/_FORTIFY_SOURCE=3/_FORTIFY_SOURCE=2}"
+
+    make DESTDIR="$pkgdir" install
+}

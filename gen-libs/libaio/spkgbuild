@@ -1,0 +1,22 @@
+# description	: Asynchronous input/output library that uses the kernels native interface
+# depends	: glibc
+
+pkgname=libaio
+pkgver=0.3.113
+pkgrel=1
+options="!lto"
+source="https://pagure.io/libaio/archive/libaio-$pkgver/$pkgname-$pkgver.tar.gz"
+optsflags=" -fno-lto "
+
+build() {
+	cd $pkgname-$pkgver
+
+     sed 's/-Werror//' harness/Makefile
+	make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

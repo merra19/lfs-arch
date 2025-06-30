@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="operating-system">
+  <id>org.linux.arch</id>
+  <name>Linux From Arch</name>
+  <summary>A customized Linux system built entirely from source</summary>
+  <description>
+    <p>
+      Linux From Arch  is a project base on Arch Linux for building
+      your own customized Linux system entirely from source.
+    </p>
+  </description>
+  <url type="homepage">https://www.linuxarch.org/</url>
+  <metadata_license>MIT</metadata_license>
+  <developer id='linuxarch.org'>
+    <name>The Linux From Arch Editors</name>
+  </developer>
+
+  <releases>
+    <release version="12.3" type="release" date="2025-03-05">
+      <description>
+        <p>The development snapshot of the next version.</p>
+      </description>
+    </release>
+
+    <release version="12.2" type="stable" date="2024-09-01">
+      <description>
+        <p>Now contains Binutils 2.4, GCC-14.2.0, Glibc-2.40,
+        and Linux kernel 6.12.21.</p>
+      </description>
+    </release>
+  </releases>
+</component>

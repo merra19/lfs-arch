@@ -1,0 +1,29 @@
+# description	: Perl-compatible regular expression library
+# depends	: readline zlib bzip2 glibc
+
+pkgname=pcre2
+pkgver=10.45
+pkgrel=1
+options="staticlibs"
+source="https://github.com/PCRE2Project/pcre2/releases/download/$pkgname-$pkgver/$pkgname-$pkgver.tar.bz2"
+optsflags=" -O3 -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition "
+
+build() {
+    cd $pkgname-$pkgver
+
+    ./configure \
+        --prefix=/usr \
+        --enable-jit \
+        --enable-pcre2-16 \
+        --enable-pcre2-32 \
+        --enable-pcre2grep-libz \
+        --enable-pcre2grep-libbz2 \
+        --enable-pcre2test-libreadline 
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

@@ -1,0 +1,24 @@
+# description	: C Library for NVM Express on Linux
+# depends	: meson ninja dbus json-c swig util-linux openssl
+# depends	: keyutils python3-asciidoc
+
+pkgname=libnvme
+pkgver=1.14
+pkgrel=1
+source="https://github.com/linux-nvme/libnvme/archive/refs/tags/v$pkgver/$pkgname-$pkgver.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd $pkgname-$pkgver
+
+    arch-meson \
+        -D libdbus=auto \
+        -D docs-build=true \
+        .build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" meson install -C .build
+}

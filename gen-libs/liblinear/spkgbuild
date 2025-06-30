@@ -1,0 +1,42 @@
+# description	: A Library for Large Linear Classification
+# depends	: glibc
+
+pkgname=liblinear
+pkgver=249
+pkgrel=1
+source="https://github.com/cjlin1/liblinear/archive/v$pkgver/liblinear-$pkgver.tar.gz"
+
+build() {
+	cd $pkgname-$pkgver
+
+	make lib all
+
+    cd python
+    gpep517 build-wheel --wheel-dir .dist --output-fd 3 3>&1 >&2
+}
+
+package() {
+    cd $srcdir/liblinear-${pkgver}
+
+    local _sover
+
+    _sover="$(find . -maxdepth 1 -type f -regextype posix-basic -regex '.*liblinear.so.[0-9]$' | awk -F'.' '{ print $NF }')"
+
+    # binaries
+    install -D -m755 predict $pkgdir/usr/bin/liblinear-predict
+    install -D -m755 train $pkgdir/usr/bin/liblinear-train
+
+    # library
+    install -D -m755 "liblinear.so.${_sover}" -t "${pkgdir}/usr/lib"
+    pushd "${pkgdir}/usr/lib"
+    ln -s "liblinear.so.${_sover}" liblinear.so
+    popd
+
+    # header
+    install -D -m644 linear.h -t "${pkgdir}/usr/include/liblinear"
+
+    # python
+    cd "${srcdir}/liblinear-${pkgver}/python"
+
+    python3 -m installer -d "$pkgdir" .dist/*.whl
+}

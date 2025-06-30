@@ -1,0 +1,87 @@
+# description	: Boost Libraries for C++
+# depends	: zlib bzip2 which icu python3 xz zstd python3-numpy
+
+pkgname=boost
+pkgver=1.88.0
+vrsn="$(echo $pkgver | sed 's/\./_/g')"
+_srcname=boost_${pkgver//./_}
+pkgrel=2
+options="!lto staticlibs"
+source="https://github.com/boostorg/boost/releases/download/boost-$pkgver/boost-$pkgver-b2-nodocs.tar.xz"
+
+build() {
+	cd boost-$pkgver
+
+    local JOBS="$(sed 's/.*\(-j *[0-9]\+\).*/\1/' <<<$MAKEFLAGS)"
+    local python_version=$(
+        python -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
+
+    case $(uname -m) in
+    i?86)
+        sed -e "s/defined(__MINGW32__)/& || defined(__i386__)/" \
+            -i ./libs/stacktrace/src/exception_headers.h ;;
+    esac
+
+    pushd tools/build
+    ./bootstrap.sh --cxxflags="$CXXFLAGS $LDFLAGS"
+    ./b2 install --prefix="$srcdir"/fakeinstall
+    ln -s b2 "$srcdir"/fakeinstall/bin/bjam
+    popd
+
+    ./bootstrap.sh --with-toolset=gcc --with-icu --with-python=python3
+
+    # support for OpenMPI
+    #echo "using mpi ;" >>project-config.jam
+
+    # boostbook is needed by quickbook
+    install -dm755 "$srcdir"/fakeinstall/share/boostbook
+    cp -a tools/boostbook/{xsl,dtd} "$srcdir"/fakeinstall/share/boostbook/
+
+    # install to $srcdir/fakeinstall in preparation for split packaging
+    ./b2 install \
+        variant=release \
+        debug-symbols=off \
+        threading=multi \
+        runtime-link=shared \
+        link=shared,static \
+        toolset=gcc \
+        cxxstd=23 \
+        python=$python_version \
+        cflags="$CPPFLAGS $CFLAGS -fPIC " \
+        cxxflags="$CPPFLAGS $CXXFLAGS -fPIC " \
+        linkflags="$LDFLAGS" \
+        --layout=system \
+        $JOBS \
+        \
+        --prefix="$srcdir"/fakeinstall
+}
+
+package() {
+  local python_version=$(
+    python -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
+
+    install -d "$pkgdir"/usr/lib
+    cp -a fakeinstall/lib/*.{a,so} "$pkgdir"/usr/lib/
+    cp -a fakeinstall/lib/cmake "$pkgdir"/usr/lib/
+    cp -a fakeinstall/{bin,include,share} "$pkgdir"/usr/
+
+    # https://github.com/boostorg/python/issues/203#issuecomment-391477685
+    for _lib in python numpy; do
+        ln -srL "$pkgdir"/usr/lib/libboost_${_lib}{${python_version/.},${python_version%.*}}.so
+    done
+
+    local python_version=$(
+    python -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
+
+    install -dm755 "$pkgdir"/usr/lib
+    cp -a fakeinstall/lib/*.so.* "$pkgdir"/usr/lib/
+
+    # https://github.com/boostorg/mpi/issues/112
+    local site_packages=$(python -c 'import site; print(site.getsitepackages()[0])')
+    install -d "$pkgdir"$site_packages/boost
+    touch "$pkgdir"$site_packages/boost/__init__.py
+    python -m compileall -o 0 -o 1 -o 2 "$pkgdir"$site_packages/boost
+    #cp fakeinstall/lib/boost-python*/mpi.so "$pkgdir"$site_packages/boost/mpi.so
+}
+
+

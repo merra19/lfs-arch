@@ -1,0 +1,43 @@
+# description	: JPEG XL image format reference implementation
+# depends	: brotli highway lcms2 glib gdk-pixbuf giflib libpng
+# depends	: libjpeg-turbo shared-mime-info python3-asciidoc
+
+pkgname=libjxl
+pkgver=0.11.1
+pkgrel=1
+source="https://github.com/libjxl/libjxl/archive/v$pkgver/libjxl-$pkgver.tar.gz"
+
+build() {
+    export CFLAGS+=' -DNDEBUG '
+    export CXXFLAGS+=' -DNDEBUG '
+
+    cmake -B build -S libjxl-$pkgver \
+        -G 'Unix Makefiles' \
+        -D CMAKE_BUILD_TYPE:STRING='None' \
+        -D CMAKE_INSTALL_PREFIX:PATH='/usr' \
+        -D JPEGXL_ENABLE_BENCHMARK:BOOL='false' \
+        -D JPEGXL_ENABLE_EXAMPLES:BOOL='false' \
+        -D JPEGXL_ENABLE_FUZZERS:BOOL='false' \
+        -D JPEGXL_ENABLE_OPENEXR:BOOL='false' \
+        -D JPEGXL_ENABLE_PLUGIN_GIMP210:BOOL='false' \
+        -D JPEGXL_ENABLE_PLUGINS:BOOL='true' \
+        -D JPEGXL_ENABLE_VIEWERS:BOOL='false' \
+        -D JPEGXL_FORCE_SYSTEM_BROTLI:BOOL='true' \
+        -D JPEGXL_FORCE_SYSTEM_GTEST:BOOL='false' \
+        -D JPEGXL_FORCE_SYSTEM_HWY:BOOL='true' \
+        -D JPEGXL_BUNDLE_LIBPNG:BOOL='NO' \
+        -D JPEGXL_INSTALL_JARDIR='/usr/share/java' \
+        -D BUILD_TESTING=OFF  \
+        -D JPEGXL_ENABLE_SKCMS=OFF \
+        -D JPEGXL_ENABLE_SJPEG=OFF \
+        -Wno-dev
+    sed -i 's@ASCIIDOC:FILEPATH=/bin/a2x@ASCIIDOC:FILEPATH=@' "$srcdir"/build/CMakeCache.txt
+    cmake --build build
+}
+
+package() {
+    DESTDIR="$pkgdir" cmake --install build
+    if [ -f "${pkgdir}/usr/share/java"/org.jpeg.jpegxl.jar ] ;then
+        mv "${pkgdir}/usr/share/java"/{org.jpeg.jpegxl,jpegxl}.jar
+    fi
+}

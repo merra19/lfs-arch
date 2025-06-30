@@ -1,0 +1,38 @@
+# description	: Portable and efficient API to determine the call-chain of a program
+# depends	: zlib xz glibc
+
+pkgname=libunwind
+pkgver=1.8.2
+pkgrel=1
+source="https://github.com/libunwind/libunwind/releases/download/v$pkgver//$pkgname-$pkgver.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    # Get the GCC version string (e.g., "gcc 15.1.0")
+    version_str=$(gcc -dumpversion)
+
+    # Extract the major version number
+    major_version=${version_str%%.*}
+
+    # Compare with 15
+    if (( major_version >= 15 )); then
+        # Fix building with GCC-15
+        sed -i '/func.s/s/s//' tests/Gtest-nomalloc.c
+    fi
+
+    ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --localstatedir=/var
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+    rm -r "$pkgdir"/usr/libexec
+}
