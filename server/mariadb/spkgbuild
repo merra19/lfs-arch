@@ -1,0 +1,143 @@
+# description	: An enhanced, drop-in replacement for MySQL
+# depends	: pcre2 texinfo ncurses zlib libxcrypt binutils readline 
+# depends	: libaio procps-ng bzip2 xz libarchive boost cracklib
+# depends	: libxml2 lz4 lzo bison cmake pam curl openssl krb5
+# depends	: unixodbc
+
+pkgname=mariadb
+pkgver=11.4.7
+pkgrel=1
+options="!lto"
+source="https://downloads.mariadb.org/interstitial/mariadb-$pkgver/source/mariadb-$pkgver.tar.gz
+        0001-arch-specific.patch mariadb.sysusers.conf mariadb.tmpfiles.conf"
+backup="etc/my.cnf etc/my.cnf.d/client.cnf etc/my.cnf.d/enable_encryption.preset
+            etc/my.cnf.d/mysql-clients.cnf etc/my.cnf.d/provider_bzip2.cnf
+            etc/my.cnf.d/provider_lz4.cnf etc/my.cnf.d/provider_lzma.cnf
+            etc/my.cnf.d/s3.cnf etc/my.cnf.d/server.cnf 
+            etc/my.cnf.d/spider.cnf etc/security/user_map.conf"
+            
+prepare() {
+    cd mariadb-$pkgver
+
+    # Arch Linux specific patches:
+    #  * enable PrivateTmp for a little bit more security
+    #  * force preloading jemalloc for memory management
+    #  * make tmpfiles create MYSQL_DATADIR
+    patch -Np1 < ../0001-arch-specific.patch
+}
+
+build() {
+    local _cmake_options=(
+        # build options
+        -D COMPILATION_COMMENT="Linux"
+        -D CMAKE_BUILD_TYPE=RelWithDebInfo
+        #-D CMAKE_BUILD_TYPE=Debug
+        #-D MYSQL_MAINTAINER_MODE=WARN
+        -Wno-dev
+
+        # file paths
+        # /etc
+        -D INSTALL_SYSCONFDIR=/etc
+        -D INSTALL_SYSCONF2DIR=/etc/my.cnf.d
+        # /run
+        -D INSTALL_UNIX_ADDRDIR=/run/mysqld/mysqld.sock
+        # /usr
+        -D CMAKE_INSTALL_PREFIX=/usr
+        # /usr/bin /usr/include
+        -D INSTALL_SCRIPTDIR=bin
+        -D INSTALL_INCLUDEDIR=include/mysql
+        # /usr/lib
+        -D INSTALL_PLUGINDIR=lib/mysql/plugin
+        -D INSTALL_SYSTEMD_UNITDIR=no
+        -D INSTALL_SYSTEMD_SYSUSERSDIR=lib/sysusers.d/
+        -D INSTALL_SYSTEMD_TMPFILESDIR=lib/tmpfiles.d/
+        # /usr/share
+        -D INSTALL_SHAREDIR=share
+        -D INSTALL_SUPPORTFILESDIR=share/mysql
+        -D INSTALL_MYSQLSHAREDIR=share/mysql
+        -D INSTALL_DOCREADMEDIR=share/doc/mariadb-$pkgver
+        -D INSTALL_DOCDIR=share/doc/mariadb-$pkgver
+        -D INSTALL_MANDIR=share/man
+        # /var
+        -D MYSQL_DATADIR=/var/lib/mysql
+
+        # default settings
+        -D DEFAULT_CHARSET=utf8mb4
+        -D DEFAULT_COLLATION=utf8mb4_unicode_ci
+
+        # features
+        -D ENABLED_LOCAL_INFILE=ON
+        -D PLUGIN_EXAMPLE=NO
+        -D PLUGIN_FEDERATED=NO
+        -D PLUGIN_FEEDBACK=NO
+        -D WITH_EMBEDDED_SERVER=ON
+        -D WITH_EXTRA_CHARSETS=complex
+        -D WITH_JEMALLOC=ON
+        -D WITH_LIBWRAP=OFF
+        -D WITH_PCRE2=system
+        -D WITH_READLINE=ON
+        -D WITH_SSL=system
+        -D WITH_SYSTEMD=no
+        -D WITH_UNIT_TESTS=OFF
+        -D WITH_ZLIB=system
+    )
+
+    # this uses malloc_usable_size, which is incompatible with fortification level 3
+    export CFLAGS="${CFLAGS/_FORTIFY_SOURCE=3/_FORTIFY_SOURCE=2}"
+    export CXXFLAGS="${CXXFLAGS/_FORTIFY_SOURCE=3/_FORTIFY_SOURCE=2}"
+
+    mkdir build
+    cd build
+
+    cmake ../mariadb-$pkgver/ "${_cmake_options[@]}"
+    make
+}
+
+package() {
+    cd build
+
+    for dir in libmariadb libmysqld libservices include; do
+        make -C "$dir" DESTDIR="$pkgdir" install
+    done
+
+    # remove static libraries
+    rm "${pkgdir}"/usr/lib/*.a
+
+    ln -s mariadb_config "$pkgdir"/usr/bin/mariadb-config
+    ln -s mariadb_config "$pkgdir"/usr/bin/mysql_config
+    install -D -m0644 "$srcdir"/mariadb-$pkgver/man/mariadb_config.1 "$pkgdir"/usr/share/man/man1/mariadb_config.1
+    ln -s mariadb_config.1 "$pkgdir"/usr/share/man/man1/mariadb-config.1
+    ln -s mariadb_config.1 "$pkgdir"/usr/share/man/man1/mysql_config.1
+
+    install -D -m0644 support-files/mariadb.pc "$pkgdir"/usr/share/pkgconfig/mariadb.pc
+    install -D -m0644 "$srcdir"/mariadb-$pkgver/support-files/mysql.m4 "$pkgdir"/usr/share/aclocal/mysql.m4
+
+    make -C client DESTDIR="${pkgdir}" install
+
+    make DESTDIR="$pkgdir" install
+
+    install -D -m0755 scripts/mytop "$pkgdir"/usr/bin/mytop
+
+    cd "$pkgdir"
+
+    # no SysV init, please!
+    rm -r etc/logrotate.d
+    rm usr/bin/rcmysql
+    rm usr/share/mysql/{binary-configure,mysql{,d_multi}.server}
+
+    # move it where one might look for it
+    #mv usr/share/{groonga{,-normalizer-mysql},doc/mariadb/}
+
+    # move to pam directories
+    install -d {etc,usr/lib}/security
+    mv usr/share/user_map.conf etc/security/
+    mv usr/share/pam_user_map.so usr/lib/security/
+
+    # Setup sysuser and tmpfiles
+    install -Dm644 $srcdir/mariadb.sysusers.conf usr/lib/sysusers.d/mariadb.conf
+    install -Dm644 $srcdir/mariadb.tmpfiles.conf usr/lib/tmpfiles.d/mariadb.conf
+
+    # not needed
+    rm -r usr/{mariadb-test,sql-bench}
+    rm usr/share/man/man1/mysql-test-run.pl.1
+}

@@ -1,0 +1,191 @@
+# description	: Controlling the startup, running, and shutdown of the system
+# depends	: meson acl-32 kbd kmod openssl-32 xz-32 python3-jinja 
+# depends	: gperf zstd-32 libgcrypt-32 libxcrypt-32 libcap-32 
+# depends	: udev glibc libidn2-32 elfutils-32 pcre2-32
+
+pkgname=udev-32
+_pkgname=systemd
+pkgver=257.3
+pkgrel=1
+source="https://github.com/systemd/systemd/archive/v$pkgver/systemd-$pkgver.tar.gz
+        0001-artix-standalone-install.patch"
+
+prepare() {
+    cd systemd-$pkgver
+
+    patch -Np1 -i ../0001-artix-standalone-install.patch
+}
+
+build() {
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+    export PKG_CONFIG_LIBDIR="/usr/lib32/pkgconfig"
+
+    local _timeservers=({0..3}.europe.pool.ntp.org)
+    local _nameservers=(
+        # We use these public name services, ordered by their privacy policy (hopefully):
+        #  * Cloudflare (https://1.1.1.1/)
+        #  * Quad9 (https://www.quad9.net/)
+        #  * Google (https://developers.google.com/speed/public-dns/)
+        '1.1.1.1#cloudflare-dns.com'
+        '9.9.9.9#dns.quad9.net'
+        '8.8.8.8#dns.google'
+        '2606:4700:4700::1111#cloudflare-dns.com'
+        '2620:fe::9#dns.quad9.net'
+        '2001:4860:4860::8888#dns.google'
+    )
+
+
+    local _meson_options=(
+        --libexecdir	/usr/lib32
+        --libdir		/usr/lib32
+
+        -Dversion-tag="${pkgver}-${pkgrel}-artix"
+        -Dshared-lib-tag="${pkgver}-${pkgrel}"
+        -Dmode=release
+
+        -Dstandalone-binaries=false
+        -Dsysusers=false
+        -Dtmpfiles=false
+
+        -Dhwdb=false
+
+        -Dblkid=disabled
+
+        -Dkmod=disabled
+
+        -Dgshadow=false
+
+        -Dsbat-distro='linux'
+        -Dsbat-distro-summary='Linux'
+        -Dsbat-distro-pkgname="${pkgname}"
+        -Dsbat-distro-version="${pkgver}"
+
+        -Dtests=true
+
+        -Dlink-udev-shared=false
+        #-Dlink-boot-shared=false
+
+        -Ddefault-keymap='fr'
+
+        -Dman=disabled
+
+        -Dhtml=disabled
+
+        -Dntp-servers="${_timeservers[*]}"
+        -Ddns-servers="${_nameservers[*]}"
+        -Defi=false
+
+        -Dsysvinit-path=
+        -Dsysvrcnd-path=
+        -Ddefault-dnssec=no
+
+        -Ddefault-llmnr=no
+        -Ddefault-mdns=no
+
+        -Dsshconfdir=no
+
+        -Dadm-group=false
+        -Danalyze=false
+
+        -Dapparmor=disabled
+        -Daudit=disabled
+        -Dbacklight=false
+        -Dbinfmt=false
+        -Dbootloader=disabled
+        -Dbzip2=disabled
+        -Dcoredump=false
+        -Ddbus=disabled
+        -Delfutils=disabled
+        -Denvironment-d=false
+        -Dfdisk=disabled
+        -Dgcrypt=disabled
+        -Dglib=disabled
+        -Dgnutls=disabled
+        -Dhibernate=false
+        -Dhostnamed=false
+        -Didn=false
+        -Dima=false
+        -Dinitrd=false
+        -Dfirstboot=false
+        -Dkernel-install=false
+        -Dldconfig=false
+        -Dlibcryptsetup=disabled
+        -Dlibcurl=disabled
+        -Dlibfido2=disabled
+        -Dlibidn=disabled
+        -Dlibidn2=disabled
+        -Dlibiptc=disabled
+        -Dlocaled=false
+        -Dlogind=false
+        -Dlz4=disabled
+        -Dmachined=false
+        -Dmicrohttpd=disabled
+        -Dnetworkd=false
+        -Dnscd=false
+        -Dnss-myhostname=false
+        -Dnss-resolve=disabled
+        -Dnss-systemd=false
+        -Doomd=false
+        -Dopenssl=disabled
+        -Dp11kit=disabled
+        -Dpam=disabled
+        -Dpcre2=disabled
+        -Dpolkit=disabled
+        -Dportabled=false
+        -Dpstore=false
+        -Dpwquality=disabled
+        -Drandomseed=false
+        -Dresolve=false
+        -Drfkill=false
+        -Dseccomp=disabled
+        -Dsmack=false
+        -Dsysext=false
+        -Dtimedated=false
+        -Dtimesyncd=false
+        -Dtpm=false
+        -Dqrencode=disabled
+        -Dquotacheck=false
+        -Duserdb=false
+        -Dutmp=false
+        -Dvconsole=false
+        -Dwheel-group=false
+        -Dxdg-autostart=false
+        -Dxkbcommon=disabled
+        -Dxz=disabled
+        -Dzlib=disabled
+        -Dzstd=disabled
+
+        -Dbpf-framework=disabled
+        -Dpasswdqc=disabled
+        -Dselinux=disabled
+        -Dxenctrl=disabled
+        -Dlibcryptsetup-plugins=disabled
+        -Drepart=false
+        -Dsysupdate=false
+        -Dimportd=false
+        -Dhomed=false
+        -Dremote=false
+        -Dnss-mymachines=false
+        -Dukify=false
+        -Dtpm2=false
+    ) 
+
+    PKG_CONFIG_PATH="/usr/lib32/pkgconfig:/tools/lib32/pkgconfig" \
+    LANG=en_US.UTF-8 arch-meson systemd-$pkgver build32 "${_meson_options[@]}"
+
+    local _targets=()
+    _targets+=(
+        udev:shared_library
+        src/libudev/libudev.pc
+    )
+
+    meson compile -C build32 "${_targets[@]}"
+}
+
+package() {
+    meson install -C build32 --destdir="$pkgdir" --no-rebuild --tags libudev,libudev-devel
+}

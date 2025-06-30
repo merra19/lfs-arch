@@ -1,0 +1,49 @@
+# description	: A lossy image compression format
+# depends	: cmake ninja libjpeg-turbo-32 libpng-32 giflib-32 libwebp
+# depends	: glibc
+### freeglut mesa
+
+pkgname=libwebp-32
+_pkgname=libwebp
+pkgver=1.5.0
+pkgrel=1
+source="http://downloads.webmproject.org/releases/webp/$_pkgname-$pkgver.tar.gz
+        0001-cmake-Install-anim-utils.patch"
+optsflags=" -O3 -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition -fstack-protector-strong -fzero-call-used-regs=used "
+
+build() {
+	cd $_pkgname-$pkgver
+
+    patch -Np1 -i ../0001-cmake-Install-anim-utils.patch
+
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+    
+    local cmake_options=(
+        -D BUILD_SHARED_LIBS=ON
+        -D CMAKE_BUILD_TYPE=None
+        -D CMAKE_INSTALL_LIBDIR=/usr/lib32
+        -D CMAKE_INSTALL_PREFIX=/usr
+        -D CMAKE_SKIP_INSTALL_RPATH=ON
+        -D WEBP_BUILD_EXTRAS=OFF
+        -D WEBP_BUILD_VWEBP=OFF
+        -D WEBP_BUILD_{C,D,GIF2,IMG2}WEBP=OFF
+    )
+    # Mimic autotools build without --enable-asserts
+    CFLAGS+=" -DNDEBUG"
+    CXXFLAGS+=" -DNDEBUG"
+    
+    cmake -B build -G Ninja "${cmake_options[@]}"
+    cmake --build build
+    unset PKG_CONFIG_PATH 
+}
+
+package() {
+    cd $_pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+    rm -r "$pkgdir"/usr/{bin,include,share}
+}

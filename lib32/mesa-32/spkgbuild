@@ -1,0 +1,86 @@
+# description	: OpenGL-like graphic library for Linux
+# depends	: python3-mako elfutils-32 bison flex libdrm-32 lib32-llvm
+# depends	: vulkan-loader wayland-protocols lm-sensors-32 wayland-32 
+# depends	: glslang expat-32 zlib-32 zstd-32 xorg-proto libxrandr-32
+# depends	: libx11-32 libxshmfence-32 libxxf86vm-32 libxfixes-32
+# depends	: libxext-32 libxcb-32 libclc python3-ply rust-bindgen 
+# depends	: cbindgen libva-32 libvdpau-32 python3-yaml libglvnd-32
+# depends	: glibc gcc rustc mesa spirv-tools-32
+# depends	: spirv-llvm-translator-32 
+
+pkgname=mesa-32
+pkgver=25.1.3
+pkgrel=1
+options="!lto !asneeded"
+source="https://mesa.freedesktop.org/archive/mesa-$pkgver.tar.xz
+        syn-2.0.68.tar.gz::https://crates.io/api/v1/crates/syn/2.0.68/download
+        unicode-ident-1.0.12.tar.gz::https://crates.io/api/v1/crates/unicode-ident/1.0.12/download
+        quote-1.0.33.tar.gz::https://crates.io/api/v1/crates/quote/1.0.33/download
+        proc-macro2-1.0.86.tar.gz::https://crates.io/api/v1/crates/proc-macro2/1.0.86/download
+        paste-1.0.14.tar.gz::https://crates.io/api/v1/crates/paste/1.0.14/download"
+noextract="syn-2.0.68.tar.gz unicode-ident-1.0.12.tar.gz quote-1.0.33.tar.gz proc-macro2-1.0.86.tar.gz
+        paste-1.0.14.tar.gz"
+optsflags=" -fno-lto "
+
+prepare() {
+    cd mesa-$pkgver 
+
+    mkdir -p subprojects/packagecache
+    cp ../*.tar.gz subprojects/packagecache
+}
+
+build() {
+
+    # -D gallium-drivers=d3d12
+
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig:/usr/share/pkgconfig"
+    export BINDGEN_EXTRA_CLANG_ARGS="-m32"
+
+    local meson_options=(
+        --cross-file lib32
+        -D android-libbacktrace=disabled
+        -D b_ndebug=true
+        -D gallium-drivers=r300,r600,radeonsi,nouveau,virgl,svga,llvmpipe,softpipe,iris,crocus,i915,zink
+        -D gallium-extra-hud=true
+        -D gallium-nine=true
+        -D gallium-opencl=icd
+        -D gallium-rusticl=true
+        -D gles1=disabled
+        -D glx=dri
+        -D html-docs=disabled
+        -D intel-clc=enabled
+        -D intel-rt=disabled
+        -D libunwind=disabled
+        -D microsoft-clc=disabled
+        -D osmesa=true
+        -D platforms=x11,wayland
+        -D valgrind=disabled
+        -D video-codecs=all
+        -D vulkan-drivers=amd,intel,intel_hasvk,nouveau,swrast,virtio
+        -D vulkan-layers=device-select,intel-nullhw,overlay,screenshot
+
+        -D lmsensors=disabled
+    )
+    arch-meson mesa-$pkgver build32 "${meson_options[@]}"
+    meson compile -C build32
+    unset PKG_CONFIG_PATH BINDGEN_EXTRA_CLANG_ARGS
+}
+
+package() {
+    meson install -C build32 --destdir "$pkgdir"
+    (
+        local libdir=usr/lib32 icddir=usr/share/vulkan/icd.d
+
+        cd "$pkgdir"
+
+        # indirect rendering
+        ln -sr $libdir/libGLX_{mesa,indirect}.so.0
+
+        rm -rv etc usr/{bin,include,share}
+    )
+}
+

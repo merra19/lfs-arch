@@ -1,0 +1,36 @@
+# description	: Generic-purpose lossless compression algorithm
+# depends	: cmake python3 python3-wheel ninja glibc brotli
+
+pkgname=brotli-32
+_pkgname=brotli
+pkgver=1.1.0
+pkgrel=1
+options="!lto"
+source="https://github.com/google/brotli/archive/v$pkgver/brotli-$pkgver.tar.gz"
+optsflags=" -fno-lto "
+
+build() {
+	cd brotli-$pkgver
+
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+    
+    cmake -B build \
+        -D CMAKE_BUILD_TYPE=Release \
+        -D CMAKE_INSTALL_PREFIX=/usr \
+        -D BUILD_SHARED_LIBS=True \
+        -D CMAKE_C_FLAGS="$CFLAGS " \
+        -D CMAKE_INSTALL_LIBDIR=/usr/lib32
+    cmake --build build -v
+    unset PKG_CONFIG_PATH 
+}
+
+package() {
+    cd brotli-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+    rm -rf "$pkgdir"/usr/{bin,include,lib32/*.a}
+}

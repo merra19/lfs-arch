@@ -1,0 +1,22 @@
+# description	: An ultra-fast, ultra-compact key-value embedded data store
+# depends	: glibc
+
+pkgname=lmdb
+pkgver=0.9.33
+pkgrel=1
+options="!emptydirs"
+source="$pkgname-$pkgver.tar.gz::https://github.com/LMDB/lmdb/archive/LMDB_$pkgver.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd lmdb-LMDB_$pkgver/libraries/liblmdb
+
+	make CFLAGS="$CFLAGS" CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS"
+	
+}
+
+package() {
+    cd lmdb-LMDB_$pkgver/libraries/liblmdb
+
+    make prefix="$pkgdir"/usr install
+}

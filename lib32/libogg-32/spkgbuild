@@ -1,0 +1,37 @@
+# description	: The Ogg media file format library
+# depends	: libogg
+
+pkgname=libogg-32
+_pkgname=libogg
+pkgver=1.3.5
+pkgrel=1
+options="!lto"
+source="http://downloads.xiph.org/releases/ogg/$_pkgname-$pkgver.tar.xz"
+optsflags=" -falign-functions=32 -fno-lto -fno-semantic-interposition "
+
+build() {
+	cd $_pkgname-$pkgver
+
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+    
+    cmake -B build32 -G Ninja \
+        -D CMAKE_INSTALL_PREFIX=/usr \
+        -D CMAKE_INSTALL_LIBDIR=/usr/lib32 \
+        -D INSTALL_DOCS=OFF \
+        -D BUILD_SHARED_LIBS=ON \
+        -D CMAKE_POLICY_VERSION_MINIMUM=3.5
+
+    cmake --build build32
+    unset PKG_CONFIG_PATH 
+}
+
+package() {
+    cd $_pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build32
+    rm -r "$pkgdir"/usr/include
+}

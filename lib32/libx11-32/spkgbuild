@@ -1,0 +1,36 @@
+# description	: X.Org X11 library
+# depends	: libxcb-32 xtrans xorg-proto libx11 glibc
+
+pkgname=libx11-32
+_pkgname=libX11
+pkgver=1.8.11
+pkgrel=1
+source="https://www.x.org/pub/individual/lib/libX11-$pkgver.tar.xz"
+optsflags=" -ffat-lto-objects -flto -fno-math-errno -fno-semantic-interposition -fno-trapping-math "
+build() {
+    cd $_pkgname-$pkgver
+    
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+    
+    ./configure \
+        --prefix=/usr \
+        --disable-static \
+        --disable-xf86bigfont \
+        --sysconfdir=/etc \
+        --localstatedir=/var \
+        --libdir=/usr/lib32 \
+        --host=i686-pc-linux-gnu 
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+    make
+}
+
+package() {
+    cd $_pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+    rm -rf "${pkgdir}"/usr/{include,share}
+}

@@ -1,0 +1,41 @@
+# description	: Open codec for interactive speech and music transmission over the Internet
+# depends	: glibc opus
+
+pkgname=opus-32
+pkgver=1.5.2
+pkgrel=1
+options="!lto"
+source=" https://downloads.xiph.org/releases/opus/opus-$pkgver.tar.gz"
+optsflags=" -Ofast -falign-functions=32 -fno-lto -fno-semantic-interposition "
+
+build() {
+    if echo "$CFLAGS" | grep -q "\-Ofast"; then
+        OPUS_FLOAT="--enable-intrinsics --enable-float-approx"
+    fi
+
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+    
+    local meson_options=(
+        --cross-file lib32
+        -D asm=disabled
+        -D custom-modes=true
+        -D deep-plc=enabled
+        -D docs=disabled
+        -D dred=enabled
+        -D osce=enabled
+        -D float-approx=true
+    )
+
+    arch-meson opus-$pkgver build32 "${meson_options[@]}"
+    meson compile -C build32
+    unset PKG_CONFIG_PATH 
+}
+
+package() {
+    meson install -C build32 --destdir "$pkgdir"
+    rm -r "$pkgdir/usr/include"
+}

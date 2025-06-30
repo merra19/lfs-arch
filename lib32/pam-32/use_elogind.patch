@@ -1,0 +1,44 @@
+diff --git a/meson.build b/meson.build
+index 2be21282..253436ac 100644
+--- a/meson.build
++++ b/meson.build
+@@ -317,22 +317,9 @@ else
+ endif
+ 
+ 
+-libsystemd = dependency('libsystemd', version: '>= 254', required: get_option('logind'))
++libsystemd = dependency('libelogind', required: get_option('logind'))
+ cdata.set('USE_LOGIND', libsystemd.found() ? 1 : false)
+ 
+-systemdunitdir = get_option('systemdunitdir')
+-if systemdunitdir == ''
+-  systemdunitdir = prefixdir / 'lib' / 'systemd' / 'system'
+-  systemd = dependency('systemd', required: false)
+-  if systemd.found()
+-    systemdunitdir = systemd.get_variable(
+-      pkgconfig: 'systemdsystemunitdir',
+-      default_value: systemdunitdir,
+-    )
+-  endif
+-endif
+-
+-
+ feature_pam_userdb = get_option('pam_userdb')
+ if feature_pam_userdb.disabled()
+   enable_pam_userdb = false
+diff --git a/modules/module-meson.build b/modules/module-meson.build
+index acb70875..001e4ccb 100644
+--- a/modules/module-meson.build
++++ b/modules/module-meson.build
+@@ -339,11 +339,6 @@ if module == 'pam_namespace'
+     output: 'pam_namespace.service',
+     configuration: cdata
+   )
+-  install_data(
+-    pam_namespace_service,
+-    install_dir: systemdunitdir,
+-    install_tag: 'config',
+-  )
+   install_data(
+     'namespace.conf',
+     install_dir: vendor_sconfigdir,

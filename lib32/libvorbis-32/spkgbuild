@@ -1,0 +1,36 @@
+# description	: The Ogg Vorbis sound file format library
+# depends	: libogg-32 glibc libvorbis
+
+
+pkgname=libvorbis-32
+pkgver=1.3.7
+pkgrel=1
+source="https://downloads.xiph.org/releases/vorbis/libvorbis-$pkgver.tar.xz"
+optsflags=" -O3 -ffast-math -ffat-lto-objects -flto=auto -ftree-loop-vectorize "
+
+build() {
+	cd libvorbis-$pkgver
+
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+    
+    ./configure \
+        --prefix=/usr \
+        --disable-static \
+        --enable-shared \
+        --libdir=/usr/lib32 \
+        --host=i686-pc-linux-gnu
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+    make
+    unset PKG_CONFIG_PATH 
+}
+
+package() {
+    cd libvorbis-$pkgver
+
+    make DESTDIR="$pkgdir" install
+    rm -r "${pkgdir}"/usr/{include,share}
+}

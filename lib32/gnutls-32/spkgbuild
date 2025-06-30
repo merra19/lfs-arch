@@ -1,0 +1,45 @@
+# description	: A secure communications library implementing the SSL, TLS and DTLS protocols
+# depends	: nettle-32 libtasn1-32 p11-kit-32 libunistring-32 libidn2 
+# depends	: zstd-32 libseccomp brotli-32 glibc gnutls-32 zlib-32
+# depends	: libgmp-32
+
+pkgname=gnutls-32
+_pkgname=gnutls
+pkgver=3.8.9
+pkgrel=1
+options="!lto"
+source="https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/$_pkgname-$pkgver.tar.xz
+        config"
+optsflags=" -falign-functions=32 -fno-lto -fno-semantic-interposition -fstack-protector-strong -fzero-call-used-regs=used "
+
+build() {
+	cd $_pkgname-$pkgver
+
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+    
+    ./configure \
+        --prefix=/usr \
+        --libdir=/usr/lib32 \
+        --host=i686-pc-linux-gnu \
+        --with-zlib \
+        --with-included-unistring \
+        --disable-year2038 \
+        --disable-valgrind-tests
+    make
+    unset PKG_CONFIG_PATH 
+}
+
+package() {
+    cd $_pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+    rm -rf "${pkgdir}"/usr/{include,share}
+
+    # lib32-p11-kit tests need a 32-bit p11tool
+    mv "$pkgdir"/usr/bin/p11tool{,-32}
+    find "$pkgdir"/usr/bin -type f -not -name '*-32' -delete  
+}

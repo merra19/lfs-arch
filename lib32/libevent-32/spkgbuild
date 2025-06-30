@@ -1,0 +1,49 @@
+# description	: Library to execute a function when a specific event occurs on a file descriptor
+# depends	: openssl-32 glibc
+
+pkgname=libevent-32
+_pkgname=libevent
+pkgver=2.1.12
+pkgrel=1
+source="https://github.com/libevent/libevent/releases/download/release-$pkgver-stable/libevent-$pkgver-stable.tar.gz
+        EVENT__SIZEOF_TIME_T.patch libevent-2.1.12-openssl-compat.patch multilib.diff"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd libevent-$pkgver-stable
+
+    #sed -i 's/python/&3/' event_rpcgen.py
+
+    # Fix Firefox build
+    patch -Np1 -i ../EVENT__SIZEOF_TIME_T.patch
+
+    # Fix build with OpenSSL 3.0
+    patch -Np1 -i ../libevent-2.1.12-openssl-compat.patch
+	#First, fix an issue that prevents event_rpcgen.py from working:
+
+    patch -Np1 -i ../multilib.diff
+    
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+    
+    cmake -B build -G Ninja \
+        -D CMAKE_BUILD_TYPE=None \
+        -D CMAKE_INSTALL_PREFIX=/usr \
+        -D CMAKE_SKIP_INSTALL_RPATH=TRUE \
+        -D EVENT__LIBRARY_TYPE=SHARED \
+        -D EVENT__DISABLE_REGRESS=OFF \
+        -D EVENT__DOXYGEN=ON \
+        -D CMAKE_POLICY_VERSION_MINIMUM=3.5
+    cmake --build build
+    unset PKG_CONFIG_PATH 
+}
+
+package() {
+    cd libevent-$pkgver-stable
+
+    DESTDIR="$pkgdir" cmake --install build
+    rm -r "$pkgdir"/usr/{bin,include}
+}

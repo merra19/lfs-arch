@@ -1,0 +1,58 @@
+# description	: SQL database engine
+# depends	: zlib readline tcl icu unzip glibc
+
+pkgname=sqlite
+pkgver=3.50.1
+_version=$(echo $pkgver |awk -F. '{print $1  $2 "0" $3 "00"}')
+pkgrel=1
+options="!emptydirs"
+source="https://sqlite.org/2025/sqlite-autoconf-$_version.tar.gz
+        https://sqlite.org/2025/sqlite-doc-$_version.zip"
+noextract="sqlite-doc-$_version.zip"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd sqlite-autoconf-$_version
+
+    # this uses malloc_usable_size, which is incompatible with fortification level 3
+    export CFLAGS="${CFLAGS/_FORTIFY_SOURCE=3/_FORTIFY_SOURCE=2}"
+    export CXXFLAGS="${CXXFLAGS/_FORTIFY_SOURCE=3/_FORTIFY_SOURCE=2}"
+
+    unzip "$srcdir"/sqlite-doc-$_version.zip
+
+    export CPPFLAGS="$CPPFLAGS \
+            -DSQLITE_ENABLE_COLUMN_METADATA=1 \
+            -DSQLITE_ENABLE_UNLOCK_NOTIFY \
+            -DSQLITE_ENABLE_DBSTAT_VTAB=1 \
+            -DSQLITE_ENABLE_FTS3_TOKENIZER=1 \
+            -DSQLITE_ENABLE_FTS3_PARENTHESIS \
+            -DSQLITE_SECURE_DELETE \
+            -DSQLITE_ENABLE_STMTVTAB \
+            -DSQLITE_ENABLE_STAT4 \
+            -DSQLITE_MAX_VARIABLE_NUMBER=250000 \
+            -DSQLITE_MAX_EXPR_DEPTH=10000 \
+            -DSQLITE_ENABLE_MATH_FUNCTIONS"
+
+    ./configure \
+        --prefix=/usr \
+        --disable-static \
+        --enable-fts{3,4,5} \
+        --rtree \
+        --soname=legacy
+    sed -i -e 's/$(LDFLAGS.libsqlite3)/ -Wl,-O1,--as-needed \0/g' Makefile
+    make
+}
+
+package() {
+    cd sqlite-autoconf-$_version
+
+    make DESTDIR="$pkgdir" install
+
+    # install manpage
+    install -m755 -d "${pkgdir}"/usr/share/man/man1
+    install -m644 sqlite3.1 "${pkgdir}"/usr/share/man/man1/
+
+    mkdir -p "${pkgdir}"/usr/share/doc/${pkgname}
+
+    cp -v -R sqlite-doc-$_version/* "$pkgdir"/usr/share/doc/$pkgname
+}

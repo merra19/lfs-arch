@@ -1,0 +1,44 @@
+# description	: Various useful Linux utilities
+# depends	: pcre2 ncurses-32 zlib-32 readline-32 util-linux glibc
+
+pkgname=util-linux-32
+_pkgname=util-linux
+pkgver=2.40.4
+pkgrel=1
+options="!emptydirs"
+source="https://www.kernel.org/pub/linux/utils/util-linux/v${pkgver:0:4}/$_pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -Os -fdata-sections -ffat-lto-objects -ffunction-sections -flto=auto -fno-semantic-interposition "
+
+build() {
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+    
+    local _meson_options=(
+        --libexecdir /usr/lib32
+        --libdir     /usr/lib32
+
+        --auto-features disabled
+
+        -D build-libblkid=enabled
+        -D build-libuuid=enabled
+        -D build-libmount=enabled
+        -D build-libsmartcols=enabled
+        -D build-libfdisk=enabled
+
+        -D ncurses=disabled
+        -D ncursesw=enabled
+    )
+
+    arch-meson util-linux-$pkgver build32 "${_meson_options[@]}"
+    meson compile -C build32
+    unset PKG_CONFIG_PATH
+}
+
+package() {
+    DESTDIR="$pkgdir" meson install -C build32
+
+    rm -rf "$pkgdir"/usr/{bin,include,share}
+}

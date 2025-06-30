@@ -1,0 +1,73 @@
+# description	: A set of co-operative tools that make networking simple and straightforward
+# depends	: glibc gcc glib-32 nspr-32 nss-32 networkmanager libxslt
+# depends	: glib util-linux-32 dbus-32 libndp-32 meson
+# depends	: libpsl-32 polkit polkit-32
+
+pkgname=networkmanager-32
+_pkgname=NetworkManager
+pkgver=1.50.0
+pkgrel=1
+source="$_pkgname-$pkgver.tar.xz::https://download.gnome.org/sources/NetworkManager/${pkgver%.*}/NetworkManager-$pkgver.tar.xz"
+optsflags=" -O3 -Os -fdata-sections -ffat-lto-objects -ffunction-sections -flto=auto -fno-semantic-interposition "
+
+build() {
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+    
+    local meson_options=(
+        --cross-file lib32
+
+        # build checks this option; injecting just via *FLAGS is broken
+        -D b_lto=true
+
+        # platform
+        -D dist_version="$pkgver-$pkgrel"
+        -D libaudit=no
+        -D session_tracking_consolekit=false
+        -D session_tracking=no
+        -D systemd_journal=false
+        -D systemdsystemunitdir=no
+        -D modify_system=true
+        -D selinux=false
+
+        # features
+        -D concheck=false
+        -D iwd=false
+        -D modem_manager=false
+        -D nm_cloud_setup=false
+        -D nmcli=false
+        -D nmtui=false
+        -D ovs=false
+        -D ppp=false
+        -D teamdctl=false
+
+        # configuration plugins
+        -D config_plugins_default=keyfile
+        -D ifupdown=false
+
+        # handlers for resolv.conf
+        -D netconfig=no
+        -D config_dns_rc_manager_default=symlink
+
+        # miscellaneous
+        -D vapi=false
+        -D docs=false
+        -D introspection=false
+        -D tests=no
+        -D more_asserts=no
+        -D more_logging=false
+        -D qt=false
+    )
+
+    arch-meson NetworkManager-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+    unset PKG_CONFIG_PATH 
+}
+
+package() {
+    meson install -C build --destdir "${pkgdir}"
+    rm -r "${pkgdir}"/{etc,usr/{bin,include,lib,lib32/NetworkManager,share},var}
+}

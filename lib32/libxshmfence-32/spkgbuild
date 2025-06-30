@@ -1,0 +1,35 @@
+# description	: Shared memory fences using futexes
+# depends	: xorg-proto libxshmfence
+
+pkgname=libxshmfence-32
+_pkgname=libxshmfence
+pkgver=1.3.3
+pkgrel=1
+source="https://www.x.org/pub/individual/lib/libxshmfence-$pkgver.tar.xz"
+optsflags=" -ffat-lto-objects -flto -fno-math-errno -fno-semantic-interposition -fno-trapping-math "
+
+build() {
+    cd $_pkgname-$pkgver
+
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+    
+    ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --localstatedir=/var \
+        --libdir=/usr/lib32 \
+        --host=i686-pc-linux-gnu 
+    make
+    unset PKG_CONFIG_PATH 
+}
+
+package() {
+    cd $_pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+    rm -r "${pkgdir}"/usr/include
+}

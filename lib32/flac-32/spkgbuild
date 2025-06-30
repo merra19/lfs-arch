@@ -1,0 +1,49 @@
+# description	: Free lossless audio encoder and decoder
+# depends	: libogg-32 xz-32 gettext pkgconf glibc flac
+
+pkgname=flac-32
+_pkgname=flac
+pkgver=1.5.0
+pkgrel=1
+source="https://downloads.xiph.org/releases/flac/flac-$pkgver.tar.xz"
+optsflags=" -O3 -falign-functions=32 -ffast-math -ffat-lto-objects -flto=auto -fno-semantic-interposition -fstack-protector-strong -ftree-loop-vectorize -fzero-call-used-regs=used "
+
+bsdtar() {
+tar $@;
+}
+
+build() {
+    cd flac-$pkgver
+
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+    
+    local cmake_options=(
+        -D BUILD_DOCS=OFF
+        -D BUILD_EXAMPLES=OFF
+        -D BUILD_PROGRAMS=OFF
+        -D BUILD_SHARED_LIBS=ON
+        -D CMAKE_BUILD_TYPE=None
+        -D CMAKE_INSTALL_LIBDIR=/usr/lib32
+        -D CMAKE_INSTALL_PREFIX=/usr
+        -D INSTALL_MANPAGES=ON
+        -D NDEBUG=ON
+
+        # Handled by our CFLAGS
+        -D WITH_FORTIFY_SOURCE=OFF
+        -D WITH_STACK_PROTECTOR=OFF
+    )
+    cmake -B build32 -G Ninja "${cmake_options[@]}"
+    cmake --build build32
+    unset PKG_CONFIG_PATH 
+}
+
+package() {
+    cd flac-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build32
+    rm -rf "$pkgdir"/usr/include "$pkgdir"/usr/share/man
+}

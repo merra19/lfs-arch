@@ -1,0 +1,38 @@
+# description	: a portable, high level programming interface to various calling conventions
+# depends	: libffi glibc
+
+pkgname=libffi-32
+_pkgname=libffi
+pkgver=3.4.7
+pkgrel=1
+source="https://github.com/libffi/libffi/releases/download/v$pkgver/$_pkgname-$pkgver.tar.gz"
+optsflags=" -falign-functions=32 -fno-lto -fno-semantic-interposition "
+
+build() {
+    cd $_pkgname-$pkgver
+
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+    
+    ./configure \
+        --prefix=/usr \
+        --disable-static \
+        --libdir=/usr/lib32 \
+        --host=i686-pc-linux-gnu \
+        --disable-exec-static-tramp \
+        --disable-multi-os-directory \
+        --enable-pax_emutramp \
+        --with-gcc-arch=i686 
+    make
+    unset PKG_CONFIG_PATH 
+}
+
+package() {
+    cd $_pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+    rm -r "$pkgdir"/usr/{include,share}
+}

@@ -1,0 +1,59 @@
+# description	: A Client that groks URL
+# depends	: p11-kit openssl zlib-32  zstd-32  perl nghttp2 libpsl-32
+# depends	: dbus-32 libidn2-32 libssh2 glibc curl c-ares 
+# optional	: krb5!!openldap
+
+pkgname=curl-32
+_pkgname=curl
+pkgver=8.12.1
+pkgrel=1
+options="!lto"
+source="https://curl.se/download/$_pkgname-$pkgver.tar.xz"
+optsflags=" -Os -fdata-sections -ffunction-sections -fno-lto -fno-semantic-interposition -fstack-protector-strong -fzero-call-used-regs=used "
+
+build() {
+    cd $_pkgname-$pkgver
+
+    scratch isinstalled openldap && OPT_LDAP='--with-gssapi' ||  OPT_LDAP='--disable-ldap'
+
+    # Fix a regression that causes crashes in some applications due to issues with eventfd
+    sed -i '198,200d' lib/asyn-thread.c
+
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+
+    autoreconf -fiv
+    
+    ./configure \
+        --prefix=/usr \
+        --libdir=/usr/lib32 \
+        --host=i686-pc-linux-gnu \
+        --disable-ldap \
+        --disable-ldaps \
+        --disable-manual \
+        --enable-ipv6 \
+        --enable-threaded-resolver \
+        --enable-websockets \
+        --with-gssapi \
+        --without-libssh2 \
+        --enable-versioned-symbols \
+        --with-fish-functions-dir=/usr/share/fish/vendor_completions.d/ \
+        --with-openssl \
+        --with-openssl-quic \
+        --with-zsh-functions-dir=/usr/share/zsh/site-functions/ \
+        --with-ca-path=/etc/ssl/certs \
+        $OPT_LDAP
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+    make
+    unset PKG_CONFIG_PATH 
+}
+
+package() {
+    cd $_pkgname-$pkgver
+    
+    make -C lib DESTDIR="${pkgdir}" install
+    make DESTDIR="${pkgdir}" install-pkgconfigDATA
+}

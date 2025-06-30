@@ -1,0 +1,6 @@
+type            = process
+command         = /usr/bin/httpd -k start -DFOREGROUND
+smooth-recovery = true
+logfile         = /var/log/dinit/apache.log
+depends-on      = network.target
+before          = login.target

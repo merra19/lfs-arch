@@ -1,0 +1,40 @@
+# description	: Another cute console display library
+# depends	: ncurses-32 readline glibc
+
+pkgname=readline-32
+_pkgname=readline
+pkgver=8.2.13
+pkgrel=1
+options="!lto !asneeded"
+source="https://ftp.gnu.org/gnu/readline/$_pkgname-$pkgver.tar.gz"
+optsflags=" -Os -fdata-sections -ffunction-sections -fno-lto -fno-semantic-interposition "
+
+build() {
+    cd $_pkgname-$pkgver
+    
+    sed -i '/MV.*old/d' Makefile.in
+    sed -i '/{OLDSUFF}/c:' support/shlib-install
+
+    # Prevent hard coding library search paths (rpath) into the shared libraries
+    sed -i 's/-Wl,-rpath,[^ ]*//' support/shobj-conf
+
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+    
+    ./configure \
+        --prefix=/usr \
+        --libdir=/usr/lib32 \
+        --host=i686-pc-linux-gnu 
+    make SHLIB_LIBS="-lncurses"
+    unset PKG_CONFIG_PATH 
+}
+
+package() {
+    cd $_pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" SHLIB_LIBS="-lncurses" install
+    rm -rf "${pkgdir}"/usr/{include,share,bin}
+}

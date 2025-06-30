@@ -1,0 +1,57 @@
+# description	: A message bus system, a simple way for applications to talk to each other
+# depends	: expat-32 elogind-32 xorg-proto libx11-32 libxt-32 dbus
+
+pkgname=dbus-32
+_pkgname=dbus
+pkgver=1.16.0
+pkgrel=1
+source="https://dbus.freedesktop.org/releases/dbus/$_pkgname-$pkgver.tar.xz
+        malloc_trim.patch memory.patch
+        0001-Arch-Linux-tweaks-lib32.patch"
+optsflags=" -fno-lto -fstack-protector-strong -fzero-call-used-regs=used "
+
+build() {
+    cd $_pkgname-$pkgver
+
+    patch -Np1 -i ../malloc_trim.patch
+    patch -Np1 -i ../memory.patch
+    patch -Np1 -i ../0001-Arch-Linux-tweaks-lib32.patch
+
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+
+    local meson_options=(
+        --cross-file lib32
+        -D apparmor=disabled
+        -D dbus_user=dbus
+        -D doxygen_docs=disabled
+        -D ducktype_docs=disabled
+        -D kqueue=disabled
+        -D launchd=disabled
+        -D libaudit=disabled
+        -D message_bus=false
+        -D qt_help=disabled
+        -D relocation=disabled
+        -D selinux=disabled
+        -D systemd=disabled
+        -D tools=false
+        -D x11_autolaunch=disabled
+        -D xml_docs=disabled
+
+        -D xml_docs=disabled
+        -D modular_tests=disabled
+    )
+    
+    arch-meson build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    cd $_pkgname-$pkgver
+
+    meson install -C build --destdir="$pkgdir"
+    rm -r "$pkgdir/usr/include"
+}

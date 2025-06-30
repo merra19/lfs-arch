@@ -1,0 +1,44 @@
+# description	: Policy framework for controlling privileges for system-wide services
+# depends	: glib-32 pam-32 elogind-32
+
+pkgname=polkit-32
+pkgver=126
+pkgrel=1
+source="https://github.com/polkit-org/polkit/archive/$pkgver/polkit-$pkgver.tar.gz
+        0001-meson-Support-explicit-GID.patch
+        0002-meson-Detect-Arch-Linux-and-set-the-UID-and-GID.patch
+        0003-meson-elogind-build-fix.patch"
+optsflags=" -O3 -Os -fdata-sections -ffat-lto-objects -ffunction-sections -flto=auto -fno-semantic-interposition "
+
+build() {
+    cd polkit-$pkgver
+
+    patch -Np1 -i ../0001-meson-Support-explicit-GID.patch
+    patch -Np1 -i ../0002-meson-Detect-Arch-Linux-and-set-the-UID-and-GID.patch
+    patch -Np1 -i ../0003-meson-elogind-build-fix.patch
+
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+  
+    local meson_options=(
+        --cross-file lib32
+        -D session_tracking=elogind
+        -D gettext=true
+        -D introspection=false
+        -D libs-only=true
+        -D tests=true
+    )
+
+    arch-meson build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    cd polkit-$pkgver
+
+	DESTDIR="$pkgdir" ninja -C build install
+    rm -r "$pkgdir"/usr/{include,lib,share}
+}

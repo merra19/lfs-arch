@@ -1,0 +1,36 @@
+# description	: A high-quality data compressor
+# depends	: bzip2 glibc
+
+pkgname=bzip2-32
+_pkgname=bzip2
+pkgver=1.0.8
+pkgrel=1
+source="https://www.sourceware.org/pub/bzip2/$_pkgname-$pkgver.tar.gz
+        https://www.linuxfromscratch.org/patches/lfs/12.1/bzip2-1.0.8-install_docs-1.patch"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $_pkgname-$pkgver
+
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+
+    sed -e "s/^CC=.*/CC=gcc -m32 -mstackrealign/" -i Makefile{,-libbz2_so}
+    make -f Makefile-libbz2_so
+    make libbz2.a
+    unset PKG_CONFIG_PATH 
+}
+
+package() {
+    cd $_pkgname-$pkgver
+
+    mkdir -p "$pkgdir"/usr/lib32
+    install -Dm755 libbz2.so.1.0.8 "$pkgdir"/usr/lib32/libbz2.so.1.0.8
+    ln -sf libbz2.so.1.0.8 "$pkgdir"/usr/lib32/libbz2.so
+    ln -sf libbz2.so.1.0.8 "$pkgdir"/usr/lib32/libbz2.so.1
+    ln -sf libbz2.so.1.0.8 "$pkgdir"/usr/lib32/libbz2.so.1.0
+    install -Dm644 libbz2.a "$pkgdir"/usr/lib32/libbz2.a
+}

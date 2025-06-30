@@ -1,0 +1,77 @@
+# description	: LDAP suite of application and development tool
+# depends	: util-linux gnutls libgcrypt e2fsprogs lmdb perl openssl 
+# depends	: groff krb5
+
+pkgname=openldap
+pkgver=2.6.10
+pkgrel=1
+options="!makeflags !lto emptydirs"
+source="https://www.openldap.org/software/download/OpenLDAP/openldap-release/openldap-$pkgver.tgz
+        https://www.linuxfromscratch.org/patches/blfs/svn/openldap-$pkgver-consolidated-1.patch
+        openldap.tmpfiles openldap.sysusers"
+optsflags=" -fno-lto "
+backup="etc/openldap/slapd.conf etc/openldap/slapd.ldif etc/openldap/ldap.conf"
+
+prepare() {
+ 	cd openldap-$pkgver
+
+    patch -Np1 -i ../openldap-$pkgver-consolidated-1.patch 
+
+    # change perms from 0644 to 0755
+    sed -i 's|-m 644 $(LIBRARY)|-m 755 $(LIBRARY)|' libraries/{liblber,libldap}/Makefile.in
+
+    # change rundir to /run/openldap
+    sed -i 's|#define LDAPI_SOCK LDAP_RUNDIR LDAP_DIRSEP "run" LDAP_DIRSEP "ldapi"|#define LDAPI_SOCK LDAP_DIRSEP "run" LDAP_DIRSEP "openldap" LDAP_DIRSEP "ldapi"|' include/ldap_defaults.h
+    sed -i 's|%LOCALSTATEDIR%/run|/run/openldap|' servers/slapd/slapd.{conf,ldif}
+    sed -i 's|-$(MKDIR) $(DESTDIR)$(localstatedir)/run|-$(MKDIR) $(DESTDIR)/run/openldap|' servers/slapd/Makefile.in
+
+    autoconf   
+}
+
+build() {
+	cd openldap-$pkgver
+
+    ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --localstatedir=/var \
+        --libexecdir=/usr/lib \
+        --sbindir=/usr/bin \
+        --disable-static \
+        --with-systemd=no \
+        --with-tls=openssl \
+        --without-cyrus-sasl \
+        --enable-dynamic \
+        --enable-syslog \
+        --enable-ipv6 \
+        --enable-local \
+        --enable-crypt \
+        --disable-spasswd \
+        --enable-slapd \
+        --enable-modules \
+        --enable-rlookups \
+        --enable-backends=mod \
+        --disable-sql \
+        --disable-wt \
+        --enable-overlays=mod \
+        --with-threads
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+    make depend -j1
+    make -j1
+}
+
+package() {
+    cd openldap-$pkgver
+
+    make DESTDIR="$pkgdir" install 
+
+    # let tmpfiles generate this directory
+    rm -rf "${pkgdir}"/run
+
+    chown root:439 "${pkgdir}"/etc/openldap/slapd.{conf,ldif}
+    chmod 640 "${pkgdir}"/etc/openldap/slapd.{conf,ldif}
+
+    # udev integration
+    install -Dm644 "${srcdir}"/openldap.tmpfiles "${pkgdir}"/usr/lib/tmpfiles.d/openldap.conf
+    install -Dm644 "${srcdir}"/openldap.sysusers "${pkgdir}"/usr/lib/sysusers.d/openldap.conf
+}

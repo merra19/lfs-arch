@@ -1,0 +1,27 @@
+# description	: Library for handling OpenGL function pointer management
+# depends	: mesa meson xorg-proto libx11-32 glibc
+
+pkgname=libepoxy-32
+_pkgname=libepoxy
+pkgver=1.5.10
+pkgrel=1
+source="https://download.gnome.org/sources/libepoxy/1.5/libepoxy-$pkgver.tar.xz"
+optsflags=" -O3 -Ofast -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition "
+
+build() {
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+
+    arch-meson libepoxy-$pkgver build32 -D docs=false --libdir=/usr/lib32
+    meson compile -C build32
+    unset PKG_CONFIG_PATH 
+}
+
+
+package() {
+    meson install -C build32 --destdir "$pkgdir"
+    rm -r "$pkgdir/usr/include"
+}

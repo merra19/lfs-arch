@@ -1,0 +1,34 @@
+# description	: Hardware Monitoring user-space utilities
+# depends	: which perl lm-sensors glibc
+
+pkgname=lm-sensors-32
+_pkgname=lm-sensors
+pkgver=3.6.2
+vrsn=$(echo $pkgver | sed 's/\./-/g')
+pkgrel=1
+source="$pkgname-$pkgver.tar.gz::https://github.com/hramrach/lm-sensors/archive/refs/tags/V$vrsn.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $_pkgname-"${vrsn}"
+
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+	#export PKG_CONFIG_LIBDIR="/usr/lib32/pkgconfig"
+
+    sed -i 's/CC := gcc/CC := gcc -m32 -mstackrealign/' Makefile
+
+    make PREFIX=/usr 
+}
+
+package() {
+    cd $_pkgname-"${vrsn}"
+
+    make PREFIX=/usr LIBDIR=/usr/lib32 BUILD_STATIC_LIB=0 DESTDIR="${pkgdir}" install 
+    
+    rm -r "${pkgdir}"/etc/
+    rm -r "${pkgdir}"/usr/{bin,sbin,include,man,share} 
+}

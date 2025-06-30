@@ -1,0 +1,35 @@
+# description	: X.Org XRes library
+# depends	: libx11-32 libxext-32 xorg-proto glibc libxres
+
+pkgname=libxres-32
+pkgver=1.2.2
+pkgrel=1
+source="https://www.x.org/pub/individual/lib/libXres-$pkgver.tar.xz"
+optsflags=" -O3 -Os -fdata-sections -ffat-lto-objects -ffunction-sections -flto=auto -fno-semantic-interposition "
+
+build() {
+    cd libXres-$pkgver
+
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+    
+    ./configure \
+        --prefix=/usr \
+        --disable-static \
+        --sysconfdir=/etc \
+        --localstatedir=/var \
+        --libdir=/usr/lib32 \
+        --host=i686-pc-linux-gnu 
+    make
+    unset PKG_CONFIG_PATH 
+}
+
+package() {
+    cd libXres-$pkgver
+
+    make DESTDIR="$pkgdir" install
+    rm -rf "${pkgdir}"/usr/{bin,include,share}
+}

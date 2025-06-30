@@ -1,0 +1,46 @@
+# description	: POSIX 1003.1e capabilities
+# depends	: diffutils pam-32 libcap glibc
+
+pkgname=libcap-32
+_pkgname=libcap
+pkgver=2.73
+pkgrel=1
+source="https://www.kernel.org/pub/linux/libs/security/linux-privs/libcap2/$_pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $_pkgname-$pkgver
+
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+
+    local make_options=(
+        CC="gcc -m32 -mstackrealign"
+        DYNAMIC=yes
+        KERNEL_HEADERS=/usr/include
+        lib=lib32
+        prefix=/usr
+        sbindir=bin
+    )
+
+    make "${make_options[@]}"
+}
+
+package() {
+    cd $_pkgname-$pkgver
+
+    local make_options=(
+        DESTDIR="$pkgdir"
+        RAISE_SETFCAP=no
+        lib=lib32
+        prefix=/usr
+        sbindir=bin
+        install
+    )
+
+    make "${make_options[@]}"
+    rm -rv "$pkgdir/usr/"{include,share/man,bin}
+}

@@ -1,0 +1,34 @@
+# description	: Keymap handling library for toolkits and window systems
+# depends	: xkeyboard-config meson libxml2-32 wayland-32 libxkbcommon
+# depends	: libxcb-32 glibc wayland-protocols 
+
+pkgname=libxkbcommon-32
+pkgver=1.8.0
+pkgrel=1
+source="https://anduin.linuxfromscratch.org/BLFS/libxkbcommon/libxkbcommon-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+    
+    local meson_options=(
+        --cross-file lib32
+        -D enable-bash-completion=false
+        -D enable-tools=false
+    )
+
+    arch-meson libxkbcommon-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+    unset PKG_CONFIG_PATH 
+}
+
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+    
+    rm -r "$pkgdir/usr/include"
+}

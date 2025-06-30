@@ -1,0 +1,38 @@
+# description	: Extended attributes tools
+# depends	: attr glibc
+
+pkgname=attr-32
+_pkgname=attr
+pkgver=2.5.2
+pkgrel=1
+options="!lto"
+source="https://download.savannah.gnu.org/releases/attr/$_pkgname-$pkgver.tar.gz"
+optsflags=" -Os -fdata-sections -ffunction-sections -fno-lto -fno-semantic-interposition "
+
+build() {
+    cd $_pkgname-$pkgver
+
+    sed -i '/nfs/d' xattr.conf
+
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+    
+    ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --libexecdir=/usr/lib32 \
+        --libdir=/usr/lib32 \
+        --host=i686-pc-linux-gnu 
+    make
+    unset PKG_CONFIG_PATH 
+}
+
+package() {
+    cd $_pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+    rm -rf "${pkgdir}"/{etc,usr/{bin,include,share}}
+}

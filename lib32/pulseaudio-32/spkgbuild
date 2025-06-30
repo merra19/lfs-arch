@@ -1,0 +1,62 @@
+# description	: (networked sound server
+# depends	: alsa-lib-32 dbus-32 udev-32 glib-32 libsndfile-32 
+# depends	: libx11-32 libice-32 libsm-32 libxtst-32 libxcb-32 
+# depends	: speexdsp-32 pulseaudio
+
+pkgname=pulseaudio-32
+_pkgname=pulseaudio
+pkgver=17.0
+pkgrel=1
+options="!lto"
+source="https://www.freedesktop.org/software/pulseaudio/releases/$_pkgname-$pkgver.tar.xz"
+optsflags=" -falign-functions=32 -fno-lto -fno-semantic-interposition "
+
+build() {
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+
+    local meson_options=(
+        --cross-file lib32
+        -D elogind=enabled
+        -D systemd=disabled
+        -D avahi=disabled
+        -D bashcompletiondir=no
+        -D bluez5-gstreamer=disabled
+        -D bluez5=disabled
+        -D consolekit=disabled
+        -D daemon=false
+        -D doxygen=false
+        -D elogind=disabled
+        -D fftw=disabled
+        -D gstreamer=disabled
+        -D gtk=disabled
+        -D jack=disabled
+        -D lirc=disabled
+        -D man=false
+        -D orc=disabled
+        -D pulsedsp-location='/usr/\$LIB/pulseaudio'
+        -D soxr=disabled
+        -D speex=disabled
+        -D stream-restore-clear-old-devices=true
+        -D tcpwrap=disabled
+        -D tests=false
+        -D udevrulesdir=/usr/lib/udev/rules.d
+        -D webrtc-aec=disabled
+        -D zshcompletiondir=no
+        -D valgrind=disabled
+        -D asyncns=disabled
+    )
+
+    export PKG_CONFIG_LIBDIR="/usr/lib32/pkgconfig:/usr/share/pkgconfig" 
+    arch-meson $_pkgname-$pkgver build32 "${meson_options[@]}"
+    meson compile -C build32
+    unset PKG_CONFIG_PATH PKG_CONFIG_LIBDIR
+}
+
+package() {
+    meson install -C build32 --destdir "$pkgdir"
+    rm -r "$pkgdir/etc" "$pkgdir"/usr/{bin,include,share}
+}

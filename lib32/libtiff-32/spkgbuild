@@ -1,0 +1,41 @@
+# description	: Tag Image File Format (TIFF) library
+# depends	: cmake ninja libjpeg-turbo-32 libwebp-32 xz-32 zlib-32
+# depends	: glibc zstd-32
+### freeglut
+
+pkgname=libtiff-32
+_pkgname=libtiff
+pkgver=4.7.0
+pkgrel=1
+options="!lto"
+source="https://download.osgeo.org/libtiff/tiff-$pkgver.tar.gz"
+optsflags=" -falign-functions=32 -fno-lto -fno-semantic-interposition "
+
+build() {
+	cd ${_pkgname#lib}-$pkgver
+
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+
+    local configure_options=(
+        --prefix=/usr
+        --sysconfdir=/etc
+        --enable-ld-version-script
+        --mandir=/usr/share/man
+        --with-docdir=/usr/share/doc/libtiff
+        --libdir=/usr/lib32
+        --includedir=/usr/include/libtiff32
+    )
+    ./configure "${configure_options[@]}"
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+    make
+    unset PKG_CONFIG_PATH
+}
+
+package() {
+    make DESTDIR="$pkgdir" -C ${_pkgname#lib}-$pkgver install
+    rm -rf "${pkgdir}"/usr/{share,bin}
+}

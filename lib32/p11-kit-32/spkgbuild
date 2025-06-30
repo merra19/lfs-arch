@@ -1,0 +1,35 @@
+# description	: Provides a standard configuration setup for installing PKCS#11
+# depends	: libtasn1-32 libffi-32 meson glibc p11-kit
+
+pkgname=p11-kit-32
+_pkgname=p11-kit
+pkgver=0.25.5
+pkgrel=1
+options="!lto"
+source="https://github.com/p11-glue/p11-kit/releases/download/$pkgver/$_pkgname-$pkgver.tar.xz"
+optsflags=" -Os -fdata-sections -ffunction-sections -fno-lto -fno-semantic-interposition "
+
+build() {
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+
+    arch-meson $_pkgname-$pkgver build \
+        --cross-file lib32 \
+        -D bash_completion=disabled \
+        -D systemd=disabled \
+        -D gtk_doc=false \
+		-D backend_max_links=4 \
+		-D libffi=enabled \
+		-D trust_module=enabled \
+        -D trust_paths=/etc/ssl/certs/ca-certificates.crt
+    ninja -C build
+    unset PKG_CONFIG_PATH
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+    rm -rf "$pkgdir"/{etc,usr/{bin,include,lib,share}}
+}

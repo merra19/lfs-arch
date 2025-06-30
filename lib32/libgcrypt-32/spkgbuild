@@ -1,0 +1,47 @@
+# description	: General purpose crypto library based on the code used in GnuPG
+# depends	: libgpg-error-32 libgcrypt
+
+pkgname=libgcrypt-32
+_pkgname=libgcrypt
+pkgver=1.11.0
+pkgrel=1
+source="https://www.gnupg.org/ftp/gcrypt/libgcrypt/$_pkgname-$pkgver.tar.bz2
+        noopt.patch"
+optsflags=" -O3 -Os -fdata-sections -ffat-lto-objects -ffunction-sections -flto=auto -fno-semantic-interposition "
+
+build() {
+    cd $_pkgname-$pkgver
+
+    # Use 32-bit assembler
+    sed 's:i\[34567\]86\*-\*-\*:x86_64-*-*:' -i mpi/config.links
+    sed 's:x86_64-\*-\*:ignore:;s:i?86-\*-\*:x86_64-*-*:' -i configure.ac
+
+    patch -Np1 -i ../noopt.patch
+
+    export LDFLAGS="$LDFLAGS -Wl,-z,max-page-size=0x1000 -Wl,--compress-debug-sections=zstd"
+
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+    
+    ./configure \
+        --prefix=/usr \
+        --libdir=/usr/lib32 \
+        --disable-static \
+        --enable-ciphers="cast5 aes twofish serpent rfc2268 seed camellia idea salsa20 gost28147 chacha20 des" \
+        --disable-large-data-tests \
+        --disable-O-flag-munging \
+        --disable-padlock-support \
+        --host=i686-pc-linux-gnu
+    make
+    unset PKG_CONFIG_PATH
+}
+
+package() {
+    cd $_pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+    rm -rf "${pkgdir}"/usr/{include,share,bin,sbin}
+}

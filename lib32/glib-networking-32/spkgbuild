@@ -1,0 +1,33 @@
+# description	: Network-related giomodules for glib
+# depends	: glib-32 gnutls gsettings-desktop-schemas p11-kit-32
+# depends	: glibc dbus-32 meson
+# optional	: libproxy 
+
+pkgname=glib-networking-32
+_pkgname=glib-networking
+pkgver=2.80.1
+pkgrel=1
+source="https://ftp.gnome.org/pub/gnome/sources/$_pkgname/${pkgver%.*}/$_pkgname-$pkgver.tar.xz
+        lib32"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd $_pkgname-$pkgver
+
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+
+    arch-meson build32 --cross-file lib32 -D libproxy=disabled
+    meson compile -C build32 
+    unset PKG_CONFIG_PATH
+}
+
+package() {
+    cd $_pkgname-$pkgver
+
+    meson install -C build32 --destdir "$pkgdir"
+    rm -r "$pkgdir"/usr/{lib,share}
+}

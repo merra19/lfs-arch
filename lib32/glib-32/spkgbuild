@@ -1,0 +1,47 @@
+# description	: Binding to the GLIB library for Gtk2Hs
+# depends	: docbook-xml meson libxslt pcre2-32 python3-packaging 
+# depends	: libffi-32 zlib-32 util-linux-32 elfutils-32 glib
+
+pkgname=glib-32
+_pkgname=glib
+pkgver=2.82.5
+pkgrel=1
+source="https://download.gnome.org/sources/glib/${pkgver%.*}/$_pkgname-$pkgver.tar.xz
+        https://www.linuxfromscratch.org/patches/blfs/svn/glib-skip_warnings-1.patch
+        gio-querymodules-32.hook"
+
+build() {
+	cd $_pkgname-$pkgver
+	
+	patch -Np1 -i ../glib-skip_warnings-1.patch
+
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+
+    arch-meson build32 \
+        --cross-file lib32 \
+        -D documentation=false \
+        -D dtrace=disabled \
+        -D glib_debug=disabled \
+        -D introspection=disabled \
+        -D man-pages=disabled \
+        -D selinux=disabled \
+        -D sysprof=disabled \
+        -D systemtap=disabled
+    meson compile -C build32
+}
+
+package() {
+    cd $_pkgname-$pkgver
+
+    meson install -C build32 --destdir "$pkgdir"
+    rm -rf "$pkgdir"/usr/{lib,share,include}
+    find "$pkgdir/usr/bin" -type f -not -name gio-querymodules -printf 'Removing %P\n' -delete
+    mv "$pkgdir"/usr/bin/gio-querymodules{,-32}
+
+    #install -Dt "$pkgdir/usr/share/libalpm/hooks" -m644 "$srcdir"/*.hook
+    touch "$pkgdir/usr/lib32/gio/modules/.keep"
+}

@@ -1,0 +1,130 @@
+# description	: PostgreSQL RDBMS
+# depends	: less intltool icu pam perl python3 readline openssl tcl 
+# depends	: libxml2 zlib zstd util-linux krb5 llvm openldap
+
+pkgname=postgresql
+pkgver=17.5
+_majorver=${pkgver%.*}
+pkgrel=1
+options="staticlibs"
+source="https://ftp.postgresql.org/pub/source/v$pkgver/postgresql-$pkgver.tar.bz2
+        https://ftp.postgresql.org/pub/source/v$pkgver/postgresql-$pkgver-docs.tar.gz
+        0001-Set-DEFAULT_PGSOCKET_DIR-to-run-postgresql.patch
+        0002-Force-RPATH-to-be-used-for-the-PL-Perl-plugin.patch
+        0003-fix-regression-tests-tz.patch::https://github.com/postgres/postgres/commit/8108674f0e5639baebcf03b54b7ccf9e9a8662a2.patch
+        postgresql-check-db-dir.in postgresql.logrotate postgresql.pam 
+        postgresql.sysusers postgresql.tmpfiles"
+optsflags=" -O3 -Ofast -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition "
+backup="etc/logrotate.d/postgresql etc/pam.d/postgresql"
+
+build() {
+	cd postgresql-$pkgver
+
+    patch -p1 < ../0001-Set-DEFAULT_PGSOCKET_DIR-to-run-postgresql.patch
+    patch -p1 < ../0002-Force-RPATH-to-be-used-for-the-PL-Perl-plugin.patch
+    #patch -p1 < ../0003-fix-regression-tests-tz.patch
+
+    ./configure \
+        --prefix=/usr \
+        --datadir=/usr/share/postgresql \
+        --disable-rpath \
+        --enable-nls \
+        --disable-tap-tests \
+        --with-gssapi \
+        --with-icu \
+        --with-ldap \
+        --with-libxml \
+        --with-libxslt \
+        --with-llvm \
+        --with-lz4 \
+        --with-openssl \
+        --with-pam \
+        --with-perl \
+        --with-python \
+        --with-readline \
+        --with-system-tzdata=/usr/share/zoneinfo \
+        --without-systemd \
+        --with-tcl \
+        --with-uuid=e2fs \
+        --with-zstd \
+        --docdir=/usr/share/doc/postgresql
+    make #world
+}
+
+package() {
+    cd postgresql-$pkgver
+
+    # install
+    make DESTDIR="${pkgdir}" install
+    make -C contrib DESTDIR="${pkgdir}" install
+    #make -C doc/src/sgml DESTDIR="${pkgdir}" install-man
+
+    install -d "${pkgdir}"/usr/share/man 
+    cp -rv doc/src/sgml/man{1,3,7} "${pkgdir}"/usr/share/man/
+
+    # we don't want these, they are in the -libs package
+    for dir in src/interfaces src/bin/pg_config src/bin/pg_dump src/bin/psql src/bin/scripts; do
+        make -C ${dir} DESTDIR="${pkgdir}" uninstall
+    done
+    for util in pg_config pg_dump pg_dumpall pg_restore psql \
+        clusterdb createdb createuser dropdb dropuser pg_isready reindexdb vacuumdb; do
+        rm -f "${pkgdir}"/usr/share/man/man1/${util}.1
+    done
+
+    # clean up unneeded installed items
+    rm -rf "${pkgdir}/usr/include/postgresql/internal"
+    rm -rf "${pkgdir}/usr/include/libpq"
+    find "${pkgdir}/usr/include" -maxdepth 1 -type f -execdir rm {} +
+    #rmdir "${pkgdir}/usr/share/doc/postgresql/html"
+
+    pushd "${srcdir}"
+
+    sed -e "s/%PGMAJORVERSION%/${_majorver}/g" \
+        -e "s/%PREVMAJORVERSION%/$((_majorver - 1))/g" \
+        postgresql-check-db-dir.in |
+        install -Dm 755 /dev/stdin "${pkgdir}/usr/bin/postgresql-check-db-dir"
+
+    install -Dm 644 postgresql.pam "${pkgdir}/etc/pam.d/postgresql"
+    install -Dm 644 postgresql.logrotate "${pkgdir}/etc/logrotate.d/postgresql"
+
+    install -Dm 644 postgresql.sysusers "${pkgdir}/usr/lib/sysusers.d/postgresql.conf"
+    install -Dm 644 postgresql.tmpfiles "${pkgdir}/usr/lib/tmpfiles.d/postgresql.conf"
+
+    popd
+
+    # install libs and non-server binaries
+    for dir in src/interfaces src/bin/pg_config src/bin/pg_dump src/bin/psql src/bin/scripts; do
+        make -C ${dir} DESTDIR="${pkgdir}" install
+    done
+
+    for util in pg_config pg_dump pg_dumpall pg_restore psql \
+        clusterdb createdb createuser dropdb dropuser pg_isready reindexdb vacuumdb; do
+        install -Dm 644 doc/src/sgml/man1/${util}.1 "${pkgdir}"/usr/share/man/man1/${util}.1
+    done
+
+    pushd src/include
+
+    install -d "${pkgdir}"/usr/include/{libpq,postgresql/internal/libpq}
+
+    # these headers are needed by the public headers of the interfaces
+    install -m 644 pg_config.h "${pkgdir}/usr/include"
+    install -m 644 pg_config_os.h "${pkgdir}/usr/include"
+    install -m 644 pg_config_ext.h "${pkgdir}/usr/include"
+    install -m 644 postgres_ext.h "${pkgdir}/usr/include"
+    install -m 644 libpq/libpq-fs.h "${pkgdir}/usr/include/libpq"
+    install -m 644 pg_config_manual.h "${pkgdir}/usr/include"
+
+    # these he aders are needed by the not-so-public headers of the interfaces
+    install -m 644 c.h "${pkgdir}/usr/include/postgresql/internal"
+    install -m 644 port.h "${pkgdir}/usr/include/postgresql/internal"
+    install -m 644 postgres_fe.h "${pkgdir}/usr/include/postgresql/internal"
+    install -m 644 libpq/pqcomm.h "${pkgdir}/usr/include/postgresql/internal/libpq"
+
+    popd
+
+    install -d "${pkgdir}/usr/share/doc/postgresql"
+    cp -r doc/src/sgml/html "${pkgdir}"/usr/share/doc/postgresql/
+
+    #make -C doc/src/sgml DESTDIR="${pkgdir}" install-html
+    chown -R root:root "${pkgdir}/usr/share/doc/postgresql/html"
+}

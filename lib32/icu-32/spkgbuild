@@ -1,0 +1,46 @@
+# description	: International Components for Unicode
+# depends	: icu glibc
+
+pkgname=icu-32
+_pkgname=icu
+pkgver=76.1
+_pkgver=$(echo $pkgver | sed 's/\./_/g')
+_pkvers=$(echo $pkgver | sed 's/\./-/g')
+pkgrel=1
+source="https://github.com/unicode-org/icu/releases/download/release-${_pkvers}/icu4c-$_pkgver-src.tgz
+        ICU-22132.patch"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $_pkgname/source
+
+    patch -Np1 < "../../ICU-22132.patch"
+    
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+    
+    CC="gcc -m32 -mstackrealign" CXX="g++ -m32 -mstackrealign" \
+    ./configure \
+        --prefix=/usr \
+        --libdir=/usr/lib32 \
+        --sysconfdir=/etc \
+        --mandir=/usr/share/man \
+        --sbindir=/usr/bin \
+        --host=i686-pc-linux-gnu 
+    make
+    unset PKG_CONFIG_PATH
+}
+
+package() {
+    cd $_pkgname/source
+
+    make DESTDIR="$pkgdir" install
+    rm -r "${pkgdir}/usr"/{include,share}
+    
+    # keep icu-config-32
+    find "${pkgdir}/usr/bin" -type f -not -name icu-config -delete
+    mv "${pkgdir}/usr/bin"/icu-config{,-32}
+}

@@ -1,0 +1,33 @@
+# description	: X.Org Xinerama library
+# depends	: libx11-32 libxext-32 xorg-proto libxinerama
+
+pkgname=libxinerama-32
+pkgver=1.1.5
+pkgrel=1
+source="https://www.x.org/pub/individual/lib/libXinerama-$pkgver.tar.xz"
+optsflags=" -ffat-lto-objects -flto -fno-math-errno -fno-semantic-interposition -fno-trapping-math "
+
+build() {
+    cd libXinerama-$pkgver
+
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+
+    ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --localstatedir=/var \
+        --libdir=/usr/lib32 \
+        --host=i686-pc-linux-gnu 
+    make
+}
+
+package() {
+    cd libXinerama-$pkgver
+
+    make DESTDIR="$pkgdir" install
+    rm -rf "${pkgdir}"/usr/{include,share,bin}
+}

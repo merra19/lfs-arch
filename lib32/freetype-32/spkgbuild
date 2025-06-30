@@ -1,0 +1,47 @@
+# description	: High-quality and portable font engine
+# depends	: libpng-32 which zlib-32 bzip2-32 freetype brotli-32
+# depends	: glibc
+
+pkgname=freetype-32
+_pkgname=freetype
+pkgver=2.13.3
+pkgrel=1
+source="https://downloads.sourceforge.net/freetype/freetype-$pkgver.tar.xz
+        0001-Enable-table-validation-modules.patch
+        0002-Enable-subpixel-rendering.patch
+        0003-Enable-long-PCF-family-names.patch
+        0001-meson.build-Add-missing-math_dep-for-SVG-support.patch"
+optsflags=" -O3 -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition -fstack-protector-strong -fzero-call-used-regs=used "
+
+build() {
+    cd $_pkgname-$pkgver
+
+    patch -Np1 < ../0001-Enable-table-validation-modules.patch
+    patch -Np1 < ../0002-Enable-subpixel-rendering.patch
+    patch -Np1 < ../0003-Enable-long-PCF-family-names.patch
+    #patch -Np1 < ../0001-meson.build-Add-missing-math_dep-for-SVG-support.patch
+
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+    
+    local meson_options=(
+        --cross-file lib32
+        -D default_library=shared
+        -D harfbuzz=disabled
+        -D brotli=disabled
+    )
+
+    arch-meson build "${meson_options[@]}"
+    meson compile -C build
+    unset PKG_CONFIG_PATH
+}
+
+package() {
+    cd $_pkgname-$pkgver
+
+    meson install -C build --destdir="$pkgdir"
+    rm -r "$pkgdir"/usr/{include,share}
+}

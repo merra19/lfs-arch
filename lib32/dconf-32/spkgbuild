@@ -1,0 +1,38 @@
+# description	: Simple low-level configuration system
+# depends	: glib-32 docbook-xml libxslt-32 gettext pkgconf dbus-32
+# depends	: glibc
+
+pkgname=dconf-32
+_pkgname=dconf
+pkgver=0.40.0
+pkgrel=1
+source="https://download.gnome.org/sources/$pkgname/${pkgver%.*}/$pkgname-$pkgver.tar.xz
+        lib32"
+optsflags=" -O3 -Os -fdata-sections -ffat-lto-objects -ffunction-sections -flto=auto -fno-semantic-interposition "
+
+build() {
+    cd $pkgname-$pkgver
+
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+
+    local meson_options=(
+        --libdir=/usr/lib32
+        -D bash_completion=false
+        -D man=false
+        -D vapi=false
+    )
+    arch-meson build32 "${meson_options[@]}"
+    meson compile -C build32
+    unset PKG_CONFIG_PATH 
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" ninja -C build32 install
+    rm -rf "${pkgdir}"/usr/{bin,include,lib,share}
+}

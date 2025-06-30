@@ -1,0 +1,44 @@
+# description	: Multi-format archive and compression library
+# depends	: glibc acl-32 zlib-32 xz-32 bzip2-32 zstd-32 openssl-32
+
+pkgname=libarchive-32
+pkgver=3.8.0
+pkgrel=1
+options="!lto"
+source="https://github.com/libarchive/libarchive/releases/download/v$pkgver/libarchive-$pkgver.tar.xz"
+optsflags=" -falign-functions=32 -fno-lto -fno-semantic-interposition "
+
+build() {
+    cd libarchive-$pkgver
+
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+
+    local configure_options=(
+        --build=i686-pc-linux-gnu
+        --disable-bsdcat
+        --disable-bsdcpio
+        --disable-bsdtar
+        --disable-bsdunzip
+        --disable-static
+        --libdir=/usr/lib32
+        --libexecdir=/usr/lib32
+        --includedir=/usr/include/libarchive32
+        --prefix=/usr
+        --program-suffix="-32"
+        --without-nettle
+    )
+
+    ./configure "${configure_options[@]}"
+    make
+    unset PKG_CONFIG_PATH
+}
+
+package() {
+    cd libarchive-$pkgver
+
+    make DESTDIR="$pkgdir" install-libLTLIBRARIES install-pkgconfigDATA
+}

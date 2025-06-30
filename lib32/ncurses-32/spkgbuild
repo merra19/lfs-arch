@@ -1,0 +1,78 @@
+# description	: Console display library
+# depends	: ncurses glibc
+
+pkgname=ncurses-32
+_pkgname=ncurses
+pkgver=6.5
+version_pkg=6.5
+pkgrel=1
+source="https://invisible-mirror.net/archives/ncurses/$_pkgname-${version_pkg}.tar.gz
+        ncurses-6.3-libs.patch ncurses-6.3-pkgconfig.patch"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $_pkgname-${version_pkg}
+
+    patch -Np1 < ../ncurses-6.3-libs.patch
+    patch -Np1 < ../ncurses-6.3-pkgconfig.patch
+
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+    
+    ./configure \
+        --prefix=/usr \
+        --libdir=/usr/lib32 \
+        --host=i686-pc-linux-gnu \
+        --disable-db-install \
+        --disable-root-access \
+        --disable-root-environ \
+        --disable-setuid-environ \
+        --enable-widec \
+        --enable-pc-files \
+        --mandir=/usr/share/man \
+        --with-cxx-binding \
+        --with-cxx-shared \
+        --with-pkg-config-libdir=/usr/lib32/pkgconfig \
+        --with-shared \
+        --with-versioned-syms \
+        --without-ada \
+        --without-debug \
+        --without-manpages \
+        --without-progs \
+        --without-tack \
+        --without-tests
+    make
+    unset PKG_CONFIG_PATH 
+}
+
+package() {
+    cd $_pkgname-${version_pkg}
+
+    make DESTDIR="$pkgdir" install
+
+    local _pkgver=${pkgver/_*/}
+
+    # fool packages looking to link to non-wide-character ncurses libraries
+    for lib in ncurses ncurses++ form panel menu; do
+        printf "INPUT(-l%sw)\n" "$lib" > "$pkgdir/usr/lib32/lib$lib.so"
+        ln -sv ${lib}w.pc "$pkgdir/usr/lib32/pkgconfig/$lib.pc"
+    done
+
+    # some packages look for -lcurses during build
+    printf 'INPUT(-lncursesw)\n' > "$pkgdir/usr/lib32/libcursesw.so"
+    ln -sv libncurses.so "$pkgdir/usr/lib32/libcurses.so"
+
+    # tic and ticinfo functionality is built in by default
+    # make sure that anything linking against it links against libncursesw.so instead
+    for lib in tic tinfo; do
+        printf "INPUT(libncursesw.so.%s)\n" "${_pkgver:0:1}" > "$pkgdir/usr/lib32/lib$lib.so"
+        ln -sv libncursesw.so.${pkgver:0:1} "$pkgdir/usr/lib32/lib$lib.so.${_pkgver:0:1}"
+        ln -fsv ncursesw.pc "$pkgdir/usr/lib32/pkgconfig/$lib.pc"
+    done
+
+    # remove all files conflicting with ncurses
+    rm -frv "$pkgdir/usr/"{bin,include}
+}

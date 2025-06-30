@@ -1,0 +1,43 @@
+# description	: zstd fast compression library
+# depends	: glibc zlib-32 zstd meson
+
+pkgname=zstd-32
+_pkgname=zstd
+pkgver=1.5.7
+pkgrel=1
+source="https://github.com/facebook/zstd/releases/download/v$pkgver/zstd-$pkgver.tar.gz
+        https://github.com/facebook/zstd/commit/6af3842118ea5325480b403213b2a9fbed3d3d74.patch"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+
+build() {
+    cd $_pkgname-$pkgver
+
+    CFLAGS="-O2 -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector --param=ssp-buffer-size=32 -Wformat -Wformat-security -Wno-error -Wl,-z,max-page-size=0x4000 -march=$MMARCH"
+    CXXFLAGS=$CFLAGS
+    FFLAGS="-O2 -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector --param=ssp-buffer-size=32 -Wno-error -Wl,-z,max-page-size=0x4000 -march=$MMARCH"
+    FCFLAGS=$FFLAGS
+
+    CFLAGS="$CFLAGS -O3 -ffat-lto-objects -flto=auto "
+    FCFLAGS="$FFLAGS -O3 -ffat-lto-objects -flto=auto "
+    FFLAGS="$FFLAGS -O3 -ffat-lto-objects -flto=auto "
+    CXXFLAGS="$CXXFLAGS -O3 -ffat-lto-objects -flto=auto "
+
+    ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
+    CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"
+    CXXFLAGS="${CXXFLAGS}${CXXFLAGS:+ }-m32 -mstackrealign"
+    LDFLAGS="${LDFLAGS}${LDFLAGS:+ }-m32 -mstackrealign"
+    export ASMFLAGS="-m32"
+    export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+
+    make prefix=/usr
+}
+
+package() {
+    cd $_pkgname-$pkgver
+
+    make prefix=/usr DESTDIR=$PWD/DESTDIR install
+    mkdir -p "$pkgdir"/usr/lib32
+    cp -Rv DESTDIR/usr/lib/* "$pkgdir"/usr/lib32
+    sed -e "/^libdir/s/lib$/lib32/" -i "$pkgdir"/usr/lib32/pkgconfig/libzstd.pc
+}
