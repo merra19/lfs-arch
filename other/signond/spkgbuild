@@ -1,6 +1,6 @@
 # description	: Signon daemon for libaccounts-glib
-# depends	:  glibc qt6-base qt6-tools doxygen
-# depends	: noto-fonts ttf-dejavu liberation-fonts
+# depends	: glibc qt6-base qt6-tools ttf-dejavu liberation-fonts
+# depends	: noto-fonts
 
 pkgname=signond
 pkgver=8.61
@@ -11,6 +11,9 @@ source="https://gitlab.com/nicolasfella/signond/-/archive/$commit/signond-$commi
 
 build() {
     cd $pkgname-$commit
+
+    sed -e "/include(\s*doc\/doc.pri\s*)/d" \
+		-i signon.pro lib/SignOn/SignOn.pro lib/plugins/plugins.pro
 
     qmake6 \
         PREFIX=/usr \
