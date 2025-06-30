@@ -1,0 +1,37 @@
+# description	: OpenGL Mathematics
+# depends	: glibc cmake
+
+pkgname=glm
+pkgver=1.0.1
+pkgrel=1
+options="!lto"
+source="https://github.com/g-truc/glm/archive/$pkgver/$pkgname-$pkgver.tar.gz"
+optsflags=" -fno-lto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    local sanitize_flags=(
+        -r
+        -e 's/-Wall ?//'
+    )
+    CFLAGS="$(<<<"$CFLAGS" sed "${sanitize_flags[@]}")"
+    CXXFLAGS="$(<<<"$CXXFLAGS" sed "${sanitize_flags[@]}")"
+
+    cmake -B build -G Ninja \
+        -D CMAKE_BUILD_TYPE=Release \
+        -D CMAKE_INSTALL_PREFIX=/usr \
+        -D CMAKE_INSTALL_DATAROOTDIR=/usr/lib/cmake \
+        -D CMAKE_BUILD_TESTING=OFF \
+        -W no-dev
+    cmake --build build --verbose
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+
+    mkdir -p "$pkgdir"/usr/share/doc
+    cp -r doc "$pkgdir"/usr/share/doc/glm
+}

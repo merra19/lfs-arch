@@ -1,0 +1,22 @@
+# description	: Oxygen SVG icon theme
+# depends	: extra-cmake-modules qt6-base
+
+pkgname=oxygen-icons
+pkgver=6.0.0
+pkgrel=1
+source="https://download.kde.org/stable/oxygen-icons/oxygen-icons-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cmake -B build -S oxygen-icons-$pkgver \
+        -Wno-dev
+    cmake --build build --verbose
+}
+
+package() {
+    DESTDIR="$pkgdir" cmake --install build
+    
+    cd oxygen-icons-$pkgver
+    find scalable -type f ! -name '*.sh' -exec \
+        install -D -m644 "{}" "$pkgdir"/usr/share/icons/oxygen/{} \;
+}

@@ -1,0 +1,42 @@
+# description	: High-quality and portable font engine
+# depends	: libpng which zlib bzip2 glibc
+
+pkgname=freetype
+pkgver=2.13.3
+pkgrel=1
+source="https://downloads.sourceforge.net/freetype/freetype-$pkgver.tar.xz
+        https://downloads.sourceforge.net/freetype/freetype-doc-$pkgver.tar.xz
+        0001-Enable-table-validation-modules.patch
+        0002-Enable-subpixel-rendering.patch
+        0003-Enable-long-PCF-family-names.patch
+        0001-meson.build-Add-missing-math_dep-for-SVG-support.patch
+        freetype2.sh"
+optsflags=" -O3 -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition -fstack-protector-strong -fzero-call-used-regs=used "
+backup="etc/profile.d/freetype2.sh"
+
+build() {
+    cd freetype-$pkgver
+
+    patch -Np1 < ../0001-Enable-table-validation-modules.patch
+    patch -Np1 < ../0002-Enable-subpixel-rendering.patch
+    patch -Np1 < ../0003-Enable-long-PCF-family-names.patch
+    #patch -Np1 < ../0001-meson.build-Add-missing-math_dep-for-SVG-support.patch
+
+    local meson_options=(
+        -D freetype2:default_library=shared
+        -D harfbuzz="$(scratch isinstalled harfbuzz && echo "enabled" || echo "disabled")"
+        -D brotli="$(scratch isinstalled brotli && echo "enabled" || echo "disabled")"
+    )
+
+    arch-meson build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    cd freetype-$pkgver
+
+    meson install -C build --destdir="$pkgdir"
+
+    install -Dm644 "$srcdir"/freetype2.sh -t "$pkgdir/etc/profile.d"
+}
+

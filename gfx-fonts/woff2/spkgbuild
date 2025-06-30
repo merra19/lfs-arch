@@ -1,0 +1,44 @@
+# description	: Encode/decode WOFF2 font format
+# depends	: brotli cmake
+
+pkgname=woff2
+pkgver=1.0.2
+pkgrel=1
+source="https://github.com/google/woff2/archive/v$pkgver/$pkgname-$pkgver.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=4 "
+
+prepare() {
+    cd $pkgname-$pkgver
+
+    # Get the GCC version string (e.g., "gcc 15.1.0")
+    version_str=$(gcc -dumpversion)
+
+    # Extract the major version number
+    major_version=${version_str%%.*}
+
+    # Compare with 15
+    if (( major_version >= 15 )); then
+        # Fix building with GCC-15
+        sed -i '/output.h/i #include <cstdint>' src/woff2_out.cc
+    fi
+
+    # Install binaries
+    sed -i 's/NOT BUILD_SHARED_LIBS/TRUE/' CMakeLists.txt
+}
+
+build() {
+    cd $pkgname-$pkgver
+
+    cmake -B out \
+        -D CMAKE_INSTALL_PREFIX=/usr \
+        -D CMAKE_INSTALL_LIBDIR=/usr/lib \
+        -D CMAKE_POLICY_VERSION_MINIMUM=3.5 \
+        -D CMAKE_BUILD_TYPE=None 
+    cmake --build out
+}
+
+package() {
+	cd $pkgname-$pkgver
+
+	DESTDIR="$pkgdir" cmake --install out
+}

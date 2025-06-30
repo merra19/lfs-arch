@@ -1,0 +1,50 @@
+# description	: Library providing rendering capabilities for complex non-Roman writing systems
+# depends	: cmake ninja freetype ttf-linux-libertine perl 
+# depends	: python3-asciidoc
+
+pkgname=graphite2
+pkgver=1.3.14
+pkgrel=1
+options="!lto"
+source="https://github.com/silnrsi/graphite/releases/download/$pkgver/graphite2-$pkgver.tgz"
+optsflags=" -fno-lto "
+
+build() {
+	cd graphite2-$pkgver
+
+    sed -i '/cmptest/d' tests/CMakeLists.txt
+
+    # Fix building this package with CMake 4.0 by updating it's syntax to conform to newer versions of CMak
+    sed -i '/cmake_policy(SET CMP0012 NEW)/d' CMakeLists.txt &&
+    sed -i 's/PythonInterp/Python3/' CMakeLists.txt          &&
+    find . -name CMakeLists.txt | xargs sed -i 's/VERSION 2.8.0 FATAL_ERROR/VERSION 4.0.0/'
+
+    # Get the GCC version string (e.g., "gcc 15.1.0")
+    version_str=$(gcc -dumpversion)
+
+    # Extract the major version number
+    major_version=${version_str%%.*}
+
+    # Compare with 15
+    if (( major_version >= 15 )); then
+        # Fix building with GCC-15
+        sed -i '/Font.h/i #include <cstdint>' tests/featuremap/featuremaptest.cpp
+    fi
+
+    local cmake_options=(
+        -D CMAKE_BUILD_TYPE=None
+        -D CMAKE_INSTALL_PREFIX=/usr
+        -D CMAKE_SKIP_INSTALL_RPATH=ON
+        -D GRAPHITE2_COMPARE_RENDERER=OFF
+        -D GRAPHITE2_VM_TYPE=direct
+    )
+
+    cmake -B build "${cmake_options[@]}"
+    cmake --build build
+}
+
+package() {
+    cd graphite2-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

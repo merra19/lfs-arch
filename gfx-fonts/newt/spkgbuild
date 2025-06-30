@@ -1,0 +1,29 @@
+# description	: Redhat's Newt windowing toolkit development files
+# depends	: popt slang tcl gpm
+
+pkgname=newt
+pkgver=0.52.25
+pkgrel=1
+_tclver=8.6
+source="http://fedorahosted.org/releases/n/e/newt/$pkgname-$pkgver.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd $pkgname-$pkgver
+
+    echo '#define USE_INTERP_RESULT 1' >> config.h
+    sed -i "s:tcl8.4:tcl$_tclver:" Makefile.in
+
+    ./autogen.sh
+
+	./configure \
+        --prefix=/usr \
+		--with-gpm-support
+	make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

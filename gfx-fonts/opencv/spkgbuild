@@ -1,0 +1,47 @@
+# description	: A collection of algorithms and sample code for various computer vision problems
+# depends	: bzip2 protobuf zlib libavif freetype harfbuzz ffmpeg
+# depends	: gstreamer gst-plugins-base glib gtk3 libjpeg-turbo
+# depends	: jasper openjpeg mesa glu libpng python3-numpy qt6-base
+# depends	: libtiff v4l-utils libva libwebp vulkan-loader wayland
+# depends	: libxkbcommon wayland-protocols xine-lib libexif java
+
+pkgname=opencv
+pkgver=4.11.0
+pkgrel=1
+source="https://github.com/opencv/opencv/archive/$pkgver/$pkgname-$pkgver.tar.gz
+        https://github.com/opencv/opencv_contrib/archive/$pkgver/opencv_contrib-$pkgver.tar.gz"
+noextract="opencv_contrib-$pkgver.tar.gz"
+
+prepare() {
+    cd $pkgname-$pkgver
+
+    tar -xf ../opencv_contrib-$pkgver.tar.gz
+
+    cat cmake/OpenCVGenPkgconfig.cmake | grep VERSION
+    sed -i 's/VERSION 2.8.12.2/VERSION 4.0.0/' cmake/OpenCVGenPkgconfig.cmake
+}
+
+build() {
+    export JAVA_HOME="/opt/jdk"
+
+    cmake -B build -S $pkgname-$pkgver \
+        -D CMAKE_INSTALL_PREFIX=/usr \
+        -D CMAKE_BUILD_TYPE=Release \
+        -D ENABLE_CXX11=ON \
+        -D BUILD_PERF_TESTS=OFF \
+        -D WITH_XINE=ON \
+        -D BUILD_TESTS=OFF \
+        -D ENABLE_PRECOMPILED_HEADERS=OFF \
+        -D CMAKE_SKIP_INSTALL_RPATH=ON \
+        -D BUILD_WITH_DEBUG_INFO=OFF \
+        -D OPENCV_GENERATE_PKGCONFIG=ON \
+        -D CMAKE_POLICY_VERSION_MINIMUM=3.5 \
+        -W no-dev
+    cmake --build build
+}
+
+package() {
+    export JAVA_HOME="/opt/jdk"
+
+    DESTDIR="$pkgdir" cmake --install build
+}

@@ -1,0 +1,44 @@
+# description	: Library to handle, display and manipulate GIF images
+# depends	: xmlto
+
+pkgname=giflib
+pkgver=5.2.2
+pkgrel=2
+options="!zipman"
+source="https://downloads.sourceforge.net/giflib/$pkgname-$pkgver.tar.gz
+        https://www.linuxfromscratch.org/patches/blfs/svn/giflib-5.2.2-upstream_fixes-1.patch
+        https://www.linuxfromscratch.org/patches/blfs/svn/giflib-5.2.2-security_fixes-1.patch
+        giflib-5.1.9-fix-missing-quantize-API-symbols.patch
+        giflib-5.1.9-make-flags.patch"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd $pkgname-$pkgver
+
+    patch -Np1 -i ../giflib-5.2.2-upstream_fixes-1.patch
+    # Fix  several security vulnerabilities in the 'gif2rgb' utility
+    patch -Np1 -i ../giflib-5.2.2-security_fixes-1.patch
+
+    patch -Np1 < ../giflib-5.1.9-fix-missing-quantize-API-symbols.patch
+    patch -Np1 < ../giflib-5.1.9-make-flags.patch
+
+    # Remove an unnecessary dependency on ImageMagick-7.1.1-28 by moving a file into
+    # an expected location
+    cp pic/gifgrid.gif doc/giflib-logo.gif   
+
+    CFLAGS="${CFLAGS/_FORTIFY_SOURCE=3/_FORTIFY_SOURCE=2}"
+
+	make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+	make PREFIX="$pkgdir"/usr install
+
+	find doc \( -name Makefile\* -o -name \*.1 \
+			-o -name \*.xml \) -exec rm -v {} \; &&
+
+	install -v -dm755 "$pkgdir"/usr/share/doc/$pkgname
+	cp -v -R doc/* "$pkgdir"/usr/share/doc/$pkgname
+}

@@ -1,0 +1,33 @@
+# description	: Portable Network Graphics library
+# depends	: zlib glibc
+
+pkgname=libpng
+pkgver=1.6.49
+pkgrel=1
+source="https://downloads.sourceforge.net/libpng/$pkgname-$pkgver.tar.xz
+        https://downloads.sourceforge.net/sourceforge/libpng-apng/libpng-$pkgver-apng.patch.gz"
+noextract="$pkgname-$pkgver-apng.patch.gz"
+optsflags=" -O3 -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition "
+
+build() {
+    cd $pkgname-$pkgver
+    
+    gzip -cd ../libpng-$pkgver-apng.patch.gz | patch -p1
+
+    ./configure \
+        --prefix=/usr \
+        --disable-static \
+        --enable-intel-sse \
+        --enable-hardware-optimizations
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+    
+    cd contrib/pngminus
+    make PNGLIB_SHARED="-L$pkgdir/usr/lib -lpng" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" png2pnm pnm2png
+    install -m0755 png2pnm pnm2png "$pkgdir/usr/bin/"
+}

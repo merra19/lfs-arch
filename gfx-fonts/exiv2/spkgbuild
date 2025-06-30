@@ -1,0 +1,38 @@
+# description	: EXIF, IPTC and XMP metadata C++ library and command line utility
+# depends	: curl cmake ninja inih zlib expat
+
+pkgname=exiv2
+pkgver=0.28.5
+pkgrel=1
+source="https://github.com/Exiv2/exiv2/archive/v$pkgver/$pkgname-$pkgver.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto -fstack-protector-strong -fzero-call-used-regs=used "
+
+build() {
+	cd $pkgname-$pkgver
+
+    if (! scratch isinstalled brotli ); then 
+        OPTS_BROTLI="-D EXIV2_ENABLE_BROTLI=no"
+    fi
+
+	cmake -B build -G Ninja \
+        $OPTS_BROTLI \
+        -D CMAKE_INSTALL_PREFIX=/usr \
+        -D CMAKE_SKIP_RPATH=ON \
+        -D EXIV2_BUILD_SAMPLES=ON \
+        -D EXIV2_BUILD_UNIT_TESTS=OFF \
+        -D EXIV2_ENABLE_VIDEO=ON \
+        -D EXIV2_ENABLE_NLS=ON \
+        -D EXIV2_ENABLE_XMP=ON \
+        -D EXIV2_ENABLE_CURL=ON \
+        -D EXIV2_ENABLE_WEBREADY=ON \
+        -D EXIV2_ENABLE_BMFF=ON
+	ninja -C build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    # remove samples instal which are only needed for unit tests
+    sed '/samples\/cmake_install.cmake/d' -i build/cmake_install.cmake
+    DESTDIR="${pkgdir}" ninja -C build install
+}

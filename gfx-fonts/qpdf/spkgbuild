@@ -1,0 +1,31 @@
+# description	: Command-line tool for structural, content-preserving transformation of PDF files
+# depends	: libjpeg-turbo zlib openssl perl
+
+pkgname=qpdf
+pkgver=12.2.0
+pkgrel=1
+source="https://github.com/qpdf/qpdf/releases/download/v$pkgver/qpdf-$pkgver.tar.gz"
+
+build() {
+	cd qpdf-$pkgver
+	
+    cmake -B build \
+        -D CMAKE_INSTALL_PREFIX:PATH=/usr \
+        -D BUILD_STATIC_LIBS:BOOL=OFF \
+        -D REQUIRE_CRYPTO_GNUTLS:BOOL=ON \
+        -D REQUIRE_CRYPTO_OPENSSL:BOOL=OFF \
+        -D ENABLE_QTC:BOOL=ON \
+        -D BUILD_DOC:BOOL=OFF
+    make -C build
+}
+
+package() {
+    cd qpdf-$pkgver
+
+    make -C build DESTDIR="${pkgdir}" install 
+
+    install -Dm644 completions/bash/qpdf "${pkgdir}/usr/share/bash-completion/completions/qpdf"
+    install -Dm644 completions/zsh/_qpdf "${pkgdir}/usr/share/zsh/site-functions/_qpdf"
+
+    rm -rf "${pkgdir}"/usr/share/doc
+}

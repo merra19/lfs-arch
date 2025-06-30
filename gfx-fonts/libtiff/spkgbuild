@@ -1,0 +1,30 @@
+# description	: Tag Image File Format (TIFF) library
+# depends	: cmake ninja libjpeg-turbo libwebp xz zlib zstd glibc
+### freeglut
+
+pkgname=libtiff
+pkgver=4.7.0
+pkgrel=1
+options="!lto"
+source="https://download.osgeo.org/libtiff/tiff-$pkgver.tar.gz"
+optsflags=" -falign-functions=32 -fno-lto -fno-semantic-interposition "
+
+build() {
+	cd ${pkgname#lib}-$pkgver
+
+    local configure_options=(
+        --prefix=/usr
+        --sysconfdir=/etc
+        --enable-ld-version-script
+        --mandir=/usr/share/man
+        --with-docdir=/usr/share/doc/libtiff
+    )
+
+    ./configure "${configure_options[@]}"
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+    make
+}
+
+package() {
+    make DESTDIR="$pkgdir" -C ${pkgname#lib}-$pkgver install
+}

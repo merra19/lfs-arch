@@ -1,0 +1,28 @@
+# description	: An OpenType text shaping engine
+# depends	: meson glib gobject-introspection icu freetype graphite2
+# depends	: cairo 
+
+pkgname=harfbuzz
+pkgver=11.2.1
+pkgrel=1
+source="https://github.com/harfbuzz/harfbuzz/releases/download/$pkgver/harfbuzz-$pkgver.tar.xz"
+optsflags=" -O3 -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition "
+
+build() {
+
+    # Harfbuzz wants no exceptions
+    CFLAGS="$CFLAGS -fno-exceptions"
+    CXXFLAGS="$CXXFLAGS -fno-exceptions"
+
+	arch-meson harfbuzz-$pkgver \
+        -D docs=disabled \
+        -D cpp_std=c++17 \
+        -D graphite2=enabled \
+        -D chafa=disabled \
+        build
+	meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

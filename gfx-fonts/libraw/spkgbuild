@@ -1,0 +1,24 @@
+# description	: LibRaw is a library for reading RAW files obtained from digital photo cameras
+# depends	: lcms2 libjpeg-turbo zlib
+
+pkgname=libraw
+pkgver=0.21.4
+pkgrel=1
+options="!lto"
+source="https://www.libraw.org/data/LibRaw-$pkgver.tar.gz"
+optsflags=" -falign-functions=32 -fno-lto -fno-semantic-interposition "
+
+build() {
+	cd LibRaw-$pkgver
+
+    autoreconf -fiv &&
+    ./configure \
+        --prefix=/usr
+    make
+}
+
+package() {
+    cd LibRaw-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

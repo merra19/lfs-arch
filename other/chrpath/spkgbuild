@@ -9,6 +9,8 @@ source="$pkgname-$pkgver.tar.gz::https://codeberg.org/pere/chrpath/archive/relea
 build() {
     cd $pkgname-$pkgver
 
+    autoreconf -fiv
+
     ./configure \
         --prefix=/usr \
         --mandir=/usr/share/man

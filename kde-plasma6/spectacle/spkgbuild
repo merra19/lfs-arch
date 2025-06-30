@@ -6,8 +6,7 @@
 # depends	: libxcb prison purpose qt6-base qt6-declarative wayland
 # depends	: qt6-imageformats qt6-multimedia qt6-wayland kdoctools
 # depends	: extra-cmake-modules xcb-util-cursor xcb-util-image 
-# depends	: xcb-util plasma-wayland-protocols
-## opencv
+# depends	: xcb-util plasma-wayland-protocols opencv
 
 pkgname=spectacle
 pkgver=6.3.4

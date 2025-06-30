@@ -1,0 +1,26 @@
+# description	: Utils to help with the transition to the new freedesktop.org naming scheme
+# depends	:  perl-xml-simple
+
+pkgname=icon-naming-utils
+pkgver=0.8.90
+pkgrel=1
+options="!lto"
+source="https://tango.freedesktop.org/releases/$pkgname-$pkgver.tar.bz2"
+optsflags=" -fno-lto "
+
+build() {
+	cd $pkgname-$pkgver
+
+    ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --libexecdir=/usr/lib/icon-naming-utils \
+        --localstatedir=/var
+    make 
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

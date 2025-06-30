@@ -1,0 +1,20 @@
+# description	: GNOME default icon theme
+# depends	: gtk3 librsvg
+
+pkgname=adwaita-icon-theme
+pkgver=48.1
+pkgrel=1
+source="https://download.gnome.org/sources/adwaita-icon-theme/${pkgver%.*}/adwaita-icon-theme-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    arch-meson adwaita-icon-theme-$pkgver build
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+
+    # deduplicate cursors
+    hardlink -c "$pkgdir/usr"
+}

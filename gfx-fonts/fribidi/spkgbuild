@@ -1,0 +1,21 @@
+# description	: A free implementation of the unicode bidirectional algorithm
+# depends	: meson
+
+pkgname=fribidi
+pkgver=1.0.16
+pkgrel=1
+source="https://github.com/fribidi/fribidi/releases/download/v$pkgver/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto -fstack-protector-strong -fzero-call-used-regs=used "
+
+build() {
+	cd $pkgname-$pkgver
+
+    arch-meson  build
+	ninja -C build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    meson install -C build --destdir "$pkgdir"
+}
