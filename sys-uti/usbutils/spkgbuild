@@ -1,0 +1,19 @@
+# description	: Prints out location of specified executables that are in your path
+# depends	: glibc hwdata meson udev
+
+pkgname=usbutils
+pkgver=018
+pkgrel=1
+source="https://kernel.org/pub/linux/utils/usb/usbutils/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=4 "
+
+build() {
+    arch-meson $pkgname-$pkgver build
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+
+    install -vDm 755 build/usbreset -t "$pkgdir/usr/bin"
+}

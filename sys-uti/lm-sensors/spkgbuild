@@ -1,0 +1,36 @@
+# description	: Hardware Monitoring user-space utilitie
+# depends	: which perl rrdtool
+ 
+pkgname=lm-sensors
+pkgver=3.6.2
+vrsn=$(echo $pkgver | sed 's/\./-/g')
+pkgrel=1
+source="$pkgname-$pkgver.tar.gz::https://github.com/hramrach/lm-sensors/archive/refs/tags/V$vrsn.tar.gz
+        healthd healthd.conf sensord.conf"
+backup="etc/sensors3.conf etc/healthd.conf etc/conf.d/sensord"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-"${vrsn}"
+
+    sed -i 's|/etc/sysconfig|/etc/conf.d|' prog/{detect/sensors-detect,init/{sensord,lm_sensors}.service}
+    sed -i 's/EnvironmentFile=/EnvironmentFile=-/' prog/init/lm_sensors.service
+
+    CFLAGS+=" -Wno-incompatible-pointer-types" \
+    make PREFIX=/usr
+}
+
+package() {
+    cd $pkgname-"${vrsn}"
+
+    make PROG_EXTRA=sensord BUILD_STATIC_LIB=0 \
+        PREFIX=/usr SBINDIR=/usr/bin MANDIR=/usr/share/man DESTDIR="$pkgdir" install
+
+    install -D -m755 "$srcdir/healthd" "$pkgdir/usr/bin/healthd"
+
+    install -D -m644 "$srcdir/healthd.conf" "$pkgdir/etc/healthd.conf"
+    install -D -m644 "$srcdir/sensord.conf" "$pkgdir/etc/conf.d/sensord"
+    
+    install -v -m755 -d "$pkgdir"/usr/share/doc/lm_sensors-$pkgver
+    cp -rv  README INSTALL doc/* "$pkgdir"/usr/share/doc/lm_sensors-$pkgver
+}

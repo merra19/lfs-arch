@@ -1,0 +1,27 @@
+# description	: Portland utils for cross-platform/cross-toolkit/cross-desktop interoperability
+# depends	: xmlto lynx xprop xset dbus desktop-file-utils gawk
+# depends	: shared-mime-info links
+
+pkgname=xdg-utils
+pkgver=1.2.1
+pkgrel=1
+source="https://gitlab.freedesktop.org/xdg/xdg-utils/-/archive/v$pkgver/$pkgname-v$pkgver.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd $pkgname-v$pkgver
+
+	./configure \
+        --prefix=/usr \
+        --mandir=/usr/share/man
+	make
+}
+
+package() {
+    cd $pkgname-v$pkgver
+
+    make DESTDIR="$pkgdir" install
+
+    # install empty directory to prevent xdg-desktop-menu install *.desktop to fail, see FS#33316
+    install -dm755 "$pkgdir"/usr/share/desktop-directories
+}

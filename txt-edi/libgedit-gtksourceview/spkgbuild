@@ -1,0 +1,24 @@
+# description	: Gedit Technology - Source code editing widget
+# depends	: glib gobject-introspection gtk3 libxml2 pango cairo
+# depends	: gdk-pixbuf
+
+pkgname=libgedit-gtksourceview
+pkgver=299.5.0
+pkgrel=1
+source="https://gitlab.gnome.org/World/gedit/libgedit-gtksourceview/-/archive/$pkgver/$pkgname-$pkgver.tar.bz2"
+
+build() {
+    local meson_options=(
+        -D gtk_doc=false
+    )
+
+    arch-meson $pkgname-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+
+    sed -i 's@x-shellscript;text/x-sh@x-shellscript;text/x-sh;text/plain@'   "$pkgdir"/usr/share/libgedit-gtksourceview-300/language-specs/sh.lang
+    sed -i 's@.profile;.bash_profile@.profile;.bash_profile;PKGBUILD@'   "$pkgdir"/usr/share/libgedit-gtksourceview-300/language-specs/sh.lang
+}

@@ -1,0 +1,32 @@
+# description	: Rotates, compresses, and mails system logs
+# depends	: popt acl fcron
+
+pkgname=logrotate
+pkgver=3.22.0
+pkgrel=1
+source="https://github.com/logrotate/logrotate/releases/download/$pkgver/$pkgname-$pkgver.tar.xz
+        logrotate.conf"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd $pkgname-$pkgver
+
+    ./configure \
+        --prefix=/usr \
+		--sbindir=/usr/bin \
+		--mandir=/usr/share/man \
+		--with-compress-command=/usr/bin/gzip \
+		--with-uncompress-command=/usr/bin/gunzip \
+		--with-default-mail-command=/usr/bin/mail \
+        --with-acl
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+
+    install -Dm 644 "$srcdir"/logrotate.conf "$pkgdir"/etc/logrotate.conf 
+    mkdir -p "$pkgdir"/etc/logrotate.d
+}

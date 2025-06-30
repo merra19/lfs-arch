@@ -1,0 +1,40 @@
+# description	: A file archival tool which can also read and write tar files
+# depends	: glibc
+
+pkgname=cpio
+pkgver=2.15
+pkgrel=1
+source="https://ftp.gnu.org/gnu/cpio/$pkgname-$pkgver.tar.bz2"
+optsflags=" -O3 -Ofast -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition -fstack-protector-strong -fzero-call-used-regs=used "
+
+build() {
+    cd $pkgname-$pkgver
+
+    # Get the GCC version string (e.g., "gcc 15.1.0")
+    version_str=$(gcc -dumpversion)
+
+    # Extract the major version number
+    major_version=${version_str%%.*}
+
+    # Compare with 15
+    if (( major_version >= 15 )); then
+        # Fix building with GCC-15
+        sed -e "/^extern int (\*xstat)/s/()/(const char * restrict,  struct stat * restrict)/" -i src/extern.h
+        sed -e "/^int (\*xstat)/s/()/(const char * restrict,  struct stat * restrict)/" -i src/global.c
+    fi
+    
+    CFLAGS+=' -fcommon' 
+    ./configure \
+        --prefix=/usr \
+        --mandir=/usr/share/man
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+
+    rm -r "$pkgdir"/usr/libexec
+    rm -r "$pkgdir"/usr/share/man/man8
+}

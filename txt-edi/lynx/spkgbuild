@@ -1,0 +1,33 @@
+# description	: An excellent console-based web browser with ssl support
+# depends	: gnutls ncurses zlib bzip2 libidn2 libgcrypt
+
+pkgname=lynx
+pkgver=2.9.2
+pkgrel=1
+source="https://invisible-mirror.net/archives/lynx/tarballs/$pkgname$pkgver.tar.bz2"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd $pkgname$pkgver
+
+	./configure \
+        --prefix=/usr \
+		--sysconfdir=/etc \
+		--with-ssl=/usr \
+		--enable-externs \
+		--enable-nls \
+		--enable-ipv6 \
+		--mandir=/usr/share/man
+	make
+}
+
+package() {
+    cd $pkgname$pkgver
+
+	make DESTDIR="$pkgdir" install-full
+
+	# FS#20404 - points to local help
+	sed -i -e "s|^HELPFILE.*$|HELPFILE:file:///usr/share/doc/lynx/lynx_help/lynx_help_main.html|" "${pkgdir}/etc/lynx.cfg"
+	install -d "$pkgdir/usr/share/doc/lynx"
+	cp -rf lynx_help "$pkgdir/usr/share/doc/lynx"
+}

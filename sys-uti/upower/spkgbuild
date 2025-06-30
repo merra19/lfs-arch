@@ -1,0 +1,31 @@
+# description	: D-Bus abstraction for enumerating power devices, querying history and statistics
+# depends	: libgudev gobject-introspection meson glib dbus udev
+# depends	: python3-gobject3 libxslt docbook-xsl
+
+pkgname=upower
+pkgver=1.90.9
+pkgrel=1
+source="https://gitlab.freedesktop.org/$pkgname/$pkgname/-/archive/v$pkgver/$pkgname-v$pkgver.tar.bz2
+        rules"
+backup="etc/UPower/UPower.conf"
+optsflags=" -O3 -Os -fdata-sections -ffat-lto-objects -ffunction-sections -flto=auto -fno-semantic-interposition "
+
+build() {
+	cd $pkgname-v$pkgver
+
+    arch-meson build \
+        -D idevice=disabled \
+        -D gtk-doc=false \
+        -D systemdsystemunitdir=no
+    meson compile -C build
+}
+
+package() {
+    cd $pkgname-v$pkgver
+
+	meson install -C build --destdir "$pkgdir"
+
+    ls "$pkgdir"/usr/{lib/upower,share/installed-tests}
+      # Remove installed-tests
+    rm -rv "$pkgdir"/usr/{lib/upower,share/installed-tests}
+}

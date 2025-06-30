@@ -1,0 +1,31 @@
+# description	: A text editor for the GNOME desktop
+# depends	: glibc glib gobject-introspection gtk3 libgedit-amtk
+# depends	: libgedit-tepl gspell python3-gobject3 cairo dconf
+# depends	: libgedit-gtksourceview adwaita-icon-theme libpeas meson
+# depends	: gsettings-desktop-schemas vala gdk-pixbuf appstream
+# depends	: hicolor-icon-theme pango yelp-tools appstream-glib
+# depends	: desktop-file-utils libgedit-gfls 
+
+pkgname=gedit
+pkgver=48.1
+pkgrel=1
+source="https://download.gnome.org/sources/$name/${pkgver%.*}/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+  local meson_options=(
+    -D gtk_doc=false
+    -D require_all_tests=false
+  )
+
+  arch-meson $pkgname-$pkgver build "${meson_options[@]}"
+  meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+
+    # Add /usr/lib/gedit paths to the default library search path
+    install -d "${pkgdir}"/etc/ld.so.conf.d
+    echo "/usr/lib/gedit" > "${pkgdir}"/etc/ld.so.conf.d/gedit.conf
+}

@@ -1,0 +1,41 @@
+# description	: System service to accurately color manage input and output devices
+# depends	: glib lcms2 sqlite dbus polkit gobject-introspection 
+# depends	: docbook-xml vala libgusb libgudev udev docbook-xsl
+# depends	: libxslt
+
+pkgname=colord
+pkgver=1.4.8
+pkgrel=1
+options="!emptydirs"
+source="https://www.freedesktop.org/software/colord/releases/colord-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd colord-$pkgver
+
+    local meson_options=(
+        -D systemd=false
+        -D daemon_user=colord
+        -D libcolordcompat=true
+        #-D print_profiles=false
+        -D sane="$(scratch isinstalled sane && echo "true" || echo "false")" 
+        -D vapi=true
+        -D argyllcms_sensor=false
+        -D docs=false
+        -D man=false
+    )
+
+    arch-meson build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    cd colord-$pkgver
+
+    meson install -C build --destdir "$pkgdir"
+
+    install -d "$pkgdir"/usr/lib/sysusers.d/
+    echo 'u colord - "Color management daemon" /var/lib/colord' > "$pkgdir/usr/lib/sysusers.d/colord.conf"
+
+
+}

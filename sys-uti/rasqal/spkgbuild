@@ -1,0 +1,30 @@
+# description	: Library that handles Resource Description Framework (RDF)
+# depends	: libgcrypt libgmp util-linux libxml2 bison flex raptor
+# depends	: gtk-doc
+
+pkgname=rasqal
+pkgver=0.9.33
+pkgrel=1
+options="!lto"
+source="https://download.librdf.org/source/$pkgname-$pkgver.tar.gz
+        0001-Add-support-for-PCRE-V2-and-prefer-it.patch"
+
+build() {
+	cd $pkgname-$pkgver
+
+    patch -Np1 -i ../0001-Add-support-for-PCRE-V2-and-prefer-it.patch
+    autoreconf -fiv
+
+    ./configure \
+        --prefix=/usr \
+        --disable-static \
+        --enable-release
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+	make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

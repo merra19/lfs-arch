@@ -1,0 +1,2 @@
+u fcron 23 - /var/spool/fcron
+g fcron 23

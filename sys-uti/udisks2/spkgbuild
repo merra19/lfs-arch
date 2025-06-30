@@ -1,0 +1,47 @@
+# description	: Daemon providing interfaces to work with storage devices
+# depends	: libatasmart libblockdev libgudev glib libxslt polkit 
+# depends	: gobject-introspection elogind parted lvm2 btrfs-progs
+# depends	: linux-api-headers acl dosfstools gptfdisk mdadm
+# depends	: util-linux
+
+pkgname=udisks2
+pkgver=2.10.1
+pkgrel=1
+options="!lto"
+source="https://github.com/storaged-project/udisks/releases/download/udisks-$pkgver/udisks-$pkgver.tar.bz2
+        udisks-privatemounts.patch::https://github.com/storaged-project/udisks/commit/5e7277debea926370e587408517560afe87d28c9.patch
+        rules"
+optsflags=" -fno-lto "
+backup="etc/udisks2/udisks2.conf"
+
+build() {
+	cd udisks-$pkgver
+
+    patch -Np1 -i ../udisks-privatemounts.patch
+
+	./configure \
+        --prefix=/usr \
+        --libexecdir=/usr/lib \
+        --sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--disable-static \
+        --enable-btrfs \
+        --enable-lvm2 \
+        --with-tmpfilesdir=/usr/lib/tmpfiles.d \
+        --with-systemdsystemunitdir=no 
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+        #--enable-available-modules \
+	make
+}
+
+package() {
+    cd udisks-$pkgver
+
+    make DESTDIR="$pkgdir" install
+
+    install -Dm 644 "$srcdir"/rules "$pkgdir"/usr/share/polkit-1/rules.d/org.freedesktop.udisks2.rules
+
+    # interface declaration
+    install -vDm 644 data/org.freedesktop.UDisks2.xml -t "$pkgdir/usr/share/dbus-1/interfaces/"
+}

@@ -1,0 +1,57 @@
+# description	: A command scheduler with extended capabilities over cron and anacron
+# depends	: pam libxcrypt readline nano vim
+
+pkgname=fcron
+pkgver=3.4.0
+pkgrel=1
+options="emptydirs !makeflags"
+source="http://fcron.free.fr/archives/$pkgname-$pkgver.src.tar.gz
+        run-parts systab.orig fcron.sysusers"
+backup="etc/fcron/fcron.conf etc/fcron/fcron.allow etc/fcron/fcron.deny
+        var/spool/fcron/systab.orig"
+
+build() {
+    cd $pkgname-$pkgver
+
+    #  fix some locations hard coded in the documentation
+    find doc -type f -exec sed -i 's:/usr/local::g' {} \;
+
+    ./configure \
+        --prefix=/usr \
+        --sbindir=/usr/bin \
+        --sysconfdir=/etc/fcron \
+        --localstatedir=/var \
+        --with-answer-all=no \
+        --with-boot-install=no \
+        --datarootdir=/usr/share \
+        --datadir=/usr/share \
+        --with-docdir=/usr/share/doc/$pkgname \
+        --localstatedir=/var \
+        --with-systemdsystemunitdir=no \
+        --with-piddir=/run \
+        --with-editor=/usr/bin/vim \
+        --without-sendmail  
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    sed -e '/systemctl daemon-reload/d' -i Makefile
+
+    make DESTDIR="$pkgdir" install
+    
+    #install -Dm755 ../run-parts "$pkgdir"/usr/bin/run-parts
+    install -vdm754 "$pkgdir"/etc/cron.{hourly,daily,weekly,monthly}
+    install -Dm644  ../systab.orig "$pkgdir"/var/spool/fcron/systab.orig
+
+    install -Dm644 files/fcron.pam "$pkgdir/etc/pam.d/fcron"
+    install -Dm644 files/fcrontab.pam "$pkgdir/etc/pam.d/fcrontab"
+    install -Dm644 ../fcron.sysusers "$pkgdir/usr/lib/sysusers.d/fcron.conf"
+
+    chown root:fcron "$pkgdir"/etc/fcron/fcron.conf 
+    chmod 644 "$pkgdir"/etc/fcron/fcron.conf
+
+    # remove docs
+    rm -r "$pkgdir/usr/share/doc"
+}

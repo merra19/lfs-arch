@@ -1,0 +1,19 @@
+# description	: Unprivileged sandboxing tool, namespaces-powered chroot-like solution
+# depends	: libseccomp libcap
+
+pkgname=bubblewrap
+pkgver=0.11.0
+pkgrel=1
+options="!lto"
+source="https://github.com/containers/bubblewrap/releases/download/v$pkgver/bubblewrap-$pkgver.tar.xz"
+optsflags=" -fno-lto "
+
+build() {
+    arch-meson bubblewrap-$pkgver build -D selinux=disabled
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+    chmod u+s "$pkgdir/usr/bin/bwrap"
+}

@@ -1,0 +1,46 @@
+# description	: The systemd project's logind, extracted to a standalone package
+# depends	: pam docbook-xml libxslt python3-lxml python3-jinja gperf 
+# depends	: util-linux libcap udev acl
+
+pkgname=elogind
+pkgver=255.17
+pkgrel=1
+source="https://github.com/elogind/elogind/archive/v$pkgver/$pkgname-$pkgver.tar.gz"
+
+build() {
+    meson_options+=(
+        --libexecdir=/usr/lib/elogind
+        -Dshared-lib-tag="${pkgver}-${pkgrel}"
+        -Dmode=release
+
+        -Ddefault-hierarchy='unified'
+        -Dcgroup-controller='openrc'
+
+        -Ddefault-kill-user-processes=false
+        -Dinstall-sysconfdir=true
+        -Dsmack=true
+        -Dutmp=true
+
+        -Dman=disabled
+        -Daudit=disabled
+        -Dpolkit=enabled
+
+        -Dselinux=disabled
+        -Dxenctrl=disabled
+        -Dfallback-hostname='linux'
+
+        -Dhalt-path=/usr/bin/halt
+        -Dpoweroff-path=/usr/bin/poweroff
+        -Dreboot-path=/usr/bin/reboot
+        -Dkexec-path=/usr/bin/kexec
+    )
+
+    arch-meson $pkgname-$pkgver build "${meson_options[@]}"
+}
+
+package() {
+	meson install -C build --destdir "${pkgdir}"
+
+    ln -sfv  libelogind.pc "$pkgdir"/usr/lib/pkgconfig/libsystemd.pc &&
+    ln -sfvn elogind "$pkgdir"/usr/include/systemd
+}

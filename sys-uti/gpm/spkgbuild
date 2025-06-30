@@ -1,0 +1,55 @@
+# description	: Console-based mouse driver
+# depends	: xz ncurses texinfo
+
+pkgname=gpm
+pkgver=1.20.7
+pkgrel=1
+options="!lto !makeflags"
+source="https://anduin.linuxfromscratch.org/BLFS/gpm/$pkgname-$pkgver.tar.bz2
+        https://www.linuxfromscratch.org/patches/blfs/svn/gpm-1.20.7-consolidated-1.patch
+        https://www.linuxfromscratch.org/patches/blfs/svn/gpm-1.20.7-gcc15_fixes-1.patch
+        error-format.patch
+        gpm.sh"
+optsflags=" -fno-lto "
+
+build() {
+    cd $pkgname-$pkgver
+    
+    patch -Np1 -i ../gpm-1.20.7-consolidated-1.patch
+    #  avoid -Wformat-security warnings
+    patch -Np1 -i ../error-format.patch
+
+    # Get the GCC version string (e.g., "gcc 15.1.0")
+    version_str=$(gcc -dumpversion)
+
+    # Extract the major version number
+    major_version=${version_str%%.*}
+
+    # Compare with 15
+    if (( major_version >= 15 )); then
+        # Fix building with GCC-15
+        patch -Np1 -i ../gpm-1.20.7-gcc15_fixes-1.patch  
+    fi
+
+    ./autogen.sh
+    ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --sbindir=/usr/bin \
+        ac_cv_path_emacs=no
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+    
+    make DESTDIR="$pkgdir" install
+    install -D -m0644 ../gpm.sh "$pkgdir/etc/profile.d/gpm.sh"
+
+    install-info --dir-file="$pkgdir"/usr/share/info/dir \
+                "$pkgdir"/usr/share/info/gpm.info
+
+    cd "${pkgdir}/usr/lib/"
+    ln -s libgpm.so.2.* libgpm.so
+    chmod 0755 "${pkgdir}"/usr/lib/libgpm.so.*
+}

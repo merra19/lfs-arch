@@ -1,0 +1,18 @@
+# description	: GtkSourceView-based text editors and IDE helper library
+# depends	: glib gobject-introspection gtk3 libgedit-gtksourceview
+# depends	: libgedit-gfls icu gsettings-desktop-schemas libhandy
+# depends	: libgedit-amtk
+
+pkgname=libgedit-tepl
+pkgver=6.13.0
+pkgrel=1
+source="https://gitlab.gnome.org/World/gedit/libgedit-tepl/-/archive/$pkgver/$pkgname-$pkgver.tar.bz2"
+
+build() {
+    arch-meson $pkgname-$pkgver -D gtk_doc=false build
+    meson compile -C build
+}
+
+package() {
+     meson install -C build --destdir "$pkgdir"
+}

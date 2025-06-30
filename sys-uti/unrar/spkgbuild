@@ -1,0 +1,24 @@
+# description	: Uncompress rar files
+# depends	: glibc
+
+pkgname=unrar
+pkgver=7.1.8
+pkgrel=1
+source="https://www.rarlab.com/rar/unrarsrc-$pkgver.tar.gz"
+
+build() {
+    sed -e '/CXXFLAGS=/d' -e '/LDFLAGS=/d' -i unrar/makefile # Use system build flags
+
+    cp -a unrar libunrar
+    
+    export LDFLAGS+=' -pthread'
+
+    make -C libunrar lib
+    make -C unrar -j1
+}
+
+package() {
+    install -Dm755 unrar/unrar -t "$pkgdir"/usr/bin/
+    install -Dm755 libunrar/libunrar.so -t "$pkgdir"/usr/lib/
+    install -Dm644 libunrar/dll.hpp -t "$pkgdir"/usr/include/unrar/
+}

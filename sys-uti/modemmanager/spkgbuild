@@ -1,0 +1,30 @@
+# description	: Modem and mobile broadband management libraries
+# depends	: libgudev glib elogind gobject-introspection libqmi 
+# depends	: libmbim polkit vala mobile-broadband-provider-info
+
+pkgname=modemmanager
+pkgver=1.24.0
+pkgrel=1
+source="https://gitlab.freedesktop.org/mobile-broadband/ModemManager/-/archive/$pkgver/ModemManager-$pkgver.tar.gz"
+optsflags=" -O3 -Os -fdata-sections -ffat-lto-objects -ffunction-sections -flto=auto -fno-semantic-interposition "
+
+build() {
+    local meson_options=(
+        -D dbus_policy_dir=/usr/share/dbus-1/system.d
+        -D dist_version="\"$pkgver-$pkgrel\""
+        -D gtk_doc=false
+        -D systemd_journal=false
+        -D systemdsystemunitdir=no
+        -D polkit=permissive
+        -D vapi=true
+        -D qrtr=false
+    )
+
+    arch-meson ModemManager-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+}
+
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

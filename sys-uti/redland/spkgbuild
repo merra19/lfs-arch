@@ -1,0 +1,35 @@
+# description	: High-level interface for the Resource Description Framework
+# depends	: libtool sqlite unixodbc rasqal raptor mariadb
+# depends	: postgresql
+
+pkgname=redland
+pkgver=1.0.17
+pkgrel=1
+options="!lto"
+source="https://download.librdf.org/source/redland-$pkgver.tar.gz
+        rpath.diff"
+
+build() {
+	cd redland-$pkgver
+
+	./configure \
+        --prefix=/usr \
+        --enable-release \
+        --disable-static \
+        --with-raptor=system \
+        --with-rasqal=system \
+        --with-sqlite=3 \
+        --with-bdb=no 
+
+    # nuke rpath
+    patch -Np0 -i "${srcdir}/rpath.diff"
+	make
+}
+
+
+package() {
+    cd redland-$pkgver
+
+    make DESTDIR="${pkgdir}" install
+}
+

@@ -1,0 +1,50 @@
+# description	: D-Bus interfaces for querying and manipulating user account information
+# depends	: glib libxcrypt polkit docbook-xml gobject-introspection
+# depends	: meson xmlto dbus vala 
+
+pkgname=accountsservice
+pkgver=23.13.9
+pkgrel=1
+options="!lto"
+source="https://www.freedesktop.org/software/accountsservice/$pkgname-$pkgver.tar.xz
+        accountsservice-23.13.9-c99-fixes.patch
+        accounts-daemon-restart.hook"
+optsflags=" -fno-lto -fstack-protector-strong -fzero-call-used-regs=used "
+
+build() {
+    cd $pkgname-$pkgver
+
+    patch -Np1 -i ../accountsservice-23.13.9-c99-fixes.patch
+
+    # Rename a directory whose presence prevents the build system from running if dbusmock is not installed:
+    mv tests/dbusmock tests/dbusmock-tests
+
+    # Fix the tests so that the new directory is found and adapt it for Python 3.12.0 or later
+    sed -e '/accounts_service\.py/s/dbusmock/dbusmock-tests/' \
+        -e 's/assertEquals/assertEqual/' \
+        -i tests/test-libaccountsservice.py
+
+    # Fix one test that fails if the en_IE.UTF-8 locale is not installed:
+    sed -i '/^SIMULATED_SYSTEM_LOCALE/s/en_IE.UTF-8/en_HK.iso88591/' tests/test-daemon.py
+
+
+    local meson_options=(
+        -D systemdsystemunitdir=no
+        -D elogind=true
+        -D admin_group=wheel
+        -D docbook=false
+        -D gtk_doc=false
+    )
+
+    arch-meson build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    meson install -C build --destdir "$pkgdir"
+
+    #install -Dt "$pkgdir/usr/share/libalpm/hooks" -m644 "$srcdir"/*.hook
+    install -d "$pkgdir/usr/share/accountsservice/interfaces"
+}

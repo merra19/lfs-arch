@@ -1,0 +1,57 @@
+# description	: A message bus system, a simple way for applications to talk to each other
+# depends	: expat xorg-proto libx11 libxt xmlto
+
+pkgname=dbus
+pkgver=1.16.2
+pkgrel=1
+options="!lto"
+source="https://dbus.freedesktop.org/releases/dbus/dbus-$pkgver.tar.xz
+        malloc_trim.patch memory.patch dbus-reload.hook
+        0001-Arch-Linux-tweaks.patch
+        0001-add-elogind-build-support.patch"
+optsflags=" -fno-lto -fstack-protector-strong -fzero-call-used-regs=used "
+
+prepare() {
+    cd dbus-$pkgver
+
+    patch -Np1 -i ../malloc_trim.patch
+    patch -Np1 -i ../memory.patch
+    patch -Np1 -i ../0001-Arch-Linux-tweaks.patch
+    patch -Np1 -i ../0001-add-elogind-build-support.patch
+}
+
+build() {
+
+
+    local meson_options=(
+        -D elogind="$(scratch isinstalled elogind && echo "enabled" || echo "disabled")"
+        -D systemd=disabled
+        -D user_session=false
+        -D apparmor=disabled
+        -D dbus_user=dbus
+        -D kqueue=disabled
+        -D launchd=disabled
+        -D relocation=disabled
+        -D selinux=disabled
+        -D x11_autolaunch=enabled
+
+        -D doxygen_docs=disabled
+        -D ducktype_docs=disabled
+        -D xml_docs=enabled
+        -D qt_help=disabled
+        -D modular_tests=disabled
+        -D libaudit=disabled
+    )
+    arch-meson dbus-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+
+    chown -v root:dbus "$pkgdir"/usr/lib/dbus-daemon-launch-helper &&
+    chmod -v      4750       "$pkgdir"/usr/lib/dbus-daemon-launch-helper
+
+    install -d "$pkgdir"/etc/
+    ln -sfv /var/lib/dbus/machine-id "$pkgdir"/etc/
+}
