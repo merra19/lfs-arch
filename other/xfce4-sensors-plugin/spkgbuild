@@ -10,7 +10,7 @@ source="https://archive.xfce.org/src/panel-plugins/xfce4-sensors-plugin/${pkgver
 build() {
     arch-meson $pkgname-$pkgver build \
         --localstatedir=/var \
-        -D hddtemp=enabled \
+        -D hddtemp=disabled \
         -D netcat=enabled \
         -D xnvctrl=disabled
     meson compile -C build

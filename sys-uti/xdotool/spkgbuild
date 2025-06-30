@@ -15,5 +15,5 @@ build() {
 package() {
     cd $pkgname-$pkgver
 
-    make PREFIX="${PKG}/usr" INSTALLMAN="${PKG}/usr/share/man" install
+    make PREFIX="$pkgdir/usr" INSTALLMAN="$pkgdir/usr/share/man" install
 }

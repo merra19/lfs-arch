@@ -20,7 +20,7 @@ build() {
         --enable-x11-backend \
         --enable-evdev-input \
         --enable-wayland-compositor \
-        --enable-gtk-doc
+        --disable-docs
     sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
     make
 }
