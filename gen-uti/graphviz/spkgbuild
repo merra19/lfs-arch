@@ -5,7 +5,7 @@
 
 #xxxxxx pango poppler  ghostscript  ruby librsvg  libwebp  
 
-pkgname=graphviz2
+pkgname=graphviz
 pkgver=13.0.1
 pkgrel=1
 source="https://gitlab.com/graphviz/graphviz/-/archive/$pkgver/$pkgname-$pkgver.tar.bz2"

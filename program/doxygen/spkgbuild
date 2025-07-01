@@ -2,7 +2,7 @@
 # depends	: flex bison coreutils perl python3 sqlite llvm
 # optional	: ghostscript
 
-pkgname=doxygen2
+pkgname=doxygen
 pkgver=1.14.0
 pkgrel=1
 source="https://doxygen.nl/files/doxygen-$pkgver.src.tar.gz"

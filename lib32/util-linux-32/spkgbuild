@@ -6,7 +6,8 @@ _pkgname=util-linux
 pkgver=2.41
 pkgrel=1
 options="!emptydirs"
-source="$_pkgname-$pkgver.zip::https://github.com/util-linux/util-linux/archive/refs/heads/stable/v$pkgver.zip"
+source="$_pkgname-$pkgver.zip::https://github.com/util-linux/util-linux/archive/refs/heads/stable/v$pkgver.zip
+        0001-sysusers-and-tmpfiles-no-systemd.patch"
 optsflags=" -O3 -Os -fdata-sections -ffat-lto-objects -ffunction-sections -flto=auto -fno-semantic-interposition "
 
 prepare() {
