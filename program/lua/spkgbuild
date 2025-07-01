@@ -1,0 +1,74 @@
+# description	: A powerful light-weight programming language designed for extending applications
+# depends	: readline
+
+pkgname=lua
+pkgver=5.4.8
+_majorver=${pkgver%.*}
+pkgrel=1
+options="!lto !asneeded !emptydirs"
+source="https://www.lua.org/ftp/$pkgname-$pkgver.tar.gz
+        liblua.so.patch paths.patch lua.pc"
+
+prepare() {
+    patch -d lua-$pkgver -p1 -i ../liblua.so.patch
+    patch -d lua-$pkgver -p1 -i ../paths.patch
+    cp -r lua-$pkgver lua++-$pkgver
+
+    sed "s/%VER%/$_majorver/g;s/%REL%/$pkgver/g" lua.pc > lua-$pkgver/lua.pc
+    sed "s/%VER%/$_majorver/g;s/%REL%/$pkgver/g;s/-llua/-llua++/g" lua.pc > lua++-$pkgver/lua++.pc
+}
+
+build() {
+	cd $pkgname-$pkgver
+
+    CFLAGS="-O2 -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector --param=ssp-buffer-size=32 -Wformat -Wformat-security -Wno-error -Wl,-z,max-page-size=0x4000 -march=$MMARCH"
+    CXXFLAGS=$CFLAGS
+    FFLAGS="-O2 -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector --param=ssp-buffer-size=32 -Wno-error -Wl,-z,max-page-size=0x4000 -march=$MMARCH"
+    FCFLAGS=$FFLAGS
+    CFLAGS="$CFLAGS -O3 -fno-lto -fstack-protector-strong -fzero-call-used-regs=used "
+    FCFLAGS="$FFLAGS -O3 -fno-lto -fstack-protector-strong -fzero-call-used-regs=used "
+    FFLAGS="$FFLAGS -O3 -fno-lto -fstack-protector-strong -fzero-call-used-regs=used "
+    CXXFLAGS="$CXXFLAGS -O3 -fno-lto -fstack-protector-strong -fzero-call-used-regs=used "
+    
+    make MYCFLAGS="$CFLAGS -fPIC" MYLDFLAGS="$LDFLAGS" linux-readline
+
+    cd ../lua++-$pkgver
+
+    make MYCFLAGS="$CXXFLAGS -fPIC" MYLDFLAGS="$LDFLAGS" CC=g++ LUA_A=liblua++.a LUA_SO=liblua++.so linux-readline
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make \
+        TO_LIB="liblua.so liblua.so.$_majorver liblua.so.$pkgver" \
+        INSTALL_DATA='cp -d' \
+        INSTALL_TOP="$pkgdir"/usr \
+        INSTALL_MAN="$pkgdir"/usr/share/man/man1 \
+        install
+    ln -sf /usr/bin/lua "$pkgdir"/usr/bin/lua$_majorver
+    ln -sf /usr/bin/luac "$pkgdir"/usr/bin/luac$_majorver
+    ln -sf /usr/lib/liblua.so.$pkgver "$pkgdir"/usr/lib/liblua$_majorver.so
+
+    install -Dm644 lua.pc "$pkgdir"/usr/lib/pkgconfig/lua54.pc
+    ln -sf lua54.pc "$pkgdir"/usr/lib/pkgconfig/lua.pc
+    ln -sf lua54.pc "$pkgdir"/usr/lib/pkgconfig/lua5.4.pc
+    ln -sf lua54.pc "$pkgdir"/usr/lib/pkgconfig/lua-5.4.pc
+
+    install -d "$pkgdir"/usr/share/doc/$pkgname
+    install -m644 doc/*.{gif,png,css,html} "$pkgdir"/usr/share/doc/$pkgname
+
+    cd ../lua++-$pkgver
+    make \
+        TO_LIB="liblua++.so liblua++.so.$_majorver liblua++.so.$pkgver" \
+        INSTALL_BIN=null INSTALL_INC=null INSTALL_MAN=../null \
+        INSTALL_DATA='cp -d' \
+        INSTALL_TOP="$pkgdir"/usr \
+        install
+    ln -sf /usr/lib/liblua++.so.$pkgver "$pkgdir"/usr/lib/liblua++$_majorver.so
+
+    install -Dm644 lua++.pc "$pkgdir"/usr/lib/pkgconfig/lua++54.pc
+    ln -sf lua++54.pc "$pkgdir"/usr/lib/pkgconfig/lua++.pc
+    ln -sf lua++54.pc "$pkgdir"/usr/lib/pkgconfig/lua++5.4.pc
+    ln -sf lua++54.pc "$pkgdir"/usr/lib/pkgconfig/lua++-5.4.pc
+}

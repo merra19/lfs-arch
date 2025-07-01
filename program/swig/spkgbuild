@@ -1,0 +1,24 @@
+# description	: Simplified Wrapper and Interface Generator
+# depends	: zlib pcre2
+
+pkgname=swig
+pkgver=4.3.1
+pkgrel=1
+options="!lto"
+source="https://downloads.sourceforge.net/swig/$pkgname-$pkgver.tar.gz"
+optsflags=" -fno-lto "
+
+build() {
+	cd $pkgname-$pkgver
+
+    ./autogen.sh
+	./configure \
+        --prefix=/usr
+	make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+	make DESTDIR="$pkgdir" install
+}

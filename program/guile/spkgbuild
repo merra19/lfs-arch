@@ -1,0 +1,27 @@
+# description	: GNU Ubiquitous Intelligent Language for Extensions
+# depends	: libgmp ncurses libunistring gc libffi libxcrypt
+
+pkgname=guile
+pkgver=3.0.10
+pkgrel=1
+source="https://ftp.gnu.org/gnu/guile/guile-3.0.10.tar.xz"
+optsflags=" -fno-lto "
+
+build() {
+	cd $pkgname-$pkgver
+
+    CC="gcc -std=gnu17" \
+    ./configure \
+        --prefix=/usr \
+        --disable-static  \
+        --disable-error-on-warning
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+    make
+}
+
+
+
+package() {
+    make -C $pkgname-$pkgver DESTDIR="$pkgdir" install
+    rm "$pkgdir"/usr/lib/libguile-3.?.so.*-gdb.scm
+}

@@ -1,0 +1,62 @@
+# description	: Linker from the LLVM project
+# depends	: llvm
+
+pkgname=lld
+pkgver=20.1.1
+pkgrel=1
+_source_base=https://github.com/llvm/llvm-project/releases/download/llvmorg-$pkgver
+source="$_source_base/lld-$pkgver.src.tar.xz
+        $_source_base/llvm-$pkgver.src.tar.xz
+        $_source_base/libunwind-$pkgver.src.tar.xz
+        $_source_base/cmake-$pkgver.src.tar.xz
+        lld-import-compact_unwind_encoding.h-from-libu.patch"
+
+prepare() {
+    # https://bugs.llvm.org/show_bug.cgi?id=49228
+    mv libunwind{-$pkgver.src,}
+
+    mv cmake{-$pkgver.src,}
+    cd lld-$pkgver.src
+    mkdir build
+
+    patch -p2 -i "$srcdir"/lld-import-compact_unwind_encoding.h-from-libu.patch
+}
+
+build() {
+	cd $pkgname-$pkgver.src/build
+
+    CFLAGS="-O2 -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector --param=ssp-buffer-size=32 -Wformat -Wformat-security -Wno-error -Wl,-z,max-page-size=0x4000 -march=$MMARCH"
+    CXXFLAGS=$CFLAGS
+    FFLAGS="-O2 -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector --param=ssp-buffer-size=32 -Wno-error -Wl,-z,max-page-size=0x4000 -march=$MMARCH"
+    FCFLAGS=$FFLAGS
+    CFLAGS="$CFLAGS -fno-lto "
+    FCFLAGS="$FFLAGS -fno-lto "
+    FFLAGS="$FFLAGS -fno-lto "
+    CXXFLAGS="$CXXFLAGS -fno-lto "
+    
+    local cmake_args=(
+        -G Ninja
+		-D CMAKE_INSTALL_PREFIX=/usr
+		-D CMAKE_BUILD_TYPE=Release
+		-D CMAKE_C_FLAGS_RELEASE="$CFLAGS"
+		-D CMAKE_CXX_FLAGS_RELEASE="$CXXFLAGS"
+		-D LLVM_LINK_LLVM_DYLIB=ON 
+        -D LLVM_INCLUDE_DIRS="$srcdir/llvm-$pkgver.src"/include
+        -D LLVM_ENABLE_ZSTD=ON
+        -D LLVM_PARALLEL_LINK_JOBS=5
+    )
+    cmake .. "${cmake_args[@]}"
+    ninja
+}
+
+package() {
+    cd lld-$pkgver.src/build
+
+    DESTDIR="$pkgdir" ninja install
+
+    # https://bugs.llvm.org/show_bug.cgi?id=42455
+    install -Dm644 -t "$pkgdir/usr/share/man/man1" ../docs/ld.lld.1
+
+    # Remove documentation sources
+    rm -rf "$pkgdir"/usr/share/doc/lld/html/{_sources,.buildinfo}
+}

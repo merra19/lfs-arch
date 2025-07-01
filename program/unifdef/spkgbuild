@@ -1,0 +1,36 @@
+# description	: Remove #ifdef'ed lines from a file while otherwise leaving the file alone
+# depends	: glibc
+
+pkgname=unifdef
+pkgver=2.12
+pkgrel=1
+source="https://dotat.at/prog/unifdef/$pkgname-$pkgver.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=4 "
+
+build() {
+	cd $pkgname-$pkgver
+
+    # Get the GCC version string (e.g., "gcc 15.1.0")
+    version_str=$(gcc -dumpversion)
+
+    # Extract the major version number
+    major_version=${version_str%%.*}
+
+    # Compare with 15
+    if (( major_version >= 15 )); then
+        # Fix building with GCC-15
+        sed -i 's/constexpr/unifdef_&/g' unifdef.c
+    fi
+
+    make clean
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    mkdir -p "$pkgdir"/usr/bin "$pkgdir"/usr/share/man/man1
+    install -m 0755 unifdef "$pkgdir"/usr/bin/
+    install -m 0755 unifdefall.sh "$pkgdir"/usr/bin/unifdefall
+    install -m 0644 unifdef.1 "$pkgdir"/usr/share/man/man1/
+}

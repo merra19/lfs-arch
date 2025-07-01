@@ -1,0 +1,32 @@
+# description	: Partition editor for graphically managing your disk partitions
+# depends	: gtkmm parted btrfs-progs dosfstools ntfs-3g polkit xhost
+# depends	: intltool  itstool pkgconf yelp-tools
+
+pkgname=gparted
+pkgver=1.7.0
+pkgrel=1
+source="https://downloads.sourceforge.net/gparted/$pkgname-$pkgver.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    ./configure \
+        --prefix=/usr \
+        --sbindir=/usr/bin \
+        --libexecdir=/usr/lib/gparted \
+        --enable-online-resize \
+        --enable-libparted-dmraid \
+        --enable-xhost-root
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="${pkgdir}" install
+
+    # Install policy file
+    install -D -m0644 org.gnome.gparted.policy \
+        "${pkgdir}"/usr/share/polkit-1/actions/org.gnome.gparted.policy
+}

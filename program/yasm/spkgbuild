@@ -1,0 +1,38 @@
+# description	: An assembler for x86 and x86_64 instruction sets
+# depends	: glibc
+
+pkgname=yasm
+pkgver=1.3.0
+pkgrel=2
+options="!lto staticlibs"
+source="https://www.tortall.net/projects/$pkgname/releases/$pkgname-$pkgver.tar.gz"
+optsflags=" -fno-lto "
+
+build() {
+	cd $pkgname-$pkgver
+
+    # Get the GCC version string (e.g., "gcc 15.1.0")
+    version_str=$(gcc -dumpversion)
+
+    # Extract the major version number
+    major_version=${version_str%%.*}
+
+    # Compare with 15
+    if (( major_version >= 15 )); then
+        # Fix building with GCC-15
+        sed -e 's/def __cplusplus/ defined(__cplusplus) || __STDC_VERSION__ >= 202311L/' \
+            -i libyasm/bitvect.h
+    fi
+
+	sed -i 's#) ytasm.*#)#' Makefile.in
+    
+	./configure \
+        --prefix=/usr
+	make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

@@ -1,0 +1,47 @@
+# description	: GNU debugger
+# depends	: bash boost expat  glibc libgmp guile libmpfr xz
+# depends	: ncurses python3 readline  texinfo xxhash zstd
+## source-highlight
+
+pkgname=gdb
+pkgver=16.3
+pkgrel=1
+source="https://ftp.gnu.org/gnu/gdb/gdb-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto -fstack-protector-strong -fzero-call-used-regs=used "
+backup="etc/gdb/gdbinit"
+
+build() {
+	cd gdb-$pkgver
+
+    mkdir -p build && cd build
+
+    ../configure \
+        --prefix=/usr \
+        --disable-nls \
+        --enable-source-highlight \
+        --disable-tui \
+        --enable-targets=all \
+        --enable-languages=all \
+        --enable-multilib \
+        --enable-interwork \
+        --with-system-readline \
+        --with-python=/usr/bin/python \
+        --with-system-gdbinit=/etc/gdb/gdbinit
+    make
+}
+
+package() {
+    cd gdb-$pkgver/build
+
+    make -C gdb DESTDIR="$pkgdir" install
+    make -C gdbserver DESTDIR="$pkgdir" install
+
+    make -C gdb/data-directory DESTDIR="$pkgdir" install
+
+    # install "custom" system gdbinit
+    install -dm 755 "$pkgdir/etc/gdb"
+    touch "$pkgdir/etc/gdb/gdbinit"
+
+    # comes from gdb-common
+    rm -r "$pkgdir/usr/share/gdb/"
+}

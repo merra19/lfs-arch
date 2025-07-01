@@ -1,0 +1,91 @@
+# description	: Low Level Virtual Machine 32 bit
+# depends	: cmake ninja llvm glibc zlib-32 zstd-32 libxml2-32
+# depends	: libffi-32 gcc cmake
+
+pkgname=lib32-llvm
+pkgver=20.1.1
+_pkgver=20.1.1
+pkgrel=1
+options="!lto !asneeded staticlibs"
+source="https://github.com/llvm/llvm-project/releases/download/llvmorg-$pkgver/llvm-$pkgver.src.tar.xz
+        https://anduin.linuxfromscratch.org/BLFS/llvm/llvm-cmake-${_pkgver}.src.tar.xz
+        https://anduin.linuxfromscratch.org/BLFS/llvm/llvm-third-party-${_pkgver}.src.tar.xz
+        https://github.com/llvm/llvm-project/releases/download/llvmorg-$pkgver/clang-$pkgver.src.tar.xz
+        https://github.com/llvm/llvm-project/releases/download/llvmorg-$pkgver/compiler-rt-$pkgver.src.tar.xz
+        clang-0003-Add-f-instructions-that-GCC-has-that-Clang-must-igno.patch"
+noextract="llvm-cmake-${_pkgver}.src.tar.xz llvm-third-party-${_pkgver}.src.tar.xz clang-$pkgver.src.tar.xz compiler-rt-$pkgver.src.tar.xz"
+
+build() {
+    cd llvm-$pkgver.src
+
+    export PKG_CONFIG="i686-pc-linux-gnu-pkg-config"
+
+    CFLAGS="-O2 -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector --param=ssp-buffer-size=32 -Wformat -Wformat-security -Wno-error -Wl,-z,max-page-size=0x4000 -march=$MMARCH"
+    CXXFLAGS=$CFLAGS
+    FFLAGS="-O2 -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector --param=ssp-buffer-size=32 -Wno-error -Wl,-z,max-page-size=0x4000 -march=$MMARCH"
+    FCFLAGS=$FFLAGS
+    CFLAGS="$CFLAGS -fno-lto "
+    FCFLAGS="$FFLAGS -fno-lto "
+    FFLAGS="$FFLAGS -fno-lto "
+    CXXFLAGS="$CXXFLAGS -fno-lto "
+
+    tar -xf ../llvm-cmake-${_pkgver}.src.tar.xz
+    tar -xf ../llvm-third-party-${_pkgver}.src.tar.xz 
+    sed "/LLVM_COMMON_CMAKE_UTILS/s@../cmake@cmake-${_pkgver}.src@" -i CMakeLists.txt 
+    sed "/LLVM_THIRD_PARTY_DIR/s@../third-party@third-party-${_pkgver}.src@" \
+        -i cmake/modules/HandleLLVMOptions.cmake
+
+    tar -xf ../clang-$pkgver.src.tar.xz -C tools &&
+    mv tools/clang-$pkgver.src tools/clang
+
+    tar -xf ../compiler-rt-$pkgver.src.tar.xz -C projects    &&
+    mv projects/compiler-rt-$pkgver.src projects/compiler-rt &&
+
+    # Fix python 
+    grep -rl '#!.*python' | xargs sed -i '1s/python$/python3/'
+
+    patch -Np1 -d tools/clang -i "$srcdir"/clang-0003-Add-f-instructions-that-GCC-has-that-Clang-must-igno.patch
+    patch -Np1 -i ../prefix.patch
+    
+    CC="gcc" CXX="g++" \
+    cmake -B build \
+        -D CMAKE_INSTALL_PREFIX=/usr \
+        -D CMAKE_CXX_FLAGS:STRING=-m32 \
+        -D CMAKE_C_FLAGS:STRING=-m32 \
+        -D CMAKE_SKIP_INSTALL_RPATH=ON \
+        -D LLVM_ENABLE_FFI=ON \
+        -D CMAKE_BUILD_TYPE=Release \
+        -D LLVM_BUILD_LLVM_DYLIB=ON \
+        -D LLVM_LINK_LLVM_DYLIB=ON \
+        -D LLVM_ENABLE_RTTI=ON \
+        -D LLVM_TARGETS_TO_BUILD="X86;host;AMDGPU" \
+        -D LLVM_DEFAULT_TARGET_TRIPLE="i686-pc-linux-gnu" \
+        -D LLVM_HOST_TRIPLE=x86_64-pc-linux-gnu \
+        -D LLVM_LIBDIR_SUFFIX=32 \
+        -D LLVM_LINK_LLVM_DYLIB=ON \
+        -D LLVM_TARGET_ARCH:STRING=i686 \
+        -D LLVM_BINUTILS_INCDIR=/usr/include \
+        -D LLVM_INCLUDE_BENCHMARKS=OFF \
+        -D CLANG_DEFAULT_PIE_ON_LINUX=ON \
+        -D CLANG_CONFIG_FILE_SYSTEM_DIR=/etc/clang \
+        -Wno-dev -G Ninja
+    ninja -C build
+}
+
+package() {
+    cd llvm-$pkgver.src/build
+
+    DESTDIR=$PWD/DESTDIR ninja install
+
+    mkdir -p "$pkgdir"/usr/lib32 "$pkgdir"/usr/bin/ "$pkgdir"/usr/include/llvm/Config
+    cp -vr DESTDIR/usr/lib32/* "$pkgdir"/usr/lib32
+
+    # keep 32bit header and config
+    mv DESTDIR/usr/bin/llvm-config "$pkgdir"/usr/bin/llvm-config32
+
+    # Symlink LLVMgold.so from /usr/lib/bfd-plugins
+    # https://bugs.archlinux.org/task/28479
+    install -d "$pkgdir/usr/lib32/bfd-plugins"
+    ln -s ../LLVMgold.so "$pkgdir/usr/lib32/bfd-plugins/LLVMgold.so"
+}
+

@@ -1,0 +1,28 @@
+# description	: Prebuilt Java JDK binaries
+# depends	: glibc libxext libxi libxrender libxtst zlib freetype 
+# depends	: fontconfig alsa-lib cups giflib man-db
+
+pkgname=java
+pkgver=24.0.1
+pkgrel=1
+source="https://anduin.linuxfromscratch.org/BLFS/OpenJDK/OpenJDK-$pkgver/OpenJDK-$pkgver+7-x86_64-bin.tar.xz
+        openjdk.sh java"
+
+package() {
+    cd OpenJDK-$pkgver+7-x86_64-bin
+
+    install -vdm755 "$pkgdir"/opt/OpenJDK-$pkgver-bin &&
+    mv -v * "$pkgdir"/opt/OpenJDK-$pkgver-bin         &&
+    chown -R root:root "$pkgdir"/opt/OpenJDK-$pkgver-bin
+
+    ln -sfn OpenJDK-$pkgver-bin "$pkgdir"/opt/jdk
+
+    install -Dm 755 "$srcdir"/openjdk.sh "$pkgdir"/etc/profile.d/openjdk.sh
+    install -Dm 644 "$srcdir"/java "$pkgdir"/etc/sudoers.d/java 
+
+    mkdir -p "$pkgdir"/opt/jdk/lib/security
+    mkdir -p "$pkgdir"/etc/ssl/certs/java
+    ln -sfv /etc/ssl/certs/java/cacerts "$pkgdir"/opt/jdk/lib/security/cacerts
+
+    mkdir -p "$pkgdir"/var/cache/man
+}

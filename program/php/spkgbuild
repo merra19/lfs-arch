@@ -1,0 +1,158 @@
+# description	: The PHP language runtime engine
+# depends	: sqlite libxml2 pcre2 lmdb aspell aspell-en 
+# depends	: enchant libxslt freetype libexif libjpeg-turbo libpng 
+# depends	: libtiff libwebp gdbm xz libxcrypt argon2 bzip2 curl 
+# depends	: libffi libgmp icu readline openssl libxpm zlib libavif 
+# depends	: acl aspell-fr postgresql oniguruma apache freetds
+# depends	: libzip
+
+pkgname=php
+pkgver=8.4.8
+pkgrel=1
+options="!lto"
+source="https://www.php.net/distributions/php-$pkgver.tar.xz
+        https://pear.php.net/go-pear.phar
+        apache.patch apache.conf php-fpm.patch
+        php-fpm.tmpfiles php.ini.patch"
+backup="etc/php/php.ini etc/httpd/conf/extra/php_module.conf etc/php/php-fpm.conf etc/php/php-fpm.d/www.conf"
+
+prepare() {
+	cd "${srcdir}/php-${pkgver}"
+
+	patch -p0 -i "${srcdir}/apache.patch"
+	patch -p0 -i "${srcdir}/php-fpm.patch"
+	patch -p0 -i "${srcdir}/php.ini.patch"
+	autoconf
+
+	# Disable failing tests
+	rm tests/output/stream_isatty_*.phpt
+	rm Zend/tests/arginfo_zpp_mismatch*.phpt
+}
+
+build() {
+	local _phpconfig="--srcdir=../php-${pkgver} \
+		--config-cache \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc/php \
+		--localstatedir=/var \
+		--with-layout=GNU \
+		--with-config-file-path=/etc/php \
+		--with-config-file-scan-dir=/etc/php/conf.d \
+		--disable-rpath \
+		--mandir=/usr/share/man \
+		"
+
+	local _phpextensions="\
+		--enable-bcmath \
+		--enable-calendar \
+		--enable-dba=shared \
+		--enable-exif=shared \
+		--enable-ftp \
+		--disable-gd \
+		--enable-intl=shared \
+		--enable-mbstring \
+		--enable-pcntl \
+		--enable-shmop=shared \
+		--enable-soap=shared \
+		--enable-sockets=shared \
+		--enable-sysvmsg=shared \
+		--enable-sysvsem=shared \
+		--enable-sysvshm=shared \
+		--with-bz2=shared \
+		--with-curl=shared \
+		--with-enchant=shared \
+		--with-external-pcre \
+		--with-ffi=shared \
+		--with-gdbm \
+		--with-gettext=shared \
+		--with-gmp=shared \
+		--with-iconv=shared \
+		--with-ldap=shared \
+		--without-ldap-sasl \
+		--with-mhash \
+		--with-mysql-sock=/run/mysqld/mysqld.sock \
+		--with-mysqli=shared \
+		--with-openssl \
+		--with-openssl-argon2 \
+		--with-password-argon2 \
+        --with-pdo-dblib=shared,/usr \
+		--with-pdo-mysql=shared \
+		--with-pdo-odbc=shared,unixODBC,/usr \
+		--with-pdo-pgsql=shared \
+		--with-pdo-sqlite=shared \
+		--with-pgsql=shared \
+		--with-readline \
+		--with-sqlite3=shared \
+		--with-unixODBC=shared \
+		--with-xsl=shared \
+        --with-zip=shared \
+		--with-zlib \
+		"
+
+    LDFLAGS="-Wl,-O1 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,-z,separate-code"
+	EXTENSION_DIR=/usr/lib/php/modules
+	export EXTENSION_DIR LDFLAGS
+
+	mkdir "${srcdir}/build"
+	cd "${srcdir}/build"
+	ln -s "../php-${pkgver}/configure"
+
+	./configure ${_phpconfig} \
+		--enable-cgi \
+		--enable-fpm \
+		--without-fpm-systemd \
+		--with-fpm-acl \
+		--with-fpm-user=http \
+		--with-fpm-group=http \
+		--enable-embed=shared \
+		${_phpextensions}
+    make
+
+	# apache
+	# reuse the previous run; this will save us a lot of time
+	cp -a "${srcdir}/build" "${srcdir}/build-apache"
+	cd "${srcdir}/build-apache"
+	./configure ${_phpconfig} \
+		--with-apxs2 \
+		${_phpextensions}
+	make
+}
+
+package() {
+	cd "${srcdir}/build"
+	make -j1 INSTALL_ROOT="${pkgdir}" install-{modules,cli,build,headers,programs,pharcmd}
+	install -D -m644 "${srcdir}/php-${pkgver}/php.ini-production" "${pkgdir}/etc/php/php.ini"
+	install -d -m755 "${pkgdir}/etc/php/conf.d/"
+
+	# remove static modules
+	rm -f "${pkgdir}/usr/lib/php/modules/"*.a
+	# remove modules provided by sub packages
+	rm -f "${pkgdir}/usr/lib/php/modules/"{enchant,gd,sodium,odbc,pdo_dblib,pdo_odbc,pgsql,pdo_pgsql,snmp,sqlite3,pdo_sqlite,tidy,xsl}.so
+
+	make -j1 INSTALL_ROOT="${pkgdir}" install-cgi
+
+	install -D -m755 "${srcdir}/build-apache/libs/libphp.so" "${pkgdir}/usr/lib/httpd/modules/libphp.so"
+	install -D -m644 "${srcdir}/apache.conf" "${pkgdir}/etc/httpd/conf/extra/php_module.conf"
+
+	make -j1 INSTALL_ROOT="${pkgdir}" install-fpm
+	install -D -m644 "${srcdir}/php-fpm.tmpfiles" "${pkgdir}/usr/lib/tmpfiles.d/php-fpm.conf"
+
+	make -j1 INSTALL_ROOT="${pkgdir}" PHP_SAPI=embed install-sapi
+
+	make -j1 INSTALL_ROOT="${pkgdir}" install-phpdbg
+
+	install -D -m755 "${srcdir}/build/modules/pdo_dblib.so" "${pkgdir}/usr/lib/php/modules/pdo_dblib.so"
+	install -D -m755 "${srcdir}/build/modules/enchant.so" "${pkgdir}/usr/lib/php/modules/enchant.so"
+	#install -D -m755 "${srcdir}/build/modules/gd.so" "${pkgdir}/usr/lib/php/modules/gd.so"
+	#install -D -m755 "${srcdir}/build/modules/sodium.so" "${pkgdir}/usr/lib/php/modules/sodium.so"
+	install -D -m755 "${srcdir}/build/modules/odbc.so" "${pkgdir}/usr/lib/php/modules/odbc.so"
+	install -D -m755 "${srcdir}/build/modules/pdo_odbc.so" "${pkgdir}/usr/lib/php/modules/pdo_odbc.so"
+	install -D -m755 "${srcdir}/build/modules/pgsql.so" "${pkgdir}/usr/lib/php/modules/pgsql.so"
+	install -D -m755 "${srcdir}/build/modules/pdo_pgsql.so" "${pkgdir}/usr/lib/php/modules/pdo_pgsql.so"
+	#install -D -m755 "${srcdir}/build/modules/snmp.so" "${pkgdir}/usr/lib/php/modules/snmp.so"
+	install -D -m755 "${srcdir}/build/modules/sqlite3.so" "${pkgdir}/usr/lib/php/modules/sqlite3.so"
+	install -D -m755 "${srcdir}/build/modules/pdo_sqlite.so" "${pkgdir}/usr/lib/php/modules/pdo_sqlite.so"
+	#install -D -m755 "${srcdir}/build/modules/tidy.so" "${pkgdir}/usr/lib/php/modules/tidy.so"
+	install -D -m755 "${srcdir}/build/modules/xsl.so" "${pkgdir}/usr/lib/php/modules/xsl.so"
+}

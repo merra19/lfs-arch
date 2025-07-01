@@ -1,0 +1,70 @@
+# description	: Stupid content tracker: distributed VCS designed for speed and efficiency
+# depends	: curl gnupg pcre2 openssl zlib libsecret glib tk fcron
+# depends	: python3-asciidoc openssh pam xmlto
+
+pkgname=git
+pkgver=2.50.0
+pkgrel=1
+source="https://www.kernel.org/pub/software/scm/git/$pkgname-$pkgver.tar.xz
+        git-sysusers.conf"
+optsflags=" -O3 -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition "
+
+_make() {
+    local make_options=(
+        prefix='/usr'
+        gitexecdir='/usr/lib/git-core'
+        perllibdir="$(/usr/bin/perl -MConfig -wle 'print $Config{installvendorlib}')"
+
+        CFLAGS="$CFLAGS"
+        LDFLAGS="$LDFLAGS"
+        INSTALL_SYMLINKS=1
+        MAN_BOLD_LITERAL=1
+        NO_PERL_CPAN_FALLBACKS=1
+        USE_LIBPCRE2=1
+    )
+
+    make "${make_options[@]}" "$@"
+}
+
+build() {
+	cd $pkgname-$pkgver
+
+    _make all 
+
+   # _make -C contrib/credential/libsecret
+    #_make -C contrib/subtree all man
+    #_make -C contrib/mw-to-git all
+    #_make -C contrib/diff-highlight
+}
+
+package() {
+	cd $pkgname-$pkgver
+
+    _make \
+        DESTDIR="$pkgdir" \
+        install 
+
+    # bash completion
+    mkdir -p "$pkgdir"/usr/share/bash-completion/completions/
+    install -m 0644 ./contrib/completion/git-completion.bash "$pkgdir"/usr/share/bash-completion/completions/git
+    # fancy git prompt
+    mkdir -p "$pkgdir"/usr/share/git/
+    install -m 0644 ./contrib/completion/git-prompt.sh "$pkgdir"/usr/share/git/git-prompt.sh
+    # libsecret credentials helper
+    # install -m 0755 contrib/credential/libsecret/git-credential-libsecret \
+    #    "$pkgdir"/usr/lib/git-core/git-credential-libsecret
+    #_make -C contrib/credential/libsecret clean
+    # subtree installation
+    #_make -C contrib/subtree DESTDIR="$pkgdir" install install-man
+    # mediawiki installation
+    #_make -C contrib/mw-to-git DESTDIR="$pkgdir" install
+    # the rest of the contrib stuff
+    find contrib/ -name '.gitignore' -delete
+    cp -a ./contrib/* "$pkgdir"/usr/share/git/
+
+    # sysusers file
+    install -D -m 0644 "$srcdir"/git-sysusers.conf "$pkgdir"/usr/lib/sysusers.d/git.conf
+
+    install -d "$pkgdir"/usr/share/zsh/site-functions/
+    ln -s ../../git/completion/git-completion.zsh "$pkgdir"/usr/share/zsh/site-functions/_git
+}

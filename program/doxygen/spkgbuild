@@ -1,0 +1,39 @@
+# description	: Documentation system for most programming languages
+# depends	: flex bison coreutils perl python3 sqlite llvm
+# optional	: ghostscript
+
+pkgname=doxygen2
+pkgver=1.14.0
+pkgrel=1
+source="https://doxygen.nl/files/doxygen-$pkgver.src.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd doxygen-$pkgver
+
+    local cmake_options=(
+        -B build
+        -W no-dev
+        -D CMAKE_BUILD_TYPE:STRING=None
+        -D CMAKE_INSTALL_PREFIX:PATH=/usr
+        -D DOC_INSTALL_DIR:PATH=share/doc/doxygen
+        -D build_doc:BOOL=OFF
+        -D build_wizard:BOOL=OFF
+        -D use_sys_spdlog:BOOL=OFF
+        -D use_sys_sqlite3:BOOL=ON
+        -D use_libclang:BOOL="$(scratch isinstalled clang && echo "ON" || echo "OFF")"
+        -D force_qt=OFF
+    )
+    cmake "${cmake_options[@]}"
+    cmake --build build --verbose
+}
+
+package() {
+    cd doxygen-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+
+    install -d "$pkgdir"/usr/share/man/man1
+    install -vm644 doc/*.1 "$pkgdir"/usr/share/man/man1
+}
+
