@@ -12,7 +12,7 @@ source="https://github.com/llvm/llvm-project/releases/download/llvmorg-$pkgver/l
         https://anduin.linuxfromscratch.org/BLFS/llvm/llvm-third-party-${_pkgver}.src.tar.xz
         https://github.com/llvm/llvm-project/releases/download/llvmorg-$pkgver/clang-$pkgver.src.tar.xz
         https://github.com/llvm/llvm-project/releases/download/llvmorg-$pkgver/compiler-rt-$pkgver.src.tar.xz
-        clang-0003-Add-f-instructions-that-GCC-has-that-Clang-must-igno.patch"
+        clang-0003-Add-f-instructions-that-GCC-has-that-Clang-must-igno.patch prefix.patch"
 noextract="llvm-cmake-${_pkgver}.src.tar.xz llvm-third-party-${_pkgver}.src.tar.xz clang-$pkgver.src.tar.xz compiler-rt-$pkgver.src.tar.xz"
 
 build() {
