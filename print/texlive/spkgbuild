@@ -78,9 +78,9 @@ package() {
 
     make DESTDIR="$pkgdir" install-strip
 	export PATH="$pkgdir$TEXLIVE_PREFIX/bin/$TEXARCH:$PATH"
-	LD_LIBRARY_PATH="$pkgdir$TEXLIVE_PREFIX/usr/lib:$LD_LIBRARY_PATH"
+	export LD_LIBRARY_PATH="$pkgdir$TEXLIVE_PREFIX/usr/lib:$LD_LIBRARY_PATH"
     make DESTDIR="$pkgdir" texlinks
 
-    mkdir -pv  $TEXLIVE_PREFIX/tlpkg/TeXLive
+    mkdir -pv  "$pkgdir$TEXLIVE_PREFIX/tlpkg/TeXLive"
     install -v -m644 ../texk/tests/TeXLive/* "$pkgdir"$TEXLIVE_PREFIX/tlpkg/TeXLive/
 }

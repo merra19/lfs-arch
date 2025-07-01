@@ -3,10 +3,14 @@
 # depends	: fontconfig alsa-lib cups giflib man-db
 
 pkgname=java
-pkgver=24.0.1
+pkgver=23.0.2
 pkgrel=1
 source="https://anduin.linuxfromscratch.org/BLFS/OpenJDK/OpenJDK-$pkgver/OpenJDK-$pkgver+7-x86_64-bin.tar.xz
         openjdk.sh java"
+
+build() {
+	:
+}
 
 package() {
     cd OpenJDK-$pkgver+7-x86_64-bin
@@ -22,7 +26,8 @@ package() {
 
     mkdir -p "$pkgdir"/opt/jdk/lib/security
     mkdir -p "$pkgdir"/etc/ssl/certs/java
-    ln -sfv /etc/ssl/certs/java/cacerts "$pkgdir"/opt/jdk/lib/security/cacerts
+    ln -sfv /opt/jdk/lib/security/cacerts "$pkgdir"/etc/ssl/certs/java/cacerts
+    
 
     mkdir -p "$pkgdir"/var/cache/man
 }

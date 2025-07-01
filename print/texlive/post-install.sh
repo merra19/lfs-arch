@@ -1,7 +1,7 @@
 #!/bin/sh
 
-
 pkg_postinst() {
+    source /etc/profile.d/texlive.sh
     mktexlsr &&
     fmtutil-sys --all
 }
