@@ -1,0 +1,29 @@
+# description	: Access current weather conditions and forecasts
+# depends	:  dconf geoclue gjs gtk4 hicolor-icon-theme libadwaita
+# depends	: libgweather-4 appstream gobject-introspection meson
+
+pkgname=gnome-weather
+pkgver=48.0
+pkgrel=1
+source="https://download.gnome.org/sources/$pkgname/${pkgver%.*}/$pkgname-$pkgver.tar.xz
+        gnome-weather-automatic-location.patch
+        gnome-weather-search-provider.patch
+        gnome-weather-activate.patch"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+prepare() {
+    cd gnome-weather-$pkgver
+
+    patch -Np1 -i ../gnome-weather-automatic-location.patch
+    patch -Np1 -i ../gnome-weather-search-provider.patch
+    patch -Np1 -i ../gnome-weather-activate.patch
+}
+
+build() {
+    arch-meson gnome-weather-$pkgver build
+    meson compile -C build
+}
+
+package() {
+  meson install -C build --destdir "$pkgdir"
+}

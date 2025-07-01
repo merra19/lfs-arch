@@ -1,0 +1,28 @@
+# description	: Advanced Linux Sound Architecture Library
+# depends	: glibc alsa-ucm-conf alsa-topology-conf
+
+pkgname=alsa-lib
+pkgver=1.2.13
+pkgrel=1
+options="!lto"
+source="https://www.alsa-project.org/files/pub/lib/$pkgname-$pkgver.tar.bz2"
+optsflags=" -falign-functions=32 -fno-lto -fno-semantic-interposition "
+
+build() {
+	cd $pkgname-$pkgver
+
+    mkdir build
+    cd build
+
+    ../configure \
+        --prefix=/usr \
+        --without-debug
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+	make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" -C build install
+}

@@ -1,0 +1,56 @@
+# description	: H.264 encoder plugin for GStreamer
+# depends	: cmake ninja nasm
+
+pkgname=x265
+pkgver=4.1
+pkgrel=1
+source="https://bitbucket.org/multicoreware/x265_git/downloads/x265_$pkgver.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd x265_$pkgver
+
+    # Remove some CMake policy settings that are no longer compatible with CMake-4.0 and later
+    sed -r '/cmake_policy.*(0025|0054)/d' -i source/CMakeLists.txt
+
+    cmake -S source -B build-12 -G Ninja \
+        -D CMAKE_INSTALL_PREFIX=/usr \
+        -D HIGH_BIT_DEPTH=TRUE \
+        -D MAIN12=TRUE \
+        -D EXPORT_C_API=FALSE \
+        -D ENABLE_CLI=FALSE \
+        -D ENABLE_SHARED=FALSE \
+        -D CMAKE_POLICY_VERSION_MINIMUM=3.5 \
+        -Wno-dev
+    ninja -C build-12
+
+    cmake -S source -B build-10 -G Ninja \
+        -D CMAKE_INSTALL_PREFIX=/usr \
+        -D HIGH_BIT_DEPTH=TRUE \
+        -D EXPORT_C_API=FALSE \
+        -D ENABLE_CLI=FALSE \
+        -D ENABLE_SHARED=FALSE \
+        -D CMAKE_POLICY_VERSION_MINIMUM=3.5 \
+        -Wno-dev
+    ninja -C build-10
+
+    cmake -S source -B build -G Ninja \
+        -D CMAKE_INSTALL_PREFIX=/usr \
+        -D ENABLE_SHARED=TRUE \
+        -D ENABLE_HDR10_PLUS=TRUE \
+        -D EXTRA_LIB='x265_main10.a;x265_main12.a' \
+        -D EXTRA_LINK_FLAGS='-L .' \
+        -D LINKED_10BIT=TRUE \
+        -D LINKED_12BIT=TRUE \
+        -D CMAKE_POLICY_VERSION_MINIMUM=3.5 \
+        -Wno-dev
+    ln -s ../build-10/libx265.a build/libx265_main10.a
+    ln -s ../build-12/libx265.a build/libx265_main12.a
+    ninja -C build
+}
+
+package() {
+    cd x265_$pkgver
+
+	DESTDIR="$pkgdir" ninja -C build install
+}

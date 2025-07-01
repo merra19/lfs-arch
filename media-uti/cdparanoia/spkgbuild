@@ -1,0 +1,35 @@
+# description	: An audio CD extraction application
+# depends	: libtool autoconf automake linux-api-headers
+
+pkgname=cdparanoia
+pkgver=10.2
+pkgrel=14
+options="!makeflags !staticlibs"
+source="https://downloads.xiph.org/releases/cdparanoia/cdparanoia-III-$pkgver.src.tgz
+        format-security.patch gcc.patch
+        cdparanoia-r15388.patch cdparanoia-10.2-format-security.patch
+        cdparanoia-10.2-ldflags.patch"
+optsflags=" -O3 -ffat-lto-objects -flto=4 "
+
+build() {
+	cd cdparanoia-III-$pkgver
+
+    # Fix for 'private' becoming a reserved keyword as of GCC 4.3+
+    patch -p0 -i "$srcdir"/cdparanoia-r15388.patch
+    # Add missing printf format strings for `-Wformat -Werror=format-security`
+    patch -p1 -i "$srcdir"/cdparanoia-10.2-format-security.patch
+    # Use LDFLAGS
+    patch -p1 -i "$srcdir"/cdparanoia-10.2-ldflags.patch
+
+	./configure \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--mandir=/usr/share/man 
+	make
+}
+
+package() {
+    cd cdparanoia-III-$pkgver
+
+    make prefix="$pkgdir"/usr MANDIR="$pkgdir"/usr/share/man install
+}

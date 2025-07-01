@@ -1,0 +1,26 @@
+From 96992f6fa7ce5cd54cf03ce52348b505e2da7ee4 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Ball=C3=B3=20Gy=C3=B6rgy?= <ballogyor@gmail.com>
+Date: Thu, 20 Jun 2024 21:33:44 +0000
+Subject: [PATCH] application: Fix icon name
+
+The icon is called 'org.gnome.Logs', not 'gnome-logs'.
+---
+ src/gl-application.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/gl-application.c b/src/gl-application.c
+index cef5320..05a39ac 100644
+--- a/src/gl-application.c
++++ b/src/gl-application.c
+@@ -220,7 +220,7 @@ gl_application_startup (GApplication *application)
+ 
+     /* gtk_init() calls setlocale(), so gettext must be called after that. */
+     g_set_application_name (_(PACKAGE_NAME));
+-    gtk_window_set_default_icon_name (PACKAGE_TARNAME);
++    gtk_window_set_default_icon_name ("org.gnome.Logs");
+ }
+ 
+ static void
+-- 
+GitLab
+

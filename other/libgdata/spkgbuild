@@ -1,0 +1,29 @@
+# description	: GLib-based library for accessing online service APIs using the GData protocol
+# depends	: glib json-glib libxml2 libsoup2 gcr meson vala
+# depends	: gobject-introspection
+
+pkgname=libgdata
+pkgver=0.18.1
+pkgrel=1
+source="https://download.gnome.org/sources/libgdata/${pkgver%.*}/$pkgname-$pkgver.tar.xz"
+
+build() {
+	cd $pkgname-$pkgver
+
+    local meson_options=(
+        -D always_build_tests=false
+
+        -D gtk_doc=false
+        -D man=true
+        -D goa=disabled
+    )
+
+    arch-meson build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    meson install -C build --destdir "$pkgdir"
+}

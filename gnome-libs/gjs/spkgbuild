@@ -1,0 +1,24 @@
+# description	: Javascript Bindings for GNOME
+# depends	: cairo dconf gcc glib glibc spidermonkey libffi
+# depends	: libx11 readline gobject-introspection
+## libsysprof-capture
+  
+pkgname=gjs
+pkgver=1.84.2
+pkgrel=1
+source="https://download.gnome.org/sources/$pkgname/${pkgver%.*}/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition "
+
+build() {
+    local meson_options=(
+        -D installed_tests=false
+        -D profiler=disabled
+    )
+
+    arch-meson gjs-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

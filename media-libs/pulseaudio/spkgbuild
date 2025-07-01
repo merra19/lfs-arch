@@ -1,0 +1,66 @@
+# description	: networked sound server
+# depends	: alsa-lib libatomic_ops dbus elogind glib libsndfile 
+# depends	: libx11 libice libsm libxtst libxcb speexdsp sbc fftw
+# depends	: libcap avahi glibc bluez
+
+pkgname=pulseaudio
+pkgver=17.0
+pkgrel=1
+options="!lto"
+source="https://www.freedesktop.org/software/pulseaudio/releases/pulseaudio-$pkgver.tar.xz"
+optsflags=" -falign-functions=32 -fno-lto -fno-semantic-interposition "
+backup="etc/pulse/daemon.conf etc/pulse/default.pa etc/pulse/system.pa
+        etc/pulse/client.conf"
+        
+build() {
+    local meson_options=(
+        -D consolekit=disabled
+        -D elogind=enabled
+        -D systemd=disabled
+        -D pulsedsp-location='/usr/\$LIB/pulseaudio'
+        -D stream-restore-clear-old-devices=true
+        -D tcpwrap=disabled
+        -D udevrulesdir=/usr/lib/udev/rules.d
+        -D tests="$(scratch isinstalled check && echo "true" || echo "false")"
+        -D doxygen=false
+        -D valgrind=disabled
+        -D asyncns=disabled
+        -D gtk="$(scratch isinstalled gtk3 && echo "enabled" || echo "disabled")"
+        -D database=gdbm
+        -D orc=disabled
+        -D soxr=disabled
+        -D webrtc-aec=disabled
+        -D bluez5="$(scratch isinstalled bluez && echo "enabled" || echo "disabled")"
+        -D jack=disabled
+        -D lirc=disabled
+        -D gstreamer="$(scratch isinstalled gst-plugins-base && echo "enabled" || echo "disabled")"
+        -D bluez5-gstreamer="$(scratch isinstalled gst-plugins-base && echo "enabled" || echo "disabled")"
+    )
+
+    arch-meson pulseaudio-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+
+    cd "$pkgdir"
+
+    # Superseded by socket activation
+    sed -e '/autospawn/iautospawn = no' \
+        -i etc/pulse/client.conf
+
+    # Disable cork-request module, can result in e.g. media players unpausing
+    # when there's a Skype call incoming
+    sed -e 's|/usr/bin/pactl load-module module-x11-cork-request|#&|' \
+        -i usr/bin/start-pulseaudio-x11
+
+    # Required by qpaeq
+    sed -e '/Load several protocols/aload-module module-dbus-protocol' \
+        -i etc/pulse/default.pa
+
+    # Avoid warning about nonexistent dir
+    # https://gitlab.archlinux.org/archlinux/packaging/packages/pulseaudio/-/issues/3
+    mkdir -p etc/pulse/{default,system}.pa.d
+}
+

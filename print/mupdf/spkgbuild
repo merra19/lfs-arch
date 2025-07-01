@@ -1,21 +1,19 @@
 # description	: Legacy library for PPD files, split out of cups-filters
 # depends	: libarchive freetype harfbuzz libpng openjpeg2 libglvnd
 # depends	: libjpeg-turbo curl openssl freeglut zlib libx11 libxext 
-# depends	: libxrandr xorg-proto libmupdf llvm
+# depends	: libxrandr xorg-proto libmupdf llvm swig
 
 pkgname=mupdf
 pkgver=1.26.2
 pkgrel=1
 options="staticlibs"
 source="https://www.mupdf.com/downloads/archive/mupdf-$pkgver-source.tar.gz
-        mupdf.desktop mupdf.xpm mupdf.pc
+        mupdf.desktop mupdf.xpm 
         mupdf-1.23.9-cpp_ldflags.patch
         mupdf-1.23.9-install_targets.patch"
 
 prepare() {
     cd mupdf-$pkgver-source
-
-    sed -e "s/VERSION/$pkgver/" -i "$srcdir"/mupdf.pc
 
     # use our LDFLAGS when building the C++ bindings to have full RELRO
     patch -Np1 -i ../mupdf-1.23.9-cpp_ldflags.patch
@@ -37,43 +35,52 @@ USE_SYSTEM_CURL := yes
 USE_SYSTEM_GUMBO := no
 EOF
 
-}
+cat > mupdf.pc.in << "EOF"
+Name: mupdf
+Description: Library for rendering PDF documents
+URL: https://github.com/ArtifexSoftware/mupdf
+Version: @@VERSION@@
+Libs: -lmupdf
+EOF
 
+sed "s/@@VERSION@@/$pkgver/" mupdf.pc.in > mupdf.pc
+
+}
 
 build() {
     cd mupdf-$pkgver-source
 
-    make -j1 VENV_FLAG= shared=yes build=release libs apps c++ python
+    export XCFLAGS=-fPIC 
+    make build=release shared=yes verbose=yes
+    make build=release shared=yes verbose=yes VENV_FLAG= python
+    unset XCFLAGS
 }
+
 
 package() {
     cd mupdf-$pkgver-source
-    
-    make prefix=/usr DESTDIR="$pkgdir" SO_INSTALL_MODE=755 install-libs install-headers
-	install -m 644 platform/c++/include/mupdf/*.h "$pkgdir"/usr/include/mupdf
-	install -m 755 build/shared-release/libmupdfcpp.so.${pkgver#*.} "$pkgdir"/usr/lib/
 
-    install -vDm 0644 ../mupdf.pc -t "$pkgdir"/usr/lib/pkgconfig/
+    make DESTDIR="$pkgdir" \
+        prefix=/usr \
+        shared=yes  \
+        docdir=/usr/share/doc/mupdf-1.25.4 \
+        install 
 
-    pydir="$(python -c "import sysconfig; print(sysconfig.get_path('platlib'))")"
+    install -D -m644 mupdf.pc -t "$pkgdir"/usr/lib/pkgconfig/mupdf.pc
 
-	install -vDm 755 build/shared-release/_mupdf.so -t "$pkgdir$pydir"/mupdf
-	install -vDm 644 build/shared-release/mupdf.py "$pkgdir$pydir"/mupdf/__init__.py   
+    ln -sfv libmupdf.so.25.4 "$pkgdir"/usr/lib/libmupdf.so
+    ln -sfv libmupdf.so.25.4 "$pkgdir"/usr/lib/libmupdf.so.4
+    chmod 755 "$pkgdir"/usr/lib/libmupdf.so.25.4
 
-    install -vDm 0755 build/shared-release/mupdf-x11 "$pkgdir"/usr/bin/mupdf
+    ln -sfv mupdf-x11 "$pkgdir"/usr/bin/mupdf
 
-    install -vDm 0644 docs/man/mupdf.1 -t "$pkgdir"/usr/share/man/man1/
+    install -vDm 0644 docs/man/$pkgname.1 -t "$pkgdir"/usr/share/man/man1/
 
-    install -vDm 0644 ../mupdf.desktop -t "$pkgdir"/usr/share/applications/
-    install -vDm 0644 ../mupdf.xpm -t "$pkgdir"/usr/share/pixmaps/
+    install -vDm 0644 ../$pkgname.desktop -t "$pkgdir"/usr/share/applications/
+    install -vDm 0644 ../$pkgname.xpm -t "$pkgdir"/usr/share/pixmaps/
 
-    install -vDm 0755 build/shared-release/mupdf-gl "$pkgdir"/usr/bin/mupdf
-
-    install -vDm 0644 docs/man/mupdf.1 -t "$pkgdir"/usr/share/man/man1/
-
-    install -vDm 0644 ../mupdf.desktop -t "$pkgdir"/usr/share/applications/
-    install -vDm 0644 ../mupdf.xpm -t "$pkgdir"/usr/share/pixmaps/
-
-    install -vDm 0755 build/shared-release/{mutool,muraster} -t "$pkgdir"/usr/bin/
-    install -vDm 0644 docs/man/mutool.1 -t "$pkgdir"/usr/share/man/man1/
+    make DESTDIR="$pkgdir" \
+        prefix=/usr \
+        shared=yes  \
+        install-shared-python 
 }

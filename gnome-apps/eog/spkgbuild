@@ -1,0 +1,29 @@
+# description	: The Eye of GNOME image viewer
+# depends	: cairo dconf exempi gcc gdk-pixbuf glib glibc gtk3 meson
+# depends	: gnome-desktop hicolor-icon-theme lcms2 libexif libhandy
+# depends	: libjpeg-turbo libpeas librsvg libx11 yelp-tools
+# depends	: webp-pixbuf-loader zlib gobject-introspection
+
+pkgname=eog
+pkgver=47.0
+pkgrel=1
+source="https://download.gnome.org/sources/$pkgname/${pkgver%.*}/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    local meson_options=(
+        -D gtk_doc=false
+        -D libportal=false
+    )
+
+    arch-meson $pkgname-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+
+    # Add /usr/lib/eog paths to the default library search path
+    install -d "${pkgdir}"/etc/ld.so.conf.d
+    echo "/usr/lib/eog" > "${pkgdir}"/etc/ld.so.conf.d/eog.conf
+}

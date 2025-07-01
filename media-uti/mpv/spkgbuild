@@ -1,0 +1,62 @@
+# description	: Media player for the command line
+# depends	: glibc libass libplacebo ffmpeg libx11 libxscrnsaver  
+# depends	: libxext libxpresent libxrandr libxv alsa-lib libarchive  
+# depends	: libdrm mesa libglvnd libjpeg-turbo lcms2 pipewire luajit 
+# depends	: pulseaudio wireplumber libva libvdpau vulkan-loader zlib
+# depends	: wayland sdl2 wayland-protocols libxkbcommon xorg-proto 
+# depends	: linux-api-headers shaderc libcdio-paranoia libcdio meson
+# depends	: libdvdnav libdvdcss libdvdread desktop-file-utils
+# depends	: hicolor-icon-theme vulkan-headers uchardet
+## libbluray jack libsixel mujs rubberband openal vapoursynth ladspa yt-dlp
+
+pkgname=mpv
+pkgver=0.39.0
+pkgrel=1
+options="!lto !emptydirs"
+source="https://github.com/mpv-player/mpv/archive/refs/tags/v$pkgver/$pkgname-$pkgver.tar.gz
+        do_not_load_client-rt.conf_properties.patch"
+optsflags=" -fno-lto "
+
+prepare() {
+    cd $pkgname-$pkgver
+    # Backported patch to don't load client-rt.conf properties
+    # which was deprecated in https://gitlab.freedesktop.org/pipewire/pipewire/-/commit/24bcacc6195ffbf8e40c9ea1374eb6666252eadc
+    # See https://github.com/mpv-player/mpv/issues/15914
+    patch -Np1 -i "${srcdir}/do_not_load_client-rt.conf_properties.patch"
+}
+
+
+build() {
+    # Add a fix to build with FFMpeg > 7.0 
+    sed -i 's/AV_OPT_TYPE_CHANNEL_LAYOUT/AV_OPT_TYPE_CHLAYOUT/' $pkgname-$pkgver/filters/f_lavfi.c
+
+    local _meson_options=(
+        --auto-features auto
+
+        -D libmpv=true
+        -D gl-x11=enabled
+        -D caca=disabled
+        -D cdda=enabled
+        -D drm=enabled
+        -D dvbin=enabled
+        -D dvdnav=enabled
+        -D libarchive=enabled
+        -D openal=disabled
+    )
+
+    arch-meson $pkgname-$pkgver build "${_meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "${pkgdir}"
+
+    # delete private entries only required for static linking 
+    sed -i -e '/Requires.private/d' -e '/Libs.private/d' "${pkgdir}"/usr/lib/pkgconfig/mpv.pc
+
+    install -m0644 $pkgname-$pkgver/DOCS/{encoding.rst,tech-overview.txt} \
+        "${pkgdir}"/usr/share/doc/mpv
+
+    install -m0644 $pkgname-$pkgver/TOOLS/{umpv,mpv_identify.sh,stats-conv.py,idet.sh,lua/*} \
+        -D -t "${pkgdir}"/usr/share/mpv/scripts
+}

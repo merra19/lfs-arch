@@ -1,0 +1,48 @@
+# description	: Virtual filesystem implementation for GIO
+# depends	: glib gsettings-desktop-schemas dbus gcr4 polkit libcap 
+# depends	: libarchive libgudev fuse udisks2 openssh libxslt
+# depends	: libgcrypt libusb libsecret libxml2 avahi libcdio libgdata
+# depends	: libcdio-paranoia libsoup3 gnome-online-accounts
+# optional	: mtp!!libmtp 
+
+pkgname=gvfs
+pkgver=1.56.1
+pkgrel=1
+source="https://download.gnome.org/sources/gvfs/${pkgver%.*}/gvfs-$pkgver.tar.xz
+        0001-monitor-Do-not-load-monitors-when-GIO_USE_VFS-local.patch
+        gvfsd.hook"
+
+build() {
+	cd gvfs-$pkgver
+
+    patch -Np1 -i  ../0001-monitor-Do-not-load-monitors-when-GIO_USE_VFS-local.patch
+
+    local meson_options=(
+        -D systemduserunitdir=no
+        -D tmpfilesdir=/usr/lib/tmpfiles.d
+        -D man=true
+        -D afc=false
+        -D goa=true
+        -D bluray=false
+        -D smb=false
+        -D google=false
+        -D onedrive=false
+        -D gphoto2=false
+        -D mtp=false
+        -D nfs=false
+    )
+
+    arch-meson build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    cd gvfs-$pkgver
+
+    meson install -C build --destdir "$pkgdir"
+
+    install -d -o root -g 102 -m 750 "$pkgdir"/usr/share/polkit-1/rules.d
+
+    #install -Dt "$pkgdir/usr/share/libalpm/hooks" -m644 "$srcdir"/*.hook
+}
+

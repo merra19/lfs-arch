@@ -1,0 +1,101 @@
+From a04ddfb0075e2da5ec4a18e51c3a7a54229222f0 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Ball=C3=B3=20Gy=C3=B6rgy?= <ballogyor@gmail.com>
+Date: Mon, 21 Apr 2025 17:34:49 +0200
+Subject: [PATCH] Various fixes for the search provider
+
+- Fix resource path (BackgroundService) in the launcher script.
+
+- Fix D-Bus name (org.gnome.Weather) when activating a result.
+
+- Fix index shifted by one.
+
+- Fix the case when the city name is null.
+
+- Fix parameter type for show-search action.
+
+This makes the search provider fully functional.
+---
+ src/app/application.js                     |  2 +-
+ src/org.gnome.Weather.BackgroundService.in |  2 +-
+ src/service/searchProvider.js              | 14 ++++++--------
+ 3 files changed, 8 insertions(+), 10 deletions(-)
+
+diff --git a/src/app/application.js b/src/app/application.js
+index 58375efc..e1817200 100644
+--- a/src/app/application.js
++++ b/src/app/application.js
+@@ -114,7 +114,7 @@ export class WeatherApplication extends Adw.Application {
+         let showSearchAction = new Gio.SimpleAction({
+             enabled: true,
+             name: 'show-search',
+-            parameter_type: new GLib.VariantType('v'),
++            parameter_type: new GLib.VariantType('s'),
+         })
+         showSearchAction.connect('activate', (action, parameter) => {
+             this._onShowSearch(action, parameter);
+diff --git a/src/org.gnome.Weather.BackgroundService.in b/src/org.gnome.Weather.BackgroundService.in
+index 53c9cccf..339c23da 100755
+--- a/src/org.gnome.Weather.BackgroundService.in
++++ b/src/org.gnome.Weather.BackgroundService.in
+@@ -4,7 +4,7 @@ imports.package.init({ name: "@APP_ID@",
+                         prefix: "@prefix@",
+                         libdir: "@libdir@" });
+ 
+-import('resource:///org/gnome/Weather/js/service/main.js').then(({ main }) => {
++import('resource:///org/gnome/Weather/BackgroundService/js/service/main.js').then(({ main }) => {
+     main([imports.system.programInvocationName, ...imports.system.programArgs]);
+ }).catch(error => {
+     console.error(error);
+diff --git a/src/service/searchProvider.js b/src/service/searchProvider.js
+index e3027716..c402891b 100644
+--- a/src/service/searchProvider.js
++++ b/src/service/searchProvider.js
+@@ -75,12 +75,12 @@ export class WeatherSearchProvider {
+ 
+         let model = this._app.model;
+ 
+-        let index = 0;
++        let index = 1;
+         for (let info of model.getAll()) {
+             let location = info.location;
+ 
+             let name = Util.normalizeCasefoldAndUnaccent(location.get_name());
+-            let city = Util.normalizeCasefoldAndUnaccent(location.get_city_name());
++            let city = Util.normalizeCasefoldAndUnaccent(location.get_city_name() ?? '');
+             let country = Util.normalizeCasefoldAndUnaccent(getCountryName(location));
+ 
+             let nameMatch = false;
+@@ -137,7 +137,7 @@ export class WeatherSearchProvider {
+ 
+             let location = info.location;
+             let name = Util.normalizeCasefoldAndUnaccent(location.get_name());
+-            let city = Util.normalizeCasefoldAndUnaccent(location.get_city_name());
++            let city = Util.normalizeCasefoldAndUnaccent(location.get_city_name() ?? '');
+             let country = Util.normalizeCasefoldAndUnaccent(getCountryName(location));
+             let good = true;
+ 
+@@ -173,7 +173,7 @@ export class WeatherSearchProvider {
+                 continue;
+ 
+             let location = info.location;
+-            let name = location.get_city_name();
++            let name = location.get_city_name() ?? location.get_name();
+             let conditions = Util.getWeatherConditions(info);
+ 
+             /* TRANSLATORS: this is the description shown in the overview search
+@@ -204,10 +204,8 @@ export class WeatherSearchProvider {
+         else
+             wrappedParam = [];
+ 
+-        profile = '';
+-
+-        Gio.DBus.session.call(pkg.name,
+-            '/org/gnome/Weather' + profile,
++        Gio.DBus.session.call('org.gnome.Weather',
++            '/org/gnome/Weather',
+             'org.freedesktop.Application',
+             'ActivateAction',
+             new GLib.Variant('(sava{sv})', [action, wrappedParam,
+-- 
+GitLab
+

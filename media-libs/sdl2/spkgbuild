@@ -1,0 +1,27 @@
+# description	: Simple Direct Media Layer 2
+# depends	: alsa-lib dbus libdrm mesa libsamplerate libglvnd glu 
+# depends	: pipewire pulseaudio wayland libxkbcommon libx11 
+# depends	: libxcursor libxext libxfixes libxi libxrandr xorg-proto 
+# depends	: libxscrnsaver vulkan-loader vulkan-headers glib nasm 
+# depends	: wayland-protocols ibus glibc     
+
+pkgname=sdl2
+pkgver=2.32.8
+pkgrel=1
+source="https://www.libsdl.org/release/SDL2-$pkgver.tar.gz"
+optsflags=" -O3 -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition "
+
+build() {
+    cmake -S SDL2-$pkgver -B build -G Ninja \
+        -D CMAKE_INSTALL_PREFIX=/usr \
+        -D SDL_STATIC=OFF \
+        -D SDL_RPATH=OFF
+    cmake --build build
+}
+
+package() {
+    DESTDIR="${pkgdir}" cmake --install build
+
+    # For some reason, this isn't named correctly and we have to fix it to reflect the actual staticlib name.
+    sed -i "s/libSDL2\.a/libSDL2main.a/g" "$pkgdir"/usr/lib/cmake/SDL2/SDL2Targets-noconfig.cmake
+}

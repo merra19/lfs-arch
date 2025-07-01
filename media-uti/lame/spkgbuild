@@ -1,0 +1,30 @@
+# description	: LAME Ain't an MP3 Encoder
+# depends	: ncurses nasm
+
+pkgname=lame
+pkgver=3.100
+pkgrel=1
+source="https://downloads.sourceforge.net/$pkgname/$pkgname-$pkgver.tar.gz
+        lame.pc"
+
+build() {
+	cd $pkgname-$pkgver
+
+    sed -e "s/VERSION/$pkgver/" ../$pkgname.pc > $pkgname.pc
+
+	./configure \
+		--prefix=/usr \
+		--libdir=/usr/lib \
+        --enable-nasm \
+        --enable-mp3rtp \
+        --enable-shared
+	make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" pkghtmldir=/usr/share/doc/$pkgname install
+
+    install -vDm 644 $pkgname.pc -t "$pkgdir/usr/lib/pkgconfig/"
+}

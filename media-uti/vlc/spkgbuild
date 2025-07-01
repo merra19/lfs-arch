@@ -1,0 +1,149 @@
+# description	: Media player and framework with support for most multimedia files and streaming
+# depends	: yasm wayland libvorbis libidn zlib mesa alsa-lib libaom 
+# depends	: libarchive dav1d dbus ffmpeg flac libogg fontconfig 
+# depends	: libjpeg-turbo libsamplerate lua52 liba52 mpg123 pcsclite
+# depends	: ncurses opus libpng pulseaudio libssh2 libxext libxpm
+# depends	: libxinerama speex speexdsp gnutls freetype ttf-dejavu 
+# depends	: udev libva libvdpau libvpx wayland-protocols libx11
+# depends	: libxcb xcb-util xcb-util-keysyms x265 libmad avahi
+# depends	: libxml2 fribidi harfbuzz liberation-fonts fdk-aac cairo
+# depends	: libgcrypt libass glib gdk-pixbuf gtk3 librsvg taglib
+# depends	: libcddb libdvdnav libdvdread faad2 libnotify libsecret
+# depends	: samba qt5
+# optional	: gstreamer!!gst-plugins-base
+
+pkgname=vlc
+pkgver=3.0.21
+pkgrel=1
+options="!emptydirs !lto"
+source="https://download.videolan.org/vlc/$pkgver/$pkgname-$pkgver.tar.xz
+        https://www.linuxfromscratch.org/patches/blfs/svn/vlc-$pkgver-taglib-1.patch
+        https://www.linuxfromscratch.org/patches/blfs/svn/vlc-$pkgver-fedora_ffmpeg7-1.patch
+        update-vlc-plugin-cache.hook"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    patch -Np1 -i ../vlc-$pkgver-taglib-1.patch 
+    patch -Np1 -i ../vlc-$pkgver-fedora_ffmpeg7-1.patch
+
+    export CFLAGS+=" -I/usr/include/samba-4.0 -Wno-incompatible-pointer-types"
+    export CPPFLAGS+=" -I/usr/include/samba-4.0"
+    export CXXFLAGS+=" -std=c++17"
+    #export LUAC=/usr/bin/luac
+    #export LUA_LIBS="$(pkg-config --libs lua)"
+
+    BUILDCC=gcc ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --disable-libplacebo \
+        --disable-chromaprint \
+        --disable-fdkaac \
+        --disable-libgcrypt \
+        --disable-libplacebo \
+        --disable-opencv \
+        --disable-rpath \
+        --disable-schroedinger \
+        --disable-update-check \
+        --enable-a52 \
+        --enable-aa \
+        --enable-alsa \
+        --enable-aom \
+        --enable-archive \
+        --enable-aribsub \
+        --enable-aribcam \
+        --enable-avahi \
+        --enable-avcodec \
+        --enable-avformat \
+        --disable-bluray \
+        --disable-caca \
+        --disable-chromecast \
+        --enable-dav1d \
+        --disable-dc1394 \
+        --disable-dca \
+        --disable-dv1394 \
+        --disable-dvbpsi \
+        --enable-dvdnav \
+        --enable-dvdread \
+        --enable-faad \
+        --enable-flac \
+        --disable-fluidsynth \
+        --enable-fontconfig \
+        --enable-freetype \
+        --enable-fribidi \
+        --enable-gnutls \
+        --disable-gme \
+        --disable-goom \
+        --enable-gst-decode \
+        --enable-harfbuzz \
+        --disable-jack \
+        --enable-jpeg \
+        --disable-kate \
+        --enable-kwallet \
+        --enable-libass \
+        --disable-libmpeg2 \
+        --enable-libtar \
+        --disable-libva \
+        --enable-libxml2 \
+        --enable-lirc \
+        --disable-live555 \
+        --enable-mad \
+        --disable-matroska \
+        --disable-mod \
+        --enable-mpc \
+        --enable-mpg123 \
+        --disable-microdns \
+        --disable-mtp \
+        --enable-ncurses \
+        --disable-nfs \
+        --enable-nls \
+        --enable-notify \
+        --enable-ogg \
+        --enable-oggspots \
+        --enable-opus \
+        --enable-png \
+        --enable-postproc \
+        --enable-projectm \
+        --enable-pulse \
+        --enable-qt \
+        --enable-realrtsp \
+        --enable-samplerate \
+        --enable-sdl-image \
+        --enable-secret \
+        --enable-sftp \
+        --disable-shout \
+        --enable-skins2 \
+        --enable-smbclient \
+        --disable-soxr \
+        --enable-speex \
+        --disable-srt \
+        --enable-svg \
+        --enable-svgdec \
+        --enable-taglib \
+        --disable-tiger \
+        --disable-twolame \
+        --disable-upnp \
+        --enable-vdpau \
+        --enable-vlc \
+        --enable-vorbis \
+        --enable-vpx \
+        --enable-wayland \
+        --enable-x264 \
+        --enable-x265 \
+        --enable-zvbi \
+        --with-kde-solid=/usr/share/solid/actions/
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make  docdir=/usr/share/doc/$pkgname DESTDIR="$pkgdir" install
+
+    for res in 16 32 48 128 256; do
+        install -Dm 644 share/icons/${res}x$res/vlc.png -t "$pkgdir/usr/share/icons/hicolor/${res}x$res/apps/"
+    done
+    #install -Dm 644 ../update-vlc-plugin-cache.hook -t "$pkgdir/usr/share/libalpm/hooks/"
+}

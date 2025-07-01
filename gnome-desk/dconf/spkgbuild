@@ -1,0 +1,27 @@
+# description	: Simple low-level configuration system
+# depends	: glib docbook-xml libxslt gettext pkgconf dbus glibc
+
+pkgname=dconf
+pkgver=0.40.0
+pkgrel=1
+source="https://download.gnome.org/sources/$pkgname/${pkgver%.*}/$pkgname-$pkgver.tar.xz
+        dconf-update dconf-update.hook"
+optsflags=" -O3 -Os -fdata-sections -ffat-lto-objects -ffunction-sections -flto=auto -fno-semantic-interposition "
+
+build() {
+    arch-meson $pkgname-$pkgver build -D gtk_doc=false
+    meson compile -C build
+}
+
+package() {
+    DESTDIR="$pkgdir" ninja -C build install
+
+    #install -Dt "$pkgdir/usr/share/libalpm/hooks" -m644 *.hook
+    #install -Dt "$pkgdir/usr/share/libalpm/scripts" dconf-update
+
+    # Prevent this directory from getting removed when other
+    # packages which install files there get uninstalled
+    install -Dm644 /dev/null "$pkgdir/etc/dconf/db/.placeholder"
+
+    rm -r $pkgdir/usr/lib/systemd
+}

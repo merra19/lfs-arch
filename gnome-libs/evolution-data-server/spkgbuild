@@ -1,0 +1,39 @@
+# description	: Evolution groupware backend
+# depends	: cairo dconf gcc glib glibc gtk3 hicolor-icon-theme pango
+# depends	: icu json-glib krb5 libcanberra libgweather-4 ninja vala
+# depends	: libical openldap libsecret libsoup3 libxml2 nspr nss
+# depends	: perl sqlite util-linux zlib boost cmake python3 gperf
+# depends	: gobject-introspection gtk4 gnome-online-accounts
+## libphonenumber postfix webkit2gtk-4.1 webkitgtk-6.0
+
+pkgname=evolution-data-server
+pkgver=3.56.2
+pkgrel=1
+source="https://download.gnome.org/sources/evolution-data-server/${pkgver%.*}/evolution-data-server-$pkgver.tar.xz"
+optsflags=" -O3 -Os -fdata-sections -ffat-lto-objects -ffunction-sections -flto=auto -fno-semantic-interposition -fstack-protector-strong -fzero-call-used-regs=used  "
+
+build() {
+    local cmake_options=(
+        -D CMAKE_BUILD_TYPE=None
+        -D CMAKE_INSTALL_PREFIX=/usr
+        -D LIBEXEC_INSTALL_DIR=/usr/lib
+        -D SYSCONF_INSTALL_DIR=/etc
+        -D ENABLE_GTK_DOC=OFF
+        -D ENABLE_INTROSPECTION=ON
+        -D ENABLE_VALA_BINDINGS=ON
+        -D WITH_GWEATHER4=ON
+        -D WITH_LIBDB=OFF
+        -D WITH_PHONENUMBER=OFF
+        -D ENABLE_OAUTH2_WEBKITGTK=OFF
+        -D ENABLE_OAUTH2_WEBKITGTK4=OFF
+    )
+
+    cmake -S evolution-data-server-$pkgver -B build -G Ninja "${cmake_options[@]}"
+    cmake --build build
+}
+
+package() {
+    DESTDIR="$pkgdir" cmake --install build
+
+    rm -rf "$pkgdir"/usr/lib/systemd
+}

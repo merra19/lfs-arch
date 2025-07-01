@@ -1,0 +1,46 @@
+# description	: Screenshot utility for GNOME
+# depends	: dconf glib gsettings-desktop-schemas gtk4 appstream
+# depends	: hicolor-icon-theme libadwaita pango udev meson
+# depends	: yelp-tools
+
+pkgname=gnome-logs
+pkgver=45.0
+pkgrel=1
+source="https://download.gnome.org/sources/$pkgname/${pkgver%.*}/$pkgname-$pkgver.tar.xz
+            gnome-logs-window-icon.patch gnome-logs-quit.patch gnome-logs-info-bar.patch
+            gnome-logs-invalid-open.patch gnome-logs-new-window.patch"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+prepare() {
+    cd $pkgname-$pkgver
+
+   
+    # Fix icon name
+    # https://gitlab.gnome.org/GNOME/gnome-logs/-/merge_requests/66
+     patch -Np1 -i ../gnome-logs-window-icon.patch
+
+    # Add CTRL+Q to quit
+    # https://gitlab.gnome.org/GNOME/gnome-logs/-/merge_requests/71
+     patch -Np1 -i ../gnome-logs-quit.patch
+
+    # Fix GtkInfoBar being blank
+    # https://gitlab.gnome.org/GNOME/gnome-logs/-/merge_requests/73
+     patch -Np1 -i ../gnome-logs-info-bar.patch
+
+    # Fix crash when invalid journal opened
+    # https://gitlab.gnome.org/GNOME/gnome-logs/-/merge_requests/77
+     patch -Np1 -i ../gnome-logs-invalid-open.patch
+
+    # Add "new-window" command-line option
+    # https://gitlab.gnome.org/GNOME/gnome-logs/-/merge_requests/78
+     #patch -Np1 -i ../gnome-logs-new-window.patch
+}
+
+build() {
+    arch-meson $pkgname-$pkgver build 
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

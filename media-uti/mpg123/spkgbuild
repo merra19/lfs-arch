@@ -1,0 +1,27 @@
+# description	: a realtime MPEG 1.0/2.0/2.5 audio player for layers 1, 2 and 3
+# depends	: alsa-lib libtool
+
+pkgname=mpg123
+pkgver=1.32.10
+pkgrel=1
+source="https://downloads.sourceforge.net/$pkgname/$pkgname-$pkgver.tar.bz2"
+optsflags=" -O3 -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition -fstack-protector-strong -fzero-call-used-regs=used "
+
+build() {
+	cd $pkgname-$pkgver
+
+	./configure \
+		--prefix=/usr \
+        --enable-int-quality
+    # https://bugzilla.gnome.org/show_bug.cgi?id=655517
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+	make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+
+    install -Dm 755 scripts/conplay -t "$pkgdir/usr/bin"
+}

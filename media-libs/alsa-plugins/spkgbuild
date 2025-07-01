@@ -1,0 +1,38 @@
+# description	: Advanced Linux Sound Architecture Library
+# depends	: alsa-lib ffmpeg libsamplerate pulseaudio speex speexdsp
+
+pkgname=alsa-plugins
+pkgver=1.2.12
+pkgrel=1
+source="https://www.alsa-project.org/files/pub/plugins/alsa-plugins-$pkgver.tar.bz2"
+optsflags=" -O3 -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition "
+
+build() {
+	cd alsa-plugins-$pkgver
+
+    ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --enable-maemo-plugin \
+        --enable-maemo-resource-manager
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+	make
+}
+
+package() {
+    cd alsa-plugins-$pkgver
+
+    make DESTDIR="$pkgdir" install
+    install -vDm 644 doc/README* doc/*.txt -t "$pkgdir/usr/share/doc/$pkgname"
+
+    # remove maemo plugin configuration (it overrides defaults for pcm and ctl),
+    # until a better way is found to package default overrides:
+    # https://bugs.archlinux.org/task/65440
+    rm -v "$pkgdir/etc/alsa/conf.d/98-maemo.conf"
+
+    # make a proper off-by-default config template out of the example file
+    mv -v "$pkgdir/etc/alsa/conf.d/99-pulseaudio-default.conf.example" "$pkgdir/usr/share/alsa/alsa.conf.d/99-pulseaudio-default.conf"
+
+    install -vdm 755 "$pkgdir/etc/alsa/conf.d"
+    ln -st "$pkgdir/etc/alsa/conf.d" /usr/share/alsa/alsa.conf.d/99-pulseaudio-default.conf
+}

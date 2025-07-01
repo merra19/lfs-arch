@@ -1,0 +1,23 @@
+# description	: GObject library for accessing the freedesktop.org Secret Service API
+# depends	: glib libgcrypt gobject-introspection vala
+
+pkgname=libsecret
+pkgver=0.21.7
+pkgrel=1
+source="https://download.gnome.org/sources/libsecret/${pkgver%.*}/libsecret-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    local meson_options=(
+        -D tpm2=false
+        -D gtk_doc=false
+    )
+
+    arch-meson libsecret-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}
+

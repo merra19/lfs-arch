@@ -1,0 +1,26 @@
+# description	: Libraries for cryptographic UIs and accessing PKCS#11 modules
+# depends	: glib libgcrypt p11-kit libsecret gobject-introspection 
+# depends	: dbus gnupg gettext pkgconf vala openssh libxml2 gtk3
+
+pkgname=gcr
+pkgver=3.41.2
+pkgrel=1
+source="https://download.gnome.org/sources/gcr/${pkgver%.*}/gcr-$pkgver.tar.xz"
+
+build() {
+    #sed -i 's:"/desktop:"/org:' gcr-$pkgver/schema/*.xml
+
+    local meson_options=(
+        # ssh-agent moved to gcr-4
+        -D ssh_agent=false
+        -D gtk_doc=false
+        -D systemd=disabled
+    )
+
+    arch-meson gcr-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

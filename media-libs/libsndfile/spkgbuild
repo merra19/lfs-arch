@@ -1,0 +1,45 @@
+# description	: C library for reading and writing files containing sampled sound
+# depends	: flac opus libvorbis alsa-lib sqlite libogg lame mpg123
+# depends	: glibc 
+
+pkgname=libsndfile
+pkgver=1.2.2
+pkgrel=1
+source="https://github.com/libsndfile/libsndfile/releases/download/$pkgver/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto -fstack-protector-strong -fzero-call-used-regs=used "
+
+build() {
+	cd $pkgname-$pkgver
+
+
+    # Get the GCC version string (e.g., "gcc 15.1.0")
+    version_str=$(gcc -dumpversion)
+
+    # Extract the major version number
+    major_version=${version_str%%.*}
+
+    # Compare with 15
+    if (( major_version >= 15 )); then
+        # Fix building with GCC-15
+        sed '/typedef enum/,/bool ;/d' -i src/ALAC/alac_{en,de}coder.c
+    fi
+
+    local cmake_options=(
+        -B build
+        -D BUILD_SHARED_LIBS=ON
+        -D CMAKE_INSTALL_PREFIX=/usr
+        -D CMAKE_BUILD_TYPE=None
+        -D ENABLE_EXTERNAL_LIBS=ON
+        -D ENABLE_MPEG=ON
+        -W no-dev
+        -D CMAKE_POLICY_VERSION_MINIMUM=3.5
+    )
+    cmake "${cmake_options[@]}"
+    cmake --build build --verbose
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" cmake --install build
+}

@@ -1,0 +1,24 @@
+# description	: Low-footprint RDF triple store with SPARQL 1.1 interface
+# depends	: avahi  glib glibc icu json-glib libsoup3 libxml2
+# depends	: snowball sqlite python3-asciidoc bash-completion dbus
+# depends	: glib gobject-introspection meson python3-dbus
+# depends	: python3-gobject3 vala
+
+pkgname=tinysparql
+pkgver=3.9.2
+pkgrel=1
+source="https://download.gnome.org/sources/tinysparql/${pkgver%.*}/tinysparql-$pkgver.tar.xz"
+
+build() {
+    local meson_options=(
+        -D systemd_user_services=false
+        -D tests_tap_protocol=false
+    )
+
+    arch-meson tinysparql-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

@@ -1,0 +1,117 @@
+# description	: Complete solution to record/convert/stream audio and video. Includes libavcodec
+# depends	: bzip2 libass freetype lame gnutls libvorbis libvpx opus 
+# depends	: x264 x265 alsa-lib yasm dav1d libaom fdk-aac libva
+# depends	: libdvdnav openjpeg2 pulseaudio libjxl llvm
+
+pkgname=ffmpeg
+pkgver=7.1
+pkgrel=1
+source="https://ffmpeg.org/releases/$pkgname-$pkgver.tar.xz
+        https://www.linuxfromscratch.org/patches/blfs/svn/ffmpeg-7.1-chromium_method-1.patch
+        https://www.linuxfromscratch.org/patches/blfs/svn/ffmpeg-7.1-texinfo_fix-1.patch"
+optsflags=" -O3 -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition -fstack-protector-strong -fzero-call-used-regs=used "
+
+build() {
+	cd $pkgname-$pkgver
+
+    patch -Np1 -i ../ffmpeg-7.1-chromium_method-1.patch
+
+    # Fix an issue with the latest version of x265-4.1
+    sed -e 's/X265_BUILD >= 210/(&) \&\& (X265_BUILD < 213)/' \
+        -i libavcodec/libx265.c
+
+    #  Fix an issue caused by Texinfo 7.2
+    patch -Np1 -i ../ffmpeg-7.1-texinfo_fix-1.patch
+
+	#sed -i 's/-lflite"/-lflite -lasound"/' configure
+
+    # -fdiagnostics-color=auto gets appended after user flags which 
+	# will ignore user's preference.
+	sed -i -e '/check_cflags -fdiagnostics-color=auto/d' configure
+
+    ./configure \
+        --prefix=/usr \
+        --disable-debug \
+        --disable-static \
+        --disable-stripping \
+        --disable-amf \
+        --disable-avisynth \
+        --disable-cuda-llvm \
+        --enable-lto \
+        --enable-fontconfig \
+        --disable-frei0r \
+        --enable-gmp \
+        --enable-gnutls \
+        --enable-gpl \
+        --disable-ladspa \
+        --enable-libaom \
+        --enable-libass \
+        --disable-libbluray \
+        --disable-libbs2b \
+        --enable-libdav1d \
+        --enable-libdrm \
+        --enable-libdvdnav \
+        --enable-libdvdread \
+        --enable-libfreetype \
+        --enable-libfribidi \
+        --enable-libglslang \
+        --disable-libgsm \
+        --enable-libharfbuzz \
+        --disable-libiec61883 \
+        --disable-libjack \
+        --enable-libjxl \
+        --disable-libmodplug \
+        --enable-libmp3lame \
+        --disable-libopencore_amrnb \
+        --disable-libopencore_amrwb \
+        --enable-libopenjpeg \
+        --disable-libopenmpt \
+        --enable-libopus \
+        "$(scratch isinstalled libplacebo && echo '--enable-libplacebo' || echo '--disable-libplacebo')" \
+        --enable-libpulse \
+        --disable-librav1e \
+        "$(scratch isinstalled librsvg && echo '--enable-librsvg' || echo '--disable-librsvg')" \
+        --disable-librubberband \
+        --disable-libsnappy \
+        --disable-libsoxr \
+        --enable-libspeex \
+        --disable-libsrt \
+        --disable-libssh \
+        --disable-libsvtav1 \
+        --disable-libtheora \
+        "$(scratch isinstalled v4l-utils && echo '--enable-libv4l2' || echo '--disable-libv4l2')" \
+        --disable-libvidstab \
+        --disable-libvmaf \
+        --enable-libvorbis \
+        --disable-libvpl \
+        --enable-libvpx \
+        --enable-libwebp \
+        --enable-libx264 \
+        --enable-libx265 \
+        --enable-libxcb \
+        --enable-libxml2 \
+        --disable-libxvid \
+        --disable-libzimg \
+        --disable-libzmq \
+        --disable-nvdec \
+        --disable-nvenc \
+        --disable-opencl \
+        --enable-opengl \
+        --enable-shared \
+        --disable-vapoursynth \
+        --enable-version3 \
+        --enable-vulkan \
+        --docdir=/usr/share/doc/$pkgname
+    make
+    make tools/qt-faststart
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+	make DESTDIR="$pkgdir" install install-man
+
+	install -v -m755    tools/qt-faststart "$pkgdir"/usr/bin &&
+	install -v -m755 -d "$pkgdir"/usr/share/doc/$pkgname
+	install -v -m644    doc/*.txt "$pkgdir"/usr/share/doc/$pkgname
+}

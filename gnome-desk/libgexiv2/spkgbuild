@@ -1,0 +1,24 @@
+# description	: GObject-based wrapper around the Exiv2 library
+# depends	: exiv2 glib glibc gcc meson vala python3-gobject3
+# depends	: gobject-introspection 
+
+pkgname=libgexiv2
+pkgver=0.14.5
+pkgrel=1
+source="https://download.gnome.org/sources/gexiv2/${pkgver%.*}/gexiv2-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    local meson_options=(
+        -D gtk_doc=false
+        -D tests=true
+    )
+
+    arch-meson gexiv2-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+}
+
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

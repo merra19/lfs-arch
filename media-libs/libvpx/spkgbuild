@@ -1,0 +1,38 @@
+# description	: WebM VP8 and VP9 Codec SDK
+# depends	: yasm which
+
+pkgname=libvpx
+pkgver=1.15.2
+pkgrel=1
+source="$pkgname$pkgver.tar.gz::https://github.com/webmproject/libvpx/archive/v$pkgver.tar.gz"
+optsflags=" -O3 -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition "
+
+build() {
+	cd $pkgname-$pkgver
+
+	sed -i 's/cp -p/cp/' build/make/Makefile &&
+
+	mkdir libvpx-build
+	cd    libvpx-build
+
+    ../configure \
+        --prefix=/usr \
+        --disable-install-docs \
+        --disable-install-srcs \
+        --disable-unit-tests \
+        --enable-pic \
+        --enable-postproc \
+        --enable-runtime-cpu-detect \
+        --enable-shared \
+        --enable-vp8 \
+        --enable-vp9 \
+        --enable-vp9-highbitdepth \
+        --enable-vp9-temporal-denoising
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" -C libvpx-build install
+}

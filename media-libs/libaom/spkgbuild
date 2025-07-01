@@ -1,0 +1,32 @@
+# description	: Alliance for Open Media AV1 Codec SDK
+# depends	: cmake ninja yasm
+
+pkgname=libaom
+pkgver=3.12.1
+pkgrel=1
+source="https://storage.googleapis.com/aom-releases/libaom-$pkgver.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    local cmake_options=(
+        # Upstream would like Release, adding -O3 and removing assertions
+        # https://gitlab.archlinux.org/archlinux/packaging/packages/aom/-/issues/1
+        -D CMAKE_BUILD_TYPE=Release
+
+        -D CMAKE_INSTALL_PREFIX=/usr
+        -D BUILD_SHARED_LIBS=1
+        -D ENABLE_TESTS=0
+        -D ENABLE_DOCS=no  
+    )
+
+    # upstream wants this off
+    CFLAGS="${CFLAGS/_FORTIFY_SOURCE=2/_FORTIFY_SOURCE=0}"
+    CXXFLAGS="${CXXFLAGS/_FORTIFY_SOURCE=2/_FORTIFY_SOURCE=0}"
+
+    cmake -S libaom-$pkgver -B build -G Ninja "${cmake_options[@]}"
+    cmake --build build
+}
+
+package() {
+    DESTDIR="$pkgdir" cmake --install build
+}

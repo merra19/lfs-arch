@@ -1,0 +1,27 @@
+# description	: Default file manager for the GNOME desktop
+# depends	: cairo dconf gcc gdk-pixbuf glib glibc gnome-autoar
+# depends	: gnome-desktop graphene gst-plugins-base gstreamer
+# depends	: gtk4 gvfs hicolor-icon-theme libadwaita libgexiv2 meson
+# depends	: libcloudproviders libportal libx11 pango localsearch
+# depends	: tinysparql wayland xdg-user-dirs-gtk appstream
+# depends	: gobject-introspection
+
+pkgname=nautilus
+pkgver=48.2
+pkgrel=1
+source="https://download.gnome.org/sources/$pkgname/${pkgver%.*}/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -Os -fdata-sections -ffat-lto-objects -ffunction-sections -flto=auto -fno-semantic-interposition "
+
+build() {
+    local meson_options=(
+        -D docs=false
+        -D packagekit=false
+    )
+
+    arch-meson nautilus-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

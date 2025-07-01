@@ -1,0 +1,25 @@
+# description	: Helper library for RESTful services
+# depends	: glib gobject-introspection libxml2 libsoup3 json-glib
+# depends	: meson vala libadwaita gtksourceview5
+
+pkgname=rest
+pkgver=0.9.1
+pkgrel=1
+source="https://download.gnome.org/sources/$pkgname/${pkgver%.*}/$pkgname-$pkgver.tar.xz
+         30.patch"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+prepare() {
+    cd $pkgname-$pkgver
+
+    patch -Np1 -i ../30.patch
+}
+
+build() {
+    arch-meson rest-$pkgver build -D vapi=true -D gtk_doc=false  -D examples=false
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

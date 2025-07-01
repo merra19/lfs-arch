@@ -1,0 +1,29 @@
+# description	: Bluetooth graphical utilities integrated with GNOME
+# depends	: bluez gcc glib glibc gsound gtk4 libadwaita libnotify
+# depends	: upower docbook-xsl meson gobject-introspection python3
+
+pkgname=gnome-bluetooth-3.0
+pkgver=47.1
+pkgrel=2
+source="https://download.gnome.org/sources/gnome-bluetooth/${pkgver%.*}/gnome-bluetooth-$pkgver.tar.xz
+        https://www.linuxfromscratch.org/patches/blfs/svn/gnome-bluetooth-47.1-build_fix-1.patch"
+optsflags=" -O3 -ffat-lto-objects  -flto=auto "
+
+prepare() {
+    cd gnome-bluetooth-$pkgver
+
+    # Fix a build failure that happens with pygobject-3.52.0 and later
+    patch -Np1 -i ../gnome-bluetooth-47.1-build_fix-1.patch
+}
+
+build() {
+    local meson_options=(
+        -D gtk_doc=false
+    )
+    arch-meson gnome-bluetooth-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

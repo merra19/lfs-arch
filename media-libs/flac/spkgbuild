@@ -1,0 +1,38 @@
+# description	: Free lossless audio encoder and decoder
+# depends	: libogg xz gettext pkgconf glibc
+
+pkgname=flac
+pkgver=1.5.0
+pkgrel=1
+source="https://downloads.xiph.org/releases/flac/flac-$pkgver.tar.xz"
+optsflags=" -O3 -falign-functions=32 -ffast-math -ffat-lto-objects -flto=auto -fno-semantic-interposition -fstack-protector-strong -ftree-loop-vectorize -fzero-call-used-regs=used "
+
+bsdtar() {
+tar $@;
+}
+
+build() {
+    cd flac-$pkgver
+
+    local cmake_options=(
+        -D BUILD_SHARED_LIBS=ON
+        -D CMAKE_BUILD_TYPE=None
+        -D CMAKE_INSTALL_PREFIX=/usr
+        -D NDEBUG=ON
+
+        # Handled by our CFLAGS
+        -D WITH_FORTIFY_SOURCE=OFF
+        -D WITH_STACK_PROTECTOR=OFF
+    )
+
+    cmake -B build -G Ninja "${cmake_options[@]}"
+    cmake --build build
+}
+
+package() {
+    cd flac-$pkgver
+
+    DESTDIR="${pkgdir}" cmake --install build
+
+    install -Dm 644 src/*/*.m4 -t "${pkgdir}/usr/share/aclocal"
+}

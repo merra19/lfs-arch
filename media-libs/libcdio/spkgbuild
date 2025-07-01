@@ -1,0 +1,36 @@
+# description	: A library to encapsulate CD-ROM reading and control
+# depends	: ncurses libcddb
+
+pkgname=libcdio
+pkgver=2.1.0
+pkgrel=1
+options="!lto"
+source="https://ftp.gnu.org/gnu/libcdio/$pkgname-$pkgver.tar.bz2"
+optsflags=" -fno-lto "
+
+build() {
+	cd $pkgname-$pkgver
+	
+    CFLAGS=$(echo "$CFLAGS" | sed 's/-Werror=format-security/-Wformat-security/')
+    CXXFLAGS=$(echo "$CXXFLAGS" | sed 's/-Werror=format-security/-Wformat-security/')
+
+    autoreconf -fvi
+
+	./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --localstatedir=/var \
+        --disable-cddb \
+        --enable-cpp-progs \
+        --enable-maintainer-mode \
+        --disable-static \
+        --disable-vcd-info
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+	make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

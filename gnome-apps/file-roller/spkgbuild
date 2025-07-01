@@ -1,0 +1,21 @@
+# description	: Archive manager for GNOME
+# depends	: dconf gcc glib glibc gtk4 hicolor-icon-theme json-glib
+# depends	: libadwaita libarchive nautilus pango meson python3
+# depends	: 7zip  binutils cpio unrar unzip yelp-tools zip
+## arj bzip3 dpkg lhasa lrzip rpmextract unace cdrtools squashfs-tools 
+
+
+pkgname=file-roller
+pkgver=44.5
+pkgrel=1
+source="https://download.gnome.org/sources/$pkgname/${pkgver%.*}/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    arch-meson $pkgname-$pkgver build
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

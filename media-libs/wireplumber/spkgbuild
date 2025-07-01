@@ -1,0 +1,29 @@
+# description	: Replacement for pipewire-media-session
+# depends	: pipewire glib lua python3-lxml elogind
+
+pkgname=wireplumber
+pkgver=0.5.10
+pkgrel=1
+source="https://gitlab.freedesktop.org/pipewire/wireplumber/-/archive/$pkgver/wireplumber-$pkgver.tar.bz2
+        pipewire-launcher.sh pipewire.desktop"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    local meson_options=(
+        -D systemd=disabled
+        -D elogind=enabled
+        -D system-lua=true
+        -D doc=disabled
+        -D introspection=disabled
+    )
+
+    arch-meson wireplumber-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+
+    install -Dm 0755 pipewire-launcher.sh  "$pkgdir"/usr/bin/pipewire-launcher.sh 
+    install -Dm 0644 pipewire.desktop "$pkgdir"/etc/xdg/autostart/pipewire.desktop
+}

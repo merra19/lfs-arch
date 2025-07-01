@@ -1,0 +1,23 @@
+# description	: Pulseaudio Volume Control, GTK based mixer for Pulseaudio
+# depends	: gtkmm4 json-glib libcanberra libsigc++3 pulseaudio
+
+pkgname=pavucontrol
+pkgver=6.1
+pkgrel=1
+source="https://freedesktop.org/software/pulseaudio/pavucontrol/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd $pkgname-$pkgver
+
+    arch-meson build -D lynx=false
+    meson compile -C build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+	meson install -C build --destdir "$pkgdir"
+
+    mv "$pkgdir"/usr/share/doc/pavucontrol "$pkgdir"/usr/share/doc/pavucontrol-$pkgver
+}

@@ -1,0 +1,40 @@
+# description	: Open source multimedia framework
+# depends	: glib libcap gobject-introspection meson qt6-base
+# depends	: qt6-declarative qt6-shadertools qt6-tools qt6-wayland
+# depends	: libunwind elfutils libxkbcommon bluez
+# depends	: libfreeaptx
+
+pkgname=gstreamer
+pkgver=1.26.2
+pkgrel=1
+source="http://gstreamer.freedesktop.org/src/$pkgname/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition "
+
+build() {
+	cd $pkgname-$pkgver
+
+    export RUSTC=/usr/bin/rustc
+
+    local meson_options=(
+        -D examples=disabled
+        -D gobject-cast-checks=disabled
+        -D dbghelp=disabled
+        -D doc=disabled
+    )
+
+    # https://gitlab.freedesktop.org/gstreamer/gstreamer/-/issues/3197
+    export GI_SCANNER_DISABLE_CACHE=1
+
+    # Cargo sub-build: Use debug and LTO
+    export CARGO_PROFILE_RELEASE_DEBUG=2
+    export CARGO_PROFILE_RELEASE_LTO=true CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1
+
+    arch-meson build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    meson install -C build --destdir "$pkgdir"
+}

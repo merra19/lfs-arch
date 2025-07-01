@@ -1,0 +1,24 @@
+# description	: A library that provides top functionality to applications
+# depends	: glib gobject-introspection dbus dconf  gcr4 glibc  libxml2 meson
+# depends	: gtk4 hicolor-icon-theme json-glib keyutils krb5 rest libadwaita
+# depends	:  libsecret libsoup3 vala
+
+pkgname=gnome-online-accounts
+pkgver=3.54.3
+pkgrel=1
+source="https://download.gnome.org/sources/gnome-online-accounts/${pkgver:0:4}/gnome-online-accounts-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    local meson_options=(
+        -D gtk_doc=false
+        -D man=true
+    )
+
+    arch-meson gnome-online-accounts-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

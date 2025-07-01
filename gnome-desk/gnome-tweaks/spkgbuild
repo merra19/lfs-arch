@@ -1,0 +1,19 @@
+# description	: Graphical interface for advanced GNOME 3 settings (Tweak Tool)
+# depends	:  dconf glib gnome-desktop hicolor-icon-theme gtk4
+# depends	: gsettings-desktop-schemas libadwaita libgudev libnotify
+# depends	: pango python3 python3-gobject3 meson
+
+pkgname=gnome-tweaks
+pkgver=46.1
+pkgrel=1
+source="https://download.gnome.org/sources/$pkgname/${pkgver%.*}/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    arch-meson gnome-tweaks-$pkgver build
+    meson compile -C build
+}
+
+package() {
+  meson install -C build --destdir "$pkgdir"
+}

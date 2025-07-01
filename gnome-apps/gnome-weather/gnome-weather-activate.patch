@@ -1,0 +1,48 @@
+From e0840077b915fc7212e277aab365f6aff8cd69e9 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Ball=C3=B3=20Gy=C3=B6rgy?= <ballogyor@gmail.com>
+Date: Mon, 21 Apr 2025 23:39:36 +0200
+Subject: [PATCH] Raise existing window instead of opening new one on
+ activation
+
+Multiple main windows are not supported.
+---
+ src/app/application.js | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/src/app/application.js b/src/app/application.js
+index 58375efc..72554dcf 100644
+--- a/src/app/application.js
++++ b/src/app/application.js
+@@ -60,7 +60,7 @@ export class WeatherApplication extends Adw.Application {
+ 
+     _onShowLocation(action, parameter) {
+         let location = this.world.deserialize(parameter.deep_unpack());
+-        let win = this._createWindow();
++        let win = this.mainWindow ?? this._createWindow();
+ 
+         let info = this.model.addNewLocation(location, false);
+         win.showInfo(info, false);
+@@ -69,7 +69,7 @@ export class WeatherApplication extends Adw.Application {
+ 
+     _onShowSearch(action, parameter) {
+         let text = parameter.deep_unpack();
+-        let win = this._createWindow();
++        let win = this.mainWindow ?? this._createWindow();
+ 
+         win.showSearch(text);
+         this._showWindowWhenReady(win);
+@@ -210,6 +210,11 @@ export class WeatherApplication extends Adw.Application {
+     }
+ 
+     vfunc_activate() {
++        if (this.mainWindow) {
++            this.mainWindow.present();
++            return;
++        }
++
+         let win = this._createWindow();
+         win.showDefault();
+         this._showWindowWhenReady(win);
+-- 
+GitLab
+

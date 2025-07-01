@@ -1,0 +1,72 @@
+# description	: Multimedia processing graphs
+# depends	: meson pkgconf python3 ncurses glib dbus readline openssl 
+# depends	: fdk-aac alsa-lib opus ffmpeg pulseaudio libx11 libxfixes 
+# depends	: alsa-plugins alsa-firmware avahi bluez libfreeaptx
+
+pkgname=pipewire
+pkgver=1.4.5
+pkgrel=1
+options="!lto"
+source="https://gitlab.freedesktop.org/pipewire/pipewire/-/archive/$pkgver/pipewire-$pkgver.tar.bz2"
+optsflags=" -fno-lto "
+
+build() {
+    local meson_options=(
+        -D bluez5-codec-lc3plus=disabled
+        -D docs=disabled
+        -D jack=disabled
+        -D man=disabled
+        -D rlimits-install=false
+        -D selinux=disabled
+        -D session-managers=[]
+        -D snap=disabled
+        -D udevrulesdir=/usr/lib/udev/rules.d
+        -D systemd=disabled
+        -D sdl2="$(scratch isinstalled sdl2 && echo "enabled" || echo "disabled")"
+        -D libmysofa=disabled
+        -D libcanberra="$(scratch isinstalled libcanberra && echo "enabled" || echo "disabled")"
+        -D gstreamer="$(scratch isinstalled gst-plugins-base && echo "enabled" || echo "disabled")"
+        -D gstreamer-device-provider="$(scratch isinstalled gst-plugins-base && echo "enabled" || echo "disabled")"
+        -D echo-cancel-webrtc=disabled
+        -D lv2=disabled
+        -D libffado=disabled
+        
+        -D libcamera=disabled
+        -D roc=disabled
+        -D bluez5="$(scratch isinstalled bluez && echo "enabled" || echo "disabled")"
+        -D bluez5-codec-ldac=disabled
+        -D bluez5-codec-lc3=disabled
+    )   
+
+    arch-meson pipewire-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+}
+
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+
+    cd "$pkgdir"
+
+    mkdir -p "$pkgdir/etc/alsa/conf.d"
+    ln -st "$pkgdir/etc/alsa/conf.d" \
+        /usr/share/alsa/alsa.conf.d/50-pipewire.conf
+
+    mkdir -p "$pkgdir/etc/alsa/conf.d"
+    ln -st "$pkgdir/etc/alsa/conf.d" \
+        /usr/share/alsa/alsa.conf.d/99-pipewire-default.conf
+
+    install -Dm644 /dev/null \
+        "$pkgdir/usr/share/pipewire/media-session.d/with-alsa"
+
+    # directory for overrides
+    mkdir -p "$pkgdir/etc/pipewire/pipewire-pulse.conf.d"
+
+    install -Dm644 /dev/null \
+        "$pkgdir/usr/share/pipewire/media-session.d/with-pulseaudio"
+
+    rm -f "$pkgdir/usr/share/glib-2.0/schemas/org.freedesktop.pulseaudio.gschema.xml"
+
+    # directories for overrides
+    mkdir -p "$pkgdir"/etc/pipewire/{client-rt,client,minimal,pipewire}.conf.d
+}

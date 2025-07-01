@@ -1,0 +1,23 @@
+# description	: FFmpeg based gstreamer plugin
+# depends	: gst-plugins-base glib gstreamer ffmpeg yasm meson
+
+pkgname=gst-libav
+pkgver=1.26.2
+pkgrel=1
+source="https://gstreamer.freedesktop.org/src/gst-libav/$pkgname-$pkgver.tar.xz"
+
+build() {
+    meson setup $pkgname-$pkgver build  \
+        --prefix /usr \
+        --libexecdir lib \
+        --sbindir bin \
+        --buildtype plain \
+        --wrap-mode nodownload \
+        -D b_pie=true \
+        -D python.bytecompile=1 
+	ninja -C build
+}
+
+package() {
+    DESTDIR="$pkgdir" ninja -C build install
+}

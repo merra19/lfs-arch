@@ -1,0 +1,40 @@
+# description	: Automatic archives creating and extracting library
+# depends	: dconf exempi ffmpeg giflib glib glibc icu python3 bash
+# depends	: gstreamer gst-plugins-base libgsf libexif libgexiv2
+# depends	: libjpeg-turbo libpng libseccomp libtiff libxml2 upower
+# depends	: poppler tinysparql totem-pl-parser python3-asciidoc
+# depends	: gobject-introspection meson python3-gobject3 libgudev
+## libiptcdata libosinfo libcue gupnp-dlna libgxps
+
+pkgname=localsearch
+pkgver=3.9.0
+pkgrel=2
+source="https://download.gnome.org/sources/$pkgname/${pkgver%.*}/$pkgname-$pkgver.tar.xz
+        https://www.linuxfromscratch.org/patches/blfs/svn/localsearch-3.9.0-libxml2_2_14-1.patch"
+
+prepare() {
+    cd localsearch-$pkgver
+
+    patch -Np1 -i ../localsearch-3.9.0-libxml2_2_14-1.patch
+}
+
+build() {
+    local meson_options=(
+        -D systemd_user_services=false
+        -D landlock=enabled
+        -D tests_tap_protocol=true
+        -D network_manager=disabled 
+        -D cue=disabled
+        -D xps=disabled
+        -D iptc=disabled
+        -D iso=disabled
+    )
+
+    arch-meson localsearch-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+}
+
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

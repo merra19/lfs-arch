@@ -1,0 +1,78 @@
+From 4a0bd586f076468329188d249f5d7b4c4738009f Mon Sep 17 00:00:00 2001
+From: Automeris naranja
+ <104251-automerisnaranja@users.noreply.gitlab.gnome.org>
+Date: Thu, 15 Aug 2024 23:14:39 -0300
+Subject: [PATCH] gl-application: Add CTRL+Q to quit
+
+Closes https://gitlab.gnome.org/GNOME/gnome-logs/-/issues/76
+---
+ data/help-overlay.ui |  6 ++++++
+ src/gl-application.c | 14 +++++++++++++-
+ 2 files changed, 19 insertions(+), 1 deletion(-)
+
+diff --git a/data/help-overlay.ui b/data/help-overlay.ui
+index f480973..ffc6fc2 100644
+--- a/data/help-overlay.ui
++++ b/data/help-overlay.ui
+@@ -30,6 +30,12 @@
+                                 <property name="title" translatable="yes" context="shortcut window">Keyboard shortcuts</property>
+                             </object>
+                         </child>
++                        <child>
++                            <object class="GtkShortcutsShortcut">
++                                <property name="action-name">app.quit</property>
++                                <property name="title" translatable="yes" context="shortcut window">Quit</property>
++                            </object>
++                        </child>
+                     </object>
+                 </child>
+                 <child>
+diff --git a/src/gl-application.c b/src/gl-application.c
+index cef5320..98a967e 100644
+--- a/src/gl-application.c
++++ b/src/gl-application.c
+@@ -143,6 +143,14 @@ on_about (GSimpleAction *action,
+                            NULL);
+ }
+ 
++static void
++on_quit (GSimpleAction *action,
++         GVariant *parameter,
++         gpointer user_data)
++{
++    g_application_quit (G_APPLICATION (user_data));
++}
++
+ static void
+ on_sort_order_changed (GSettings *settings,
+                        const gchar *key,
+@@ -206,7 +214,8 @@ on_monospace_font_name_changed (GSettings *settings,
+ static GActionEntry actions[] = {
+     { "new-window", on_new_window },
+     { "help", on_help },
+-    { "about", on_about }
++    { "about", on_about },
++    { "quit", on_quit }
+ };
+ 
+ static void
+@@ -233,6 +242,7 @@ launch_window (GApplication *application)
+     const gchar * const export_accel[] = { "<Primary>e", NULL };
+     const gchar * const help_accel[] = { "F1", NULL };
+     const gchar * const new_window_accel[] = { "<Primary>n", NULL };
++    const gchar * const quit_accel[] = { "<Primary>q", NULL };
+ 
+     priv = gl_application_get_instance_private (GL_APPLICATION (application));
+ 
+@@ -249,6 +259,8 @@ launch_window (GApplication *application)
+                                            "app.help", help_accel);
+     gtk_application_set_accels_for_action (GTK_APPLICATION (application),
+                                            "app.new-window", new_window_accel);
++    gtk_application_set_accels_for_action (GTK_APPLICATION (application),
++                                           "app.quit", quit_accel);
+ 
+     on_monospace_font_name_changed (priv->desktop, DESKTOP_MONOSPACE_FONT_NAME,
+                                     priv);
+-- 
+GitLab
+

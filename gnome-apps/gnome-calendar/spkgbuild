@@ -1,0 +1,21 @@
+# description	: Manage your calendars with simple and modern interface
+# depends	: dconf evolution-data-server gcc geoclue glib glibc gtk4
+# depends	: graphene gsettings-desktop-schemas libadwaita libsoup3
+# depends	: hicolor-icon-theme libgweather-4 libical pango meson
+
+## gnome-control-center xdg-desktop-portal-impl
+
+pkgname=gnome-calendar
+pkgver=48.1
+pkgrel=1
+source="https://download.gnome.org/sources/$pkgname/${pkgver%.*}/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -Os -fdata-sections -ffat-lto-objects -ffunction-sections -flto=auto -fno-semantic-interposition "
+
+build() {
+    arch-meson gnome-calendar-$pkgver build 
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

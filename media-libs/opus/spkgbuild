@@ -1,0 +1,34 @@
+# description	: Open codec for interactive speech and music transmission over the Internet
+# depends	: glibc
+
+pkgname=opus
+pkgver=1.5.2
+pkgrel=1
+options="!lto"
+source=" https://downloads.xiph.org/releases/opus/opus-$pkgver.tar.gz"
+optsflags=" -Ofast -falign-functions=32 -fno-lto -fno-semantic-interposition "
+
+build() {
+    if echo "$CFLAGS" | grep -q "\-Ofast"; then
+        OPUS_FLOAT="--enable-intrinsics --enable-float-approx"
+    fi
+
+    local meson_options=(
+        -D asm=disabled
+        -D custom-modes=true
+        -D deep-plc=enabled
+        -D dred=enabled
+        -D osce=enabled
+        -D docs=enabled
+        -D float-approx=true
+        -D docs=disabled
+    )
+
+    arch-meson opus-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+    install -Dt "$pkgdir/usr/share/aclocal" -m644 opus-$pkgver/opus.m4
+}

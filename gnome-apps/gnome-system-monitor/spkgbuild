@@ -1,0 +1,20 @@
+# description	: The Gnome System Monitor
+# depends	: cairo dconf gcc gdk-pixbuf glib glibc glibmm268 gtk4
+# depends	: graphene  gtkmm4 hicolor-icon-theme libadwaita libgtop
+# depends	: librsvg libsigc++3 pango polkit yelp-tools appstream
+# depends	: catch2 glib meson
+
+pkgname=gnome-system-monitor
+pkgver=48.1
+pkgrel=1
+source="https://download.gnome.org/sources/$pkgname/${pkgver%.*}/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    arch-meson $pkgname-$pkgver build -D systemd=false
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

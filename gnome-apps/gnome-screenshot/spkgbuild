@@ -1,0 +1,28 @@
+# description	: Screenshot utility for GNOME
+# depends	: cairo dconf gcc gdk-pixbuf glib glibc gtk3 libhandy
+# depends	: hicolor-icon-theme libxext meson libx11
+
+pkgname=gnome-screenshot
+pkgver=41.0+r39+ga362197
+pkgrel=1
+commit=a36219781bd08201d0454bc6101ff9502430aea3
+source="https://gitlab.gnome.org/GNOME/gnome-screenshot/-/archive/$commit/gnome-screenshot-$commit.tar.gz
+        0001-Fix-various-fallback-paths.patch"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+prepare() {
+    cd $pkgname-$commit
+
+    # Fix various fallback paths
+    # https://gitlab.gnome.org/GNOME/gnome-screenshot/-/merge_requests/72
+    patch -Np1 -i ../0001-Fix-various-fallback-paths.patch
+}
+
+build() {
+    arch-meson $pkgname-$commit build 
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

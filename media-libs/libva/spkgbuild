@@ -1,0 +1,28 @@
+# description	: Video Acceleration (VA) API for Linux
+# depends	: libdrm meson libx11 libxext libxfixes libxcb wayland
+# depends	: glibc
+
+pkgname=libva
+pkgver=2.22.0
+pkgrel=1
+source="https://github.com/intel/libva/archive/$pkgver/$pkgname-$pkgver.tar.gz"
+backup="etc/libva.conf"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    CFLAGS+=" -DENABLE_VA_MESSAGING" 
+    arch-meson build
+    meson compile -C build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    meson install -C build --destdir "$pkgdir"
+
+  install -Dm 644 /dev/stdin "$pkgdir"/etc/libva.conf <<END
+LIBVA_MESSAGING_LEVEL=1
+END
+}

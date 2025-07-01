@@ -1,0 +1,19 @@
+# description	: A calculator application for GNOME
+# depends	: dconf glib glibc gtk4 gtksourceview5 hicolor-icon-theme
+# depends	: libadwaita libgee libmpc libsoup3 libxml2 libmpfr meson
+# depends	: vala yelp-tools gobject-introspection
+
+pkgname=gnome-calculator
+pkgver=48.1
+pkgrel=1
+source="https://download.gnome.org/sources/$pkgname/${pkgver%.*}/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -Os -fdata-sections -ffat-lto-objects -ffunction-sections -flto=auto -fno-semantic-interposition "
+
+build() {
+    arch-meson gnome-calculator-$pkgver build 
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

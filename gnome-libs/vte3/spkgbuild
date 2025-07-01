@@ -1,0 +1,29 @@
+# description	: Library providing a virtual terminal emulator widget
+# depends	: fribidi glib icu pango pcre2 gtk3 zlib lz4 cairo libxml2
+# depends	: gobject-introspection vala gnutls gtk4
+
+pkgname=vte3
+pkgver=0.80.2
+pkgrel=1
+source="https://gitlab.gnome.org/GNOME/vte/-/archive/$pkgver/vte-$pkgver.tar.gz
+        defaults.patch"
+
+prepare() {
+    cd vte-$pkgver
+
+    patch -Np1 -i ../defaults.patch
+}
+
+build() {
+    local meson_options=(
+        -D _systemd=false
+        -D docs=false
+    )
+    
+    arch-meson vte-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

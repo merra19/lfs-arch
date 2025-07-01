@@ -1,0 +1,26 @@
+# description	: Free library for encoding X264/AVC streams
+# depends	: nasm
+
+pkgname=x264
+pkgver=20250212
+pkgrel=1
+source="https://anduin.linuxfromscratch.org/BLFS/x264/x264-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd x264-$pkgver
+
+	./configure \
+        --prefix=/usr \
+		--enable-shared \
+        --enable-pic \
+        --enable-lto \
+        --disable-avs
+	make
+}
+
+package() {
+    cd x264-$pkgver
+
+    make DESTDIR="$pkgdir" BASHCOMPLETIONSDIR=/usr/share/bash-completion/completions install-cli install-lib-shared install-bashcompletion
+}

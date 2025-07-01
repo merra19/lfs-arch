@@ -1,0 +1,17 @@
+# description	: Thin GObject wrapper around the libcanberra sound event library
+# depends	: glib vala libcanberra gobject-introspection
+
+pkgname=gsound
+pkgver=1.0.3
+pkgrel=1
+source="https://download.gnome.org/sources/gsound/${pkgver%.*}/$pkgname-$pkgver.tar.xz"
+
+build() {
+    arch-meson $pkgname-$pkgver build \
+        -D gtk_doc=false
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

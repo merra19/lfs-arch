@@ -1,0 +1,23 @@
+# description	: Libraries for cryptographic UIs and accessing PKCS#11 modules
+# depends	: glib gobject-introspection libgcrypt p11-kit libsecret 
+# depends	: dbus gnupg libxml2 gettext pkgconf vala gtk4
+
+pkgname=gcr4
+pkgver=4.4.0.1
+pkgrel=1
+source="https://download.gnome.org/sources/gcr/${pkgver%.*}/gcr-$pkgver.tar.xz"
+
+build() {
+    local meson_options=(
+        -D crypto=gnutls
+        -D gtk_doc=false
+        -D systemd=disabled
+    )
+
+    arch-meson gcr-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

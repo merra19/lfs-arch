@@ -1,0 +1,35 @@
+# description	: Simple GObject-based library to parse and save a host of playlist formats
+# depends	:  glib glibc libarchive libgcrypt libxml2 meson uchardet
+# depends	:  gobject-introspection
+
+pkgname=totem-pl-parser
+pkgver=3.26.6
+pkgrel=1
+source="https://download.gnome.org/sources/$pkgname/${pkgver%.*}/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    local meson_options=(
+        -D enable-gtk-doc=false
+        -D enable-libarchive=yes
+        -D enable-libgcrypt=yes
+        -D enable-uchardet=yes
+    )
+
+    local sanitize_flags=(
+        -r
+        -e 's/-ftrivial-auto-var-init=zero ?//'
+        -e 's/-O3 ?//'
+    )
+    CFLAGS="$(<<<"$CFLAGS" sed "${sanitize_flags[@]}")"
+    CXXFLAGS="$(<<<"$CXXFLAGS" sed "${sanitize_flags[@]}")"
+    export CFLAGS CXXFLAGS
+
+    arch-meson $pkgname-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+}
+
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}
