@@ -3,7 +3,7 @@
 
 pkgname=sqlite-32
 _pkgname=sqlite
-pkgver=3.49.1
+pkgver=3.50.1
 _version=$(echo $pkgver |awk -F. '{print $1  $2 "0" $3 "00"}')
 pkgrel=1
 options="!emptydirs"

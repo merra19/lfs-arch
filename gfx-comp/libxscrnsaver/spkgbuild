@@ -1,0 +1,24 @@
+# description	: X.Org X11 library
+# depends	: libx11 libxext xorg-proto glibc
+
+pkgname=libxscrnsaver
+pkgver=1.2.4
+pkgrel=1
+source="https://www.x.org/pub/individual/lib/libXScrnSaver-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd libXScrnSaver-$pkgver
+
+    ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --localstatedir=/var 
+    make
+}
+
+package() {
+    cd libXScrnSaver-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

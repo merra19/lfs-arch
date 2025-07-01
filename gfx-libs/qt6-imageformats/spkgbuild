@@ -1,0 +1,31 @@
+# description	: Additional format plugins for the Qt image I/O system
+# depends	: qt6-base qt6-declarative cmake libwebp libtiff libmng 
+# depends	: qt6-shadertools
+
+pkgname=qt6-imageformats
+pkgver=6.9.1
+pkgrel=1
+source="https://download.qt.io/official_releases/qt/${pkgver%.*}/$pkgver/submodules/qtimageformats-everywhere-src-$pkgver.tar.xz
+        fix.build.patch"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd qtimageformats-everywhere-src-$pkgver
+
+    patch -Np1 -i ../fix.build.patch
+
+	cmake -B build -G Ninja \
+		-D CMAKE_INSTALL_PREFIX=/usr \
+		-D CMAKE_INSTALL_LIBDIR=lib \
+		-D CMAKE_INSTALL_LIBEXECDIR=lib \
+        -D CMAKE_MESSAGE_LOG_LEVEL=STATUS \
+        -D INSTALL_PUBLICBINDIR=usr/bin \
+        -W no-dev
+	cmake --build build
+}
+
+package() {
+    cd qtimageformats-everywhere-src-$pkgver
+
+    DESTDIR=$pkgdir cmake --install build
+}

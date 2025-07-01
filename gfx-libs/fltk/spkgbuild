@@ -1,0 +1,39 @@
+# description	: C++ user interface toolkit for X and OpenGL
+# depends	: xorg-proto libjpeg-turbo libpng zlib libice libsm 
+# depends	: libxcursor libxcursor libxt mesa glu libxft cairo
+
+pkgname=fltk
+pkgver=1.4.3
+pkgrel=1
+options="!docs staticlibs"
+source="https://github.com/fltk/fltk/releases/download/release-$pkgver/fltk-$pkgver-source.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    #sed -i -e '/cat./d' fltk-$pkgver/documentation/Makefile
+
+    local cmake_options=(
+        -B build
+        -D CMAKE_INSTALL_PREFIX=/usr
+        -D CMAKE_BUILD_TYPE=None
+        -D FLTK_LIBDIR=/usr/lib
+        -D OPTION_BUILD_SHARED_LIBS=ON
+        #-D OPTION_BUILD_HTML_DOCUMENTATION=ON
+        #-D OPTION_INSTALL_HTML_DOCUMENTATION=ON
+        -D FLTK_BUILD_FLUID_DOCS=OFF
+        -D FLTK_BUILD_HTML_DOCS=OFF
+        -D FLTK_BUILD_PDF_DOCS=OFF
+        -S fltk-$pkgver
+        -W no-dev
+    )
+    cmake "${cmake_options[@]}"
+
+    cmake --build build --verbose
+}
+
+package() {
+    DESTDIR="$pkgdir" cmake --install build
+    
+    # remove man pages of examples
+    rm -rvf "$pkgdir/usr/share/man/man6"
+}

@@ -1,0 +1,48 @@
+# description	: Gimp ToolKit +
+# depends	: at-spi2-core fribidi glib fontconfig harfbuzz libepoxy 
+# depends	: intltool cairo gdk-pixbuf pango shared-mime-info cups 
+# depends	: gobject-introspection wayland wayland-protocols mesa 
+# depends	: libxkbcommon librsvg docbook-xml libxslt libglvnd 
+# depends	: xorg-proto libx11 libxcomposite libxcursor libxdamage 
+# depends	: libxext libxfixes libxi libxrandr libxinerama colord
+# depends	: libcloudproviders 
+
+pkgname=gtk3
+pkgver=3.24.49
+pkgrel=1
+source="https://download.gnome.org/sources/gtk/${pkgver%.*}/gtk-$pkgver.tar.xz
+        settings.ini gtk-query-immodules-3.0.hook
+        https://www.linuxfromscratch.org/patches/blfs/svn/gtk-3.24.49-upstream_fix-1.patch
+        0001-Allow-disabling-legacy-Tracker-search.patch"
+optsflags=" -O3 -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition "
+
+build() {
+	cd gtk-$pkgver
+
+    patch -Np1 -i ../0001-Allow-disabling-legacy-Tracker-search.patch
+    patch -Np1 -i ../gtk-3.24.49-upstream_fix-1.patch
+
+    local meson_options=(
+        -D broadway_backend=true
+        -D cloudproviders=true
+        -D colord=yes
+        -D gtk_doc=false
+        -D introspection=true
+        -D man=true
+        -D tracker=false
+        -D tracker3=false
+    )
+
+    CFLAGS+=" -DG_DISABLE_CAST_CHECKS"
+    arch-meson build "${meson_options[@]}"
+}
+
+package() {
+    cd gtk-$pkgver
+
+    meson install -C build --destdir "$pkgdir"
+
+    install -Dm 644 "$srcdir"/settings.ini "$pkgdir"/etc/gtk-3.0/settings.ini
+
+    #install -Dm 644 "$srcdir"/gtk-query-immodules-3.0.hook -t "$pkgdir/usr/share/libalpm/hooks"
+}

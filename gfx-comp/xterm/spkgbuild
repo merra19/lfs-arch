@@ -1,0 +1,58 @@
+# description	: Terminal emulator for the X Window System
+# depends	: fontconfig ncurses freetype xmessage libice libx11 
+# depends	: libxaw libxft libxkbfile libxmu libxext libxt luit 
+# depends	: libxinerama xorg-proto  
+
+pkgname=xterm
+pkgver=400
+pkgrel=1
+source="http://invisible-mirror.net/archives/$pkgname/$pkgname-$pkgver.tgz"
+
+build() {
+	cd $pkgname-$pkgver
+
+    sed -i '/v0/{n;s/new:/new:kb=^?:/}' termcap &&
+    printf '\tkbs=\\177,\n' >> terminfo &&
+
+    ./configure --prefix=/usr \
+        --libdir=/etc \
+        --mandir=/usr/share/man \
+        --with-app-defaults=/usr/share/X11/app-defaults/ \
+        --with-x \
+        --disable-full-tgetent \
+        --disable-imake \
+        --enable-ansi-color \
+        --enable-88-color \
+        --enable-256-color \
+        --enable-broken-osc \
+        --enable-broken-st \
+        --enable-load-vt-fonts \
+        --enable-i18n \
+        --enable-wide-chars \
+        --enable-doublechars \
+        --enable-warnings \
+        --enable-tcap-query \
+        --enable-logging \
+        --enable-dabbrev \
+        --enable-freetype \
+        --enable-luit \
+        --enable-mini-luit \
+        --enable-narrowproto \
+        --enable-exec-xterm \
+        --enable-sixel-graphics \
+        --enable-regis-graphics \
+        --enable-block-select \
+        --with-tty-group=tty 
+	make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+	make DESTDIR="$pkgdir" install
+
+    chmod 0755 "${pkgdir}/usr/bin/xterm"
+
+    install -m755 -d "${pkgdir}"/usr/share/applications
+    install -m644 {xterm,uxterm}.desktop "${pkgdir}"/usr/share/applications/
+}

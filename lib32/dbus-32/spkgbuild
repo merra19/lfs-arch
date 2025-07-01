@@ -3,7 +3,7 @@
 
 pkgname=dbus-32
 _pkgname=dbus
-pkgver=1.16.0
+pkgver=1.16.2
 pkgrel=1
 source="https://dbus.freedesktop.org/releases/dbus/$_pkgname-$pkgver.tar.xz
         malloc_trim.patch memory.patch

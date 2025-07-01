@@ -5,7 +5,7 @@
 
 pkgname=cairo-32
 _pkgname=cairo
-pkgver=1.18.2
+pkgver=1.18.4
 pkgrel=1
 source="https://www.cairographics.org/releases/cairo-$pkgver.tar.xz
         https://www.linuxfromscratch.org/patches/blfs/12.3/cairo-1.18.2-upstream_fixes-1.patch"

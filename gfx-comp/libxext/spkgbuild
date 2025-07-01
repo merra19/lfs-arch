@@ -1,0 +1,25 @@
+# description	: X.Org Xext library
+# depends	: libx11 xorg-proto glibc
+
+pkgname=libxext
+pkgver=1.3.6
+pkgrel=1
+source="https://www.x.org/pub/individual/lib/libXext-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto -fno-math-errno -fno-semantic-interposition -fno-trapping-math -fzero-call-used-regs=used "
+
+build() {
+    cd libXext-$pkgver
+
+    ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --localstatedir=/var \
+        --disable-static 
+    make
+}
+
+package() {
+    cd libXext-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

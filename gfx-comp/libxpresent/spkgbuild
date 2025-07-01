@@ -1,0 +1,25 @@
+# description	: X Present Extension C Library
+# depends	: libx11 libxext libxfixes libxrandr xorg-proto
+
+pkgname=libxpresent
+pkgver=1.0.1
+pkgrel=1
+source=" https://www.x.org/pub/individual/lib/libXpresent-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd libXpresent-$pkgver
+
+    ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --localstatedir=/var 
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+    make
+}
+
+package() {
+    cd libXpresent-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

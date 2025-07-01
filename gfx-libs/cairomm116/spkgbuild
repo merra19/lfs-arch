@@ -1,0 +1,23 @@
+# description	: C++ bindings for the Cairo vector graphics library
+# depends	: cairo libsigc++3 boost
+
+pkgname=cairomm116
+pkgver=1.18.0
+pkgrel=1
+options="!emptydirs"
+source="https://www.cairographics.org/releases/cairomm-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    local meson_options=(
+        -D maintainer-mode=false
+        -D build-documentation=false
+    )
+
+    arch-meson cairomm-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

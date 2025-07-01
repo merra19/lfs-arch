@@ -5,7 +5,7 @@
 
 pkgname=udev-32
 _pkgname=systemd
-pkgver=257.3
+pkgver=257.6
 pkgrel=1
 source="https://github.com/systemd/systemd/archive/v$pkgver/systemd-$pkgver.tar.gz
         0001-artix-standalone-install.patch"

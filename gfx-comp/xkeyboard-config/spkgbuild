@@ -1,0 +1,26 @@
+# description	: X keyboard configuration database
+# depends	: perl libxslt gettext xorg-proto
+
+pkgname=xkeyboard-config
+pkgver=2.45
+pkgrel=1
+source="https://www.x.org/pub/individual/data/xkeyboard-config/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+  arch-meson build \
+        -D xkb-base="/usr/share/X11/xkb" \
+        -D compat-rules=true \
+        -D xorg-rules-symlinks=true
+	ninja -C build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    DESTDIR="$pkgdir" ninja -C build install
+
+    install -m755 -d "$pkgdir/var/lib/xkb"
+}

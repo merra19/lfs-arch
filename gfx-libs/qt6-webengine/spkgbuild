@@ -1,0 +1,51 @@
+# description	: Library for rendering dynamic web content in Qt6 C++ and QML applications
+# depends	: alsa-lib dbus expat ffmpeg fontconfig freetype gcc ninja
+# depends	: glib glibc harfbuzz icu lcms2 libdrm libevent libxdamage
+# depends	: libjpeg-turbo libpng libtiff libwebp libx11 libxcb mesa
+# depends	: libxcomposite libxfixes libxkbcommon libxkbfile libxext
+# depends	: libxml2 libxrandr libxslt libxtst zlib-minizip nspr nss
+# depends	: openjpeg2 opus qt6-base qt6-declarative qt6-positioning
+# depends	: qt6-webchannel zlib cmake libxcursor libepoxy pulseaudio
+# depends	: gperf libva nodejs pipewire qt6-tools noto-fonts
+# depends	: python3-html5lib qt6-websockets ttf-dejavu
+## re2 snappy jsoncpp perf
+
+pkgname=qt6-webengine
+pkgver=6.9.1
+pkgrel=1
+source="https://download.qt.io/official_releases/qt/${pkgver%.*}/$pkgver/submodules/qtwebengine-everywhere-src-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+prepare() {
+    cd qtwebengine-everywhere-src-$pkgver
+
+    # Fix a build failure that occurs with the latest version of pipewire
+    pushd src/3rdparty/chromium/third_party/webrtc/modules
+
+    sed -e "88 s/proxy_/reinterpret_cast<pw_node*>(&)/"       \
+        -e "120s/that->proxy_/reinterpret_cast<pw_node*>(&)/" \
+        -i video_capture/linux/pipewire_session.cc
+
+    popd
+}
+build() {
+
+    cmake -B build -S qtwebengine-everywhere-src-$pkgver -G Ninja \
+		-D CMAKE_INSTALL_PREFIX=/usr \
+		-D CMAKE_INSTALL_LIBDIR=lib \
+		-D CMAKE_INSTALL_LIBEXECDIR=lib \
+        -D CMAKE_MESSAGE_LOG_LEVEL=STATUS \
+        -D CMAKE_TOOLCHAIN_FILE=/usr/lib/cmake/Qt6/qt.toolchain.cmake \
+        -D QT_FEATURE_webengine_system_ffmpeg=ON \
+        -D QT_FEATURE_webengine_system_icu=ON \
+        -D QT_FEATURE_webengine_system_libevent=ON \
+        -D QT_FEATURE_webengine_system_re2=OFF \
+        -D QT_FEATURE_webengine_proprietary_codecs=ON \
+        -D QT_FEATURE_webengine_kerberos=ON \
+        -D QT_FEATURE_webengine_webrtc_pipewire=ON
+    cmake --build build
+}
+
+package() {
+    DESTDIR="$pkgdir" cmake --install build
+}

@@ -1,0 +1,24 @@
+# description	: X.Org Inter-Client Exchange library
+# depends	: xorg-proto xtrans glibc
+
+pkgname=libice
+pkgver=1.1.2
+pkgrel=1
+source=" https://www.x.org/pub/individual/lib/libICE-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto -fno-math-errno -fno-semantic-interposition -fno-trapping-math -fzero-call-used-regs=used "
+
+build() {
+    cd libICE-$pkgver
+
+    ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --localstatedir=/var
+    make
+}
+
+package() {
+    cd libICE-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

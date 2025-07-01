@@ -3,7 +3,7 @@
 
 pkgname=libdrm-32
 _pkgname=libdrm
-pkgver=2.4.124
+pkgver=2.4.125
 pkgrel=1
 source="https://dri.freedesktop.org/libdrm/$_pkgname-$pkgver.tar.xz"
 optsflags=" -O3 -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition "

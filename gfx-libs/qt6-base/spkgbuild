@@ -1,0 +1,70 @@
+# description	: Cross-platform application development framework
+# depends	: zlib openssl elogind zstd double-conversion glib pcre2 
+# depends	: icu dbus fontconfig freetype harfbuzz libjpeg-turbo 
+# depends	: libpng libdrm libxkbcommon libice libsm libx11 libxcb 
+# depends	: xcb-util-cursor xcb-util-image xcb-util-keysyms 
+# depends	: xcb-util-renderutil xcb-util-wm at-spi2-core mesa mtdev 
+# depends	: libinput libglvnd cups gdk-pixbuf gtk3 pango sqlite 
+# depends	: xorg-proto vulkan-headers
+
+pkgname=qt6-base
+pkgver=6.9.1
+pkgrel=1
+options="!asneeded"
+source="https://download.qt.io/official_releases/qt/${pkgver%.*}/$pkgver/submodules/qtbase-everywhere-src-$pkgver.tar.xz
+        qt6-base-cflags.patch qt6-base-nostrip.patch"
+optsflags=" -O3 -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition "
+
+prepare() {
+    cd qtbase-everywhere-src-$pkgver
+
+	patch -p1 -i $srcdir/qt6-base-cflags.patch
+	patch -p1 -i $srcdir/qt6-base-nostrip.patch
+}
+
+build() {
+	cmake -B build -G Ninja -S qtbase-everywhere-src-$pkgver \
+        -D CMAKE_INSTALL_PREFIX=/usr \
+		-D CMAKE_INSTALL_LIBDIR=lib \
+		-D CMAKE_INSTALL_LIBEXECDIR=lib \
+        -D CMAKE_BUILD_TYPE=RelWithDebInfo \
+        -D INSTALL_BINDIR=lib/qt6/bin \
+        -D INSTALL_PUBLICBINDIR=usr/bin \
+        -D INSTALL_LIBEXECDIR=lib/qt6 \
+        -D INSTALL_DOCDIR=share/doc/qt6 \
+        -D INSTALL_ARCHDATADIR=lib/qt6 \
+        -D INSTALL_DATADIR=share/qt6 \
+        -D INSTALL_INCLUDEDIR=include/qt6 \
+        -D INSTALL_MKSPECSDIR=lib/qt6/mkspecs \
+        -D INSTALL_EXAMPLESDIR=share/doc/qt6/examples \
+        -D FEATURE_journald=OFF \
+        -D FEATURE_libproxy=OFF \
+        -D FEATURE_openssl_linked=ON \
+        -D FEATURE_system_sqlite=ON \
+        -D FEATURE_system_xcb_xinput=ON \
+        -D FEATURE_no_direct_extern_access=ON \
+        -D FEATURE_optimize_debug=OFF \
+        -D FEATURE_reduce_relocations=ON \
+        -D CMAKE_INTERPROCEDURAL_OPTIMIZATION=ON \
+        -D CMAKE_MESSAGE_LOG_LEVEL=STATUS \
+		-Wno-dev
+	cmake --build build
+}
+
+package() {
+	DESTDIR=$pkgdir cmake --install build
+
+    # Install symlinks for user-facing tools
+    cd "$pkgdir"
+    mkdir usr/bin
+    while read _line; do
+        ln -s $_line
+    done < "$srcdir"/build/user_facing_tool_links.txt
+
+    cd "$srcdir"/qtbase-everywhere-src-$pkgver
+    
+    install -d -m755 "$pkgdir"/usr/include/qt6xcb-private/{gl_integrations,nativepainting}
+    cp -r src/plugins/platforms/xcb/*.h "$pkgdir"/usr/include/qt6xcb-private/
+    cp -r src/plugins/platforms/xcb/gl_integrations/*.h "$pkgdir"/usr/include/qt6xcb-private/gl_integrations/
+    cp -r src/plugins/platforms/xcb/nativepainting/*.h "$pkgdir"/usr/include/qt6xcb-private/nativepainting/
+}

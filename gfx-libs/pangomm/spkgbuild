@@ -1,0 +1,22 @@
+# description	: C++ interface for pango
+# depends	: cairomm glibmm pango libsigc++
+
+pkgname=pangomm
+pkgver=2.46.4
+pkgrel=1
+options="!emptydirs"
+source="https://download.gnome.org/sources/pangomm/${pkgver%.*}/pangomm-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    local meson_options=(
+        -D maintainer-mode=false
+    )
+
+    arch-meson pangomm-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

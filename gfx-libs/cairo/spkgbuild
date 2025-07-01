@@ -1,0 +1,35 @@
+# description	: A vector graphics library with cross-device output support
+# depends	: lzo pixman fontconfig freetype libpng zlib glib libxcb
+# depends	: libxrender libx11 libxext xorg-proto binutils glibc
+
+pkgname=cairo
+pkgver=1.18.4
+pkgrel=1
+source="https://www.cairographics.org/releases/cairo-$pkgver.tar.xz
+        https://www.linuxfromscratch.org/patches/blfs/12.3/cairo-1.18.2-upstream_fixes-1.patch"
+optsflags=" -O3 -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition -fstack-protector-strong -fzero-call-used-regs=used "
+
+prepare() {
+    cd cairo-$pkgver 
+
+    patch -Np1 -i $srcdir/cairo-1.18.2-upstream_fixes-1.patch
+}
+
+build() {
+
+    arch-meson cairo-$pkgver build \
+        --wrap-mode default \
+        -D dwrite=disabled  \
+        -D gtk_doc=false \
+        -D spectre=disabled \
+        -D symbol-lookup=disabled \
+        -D tests=disabled 
+    meson compile -C build
+}
+
+
+package() {
+    options+=" !emptydirs"
+
+    meson install -C build --destdir "$pkgdir"
+}

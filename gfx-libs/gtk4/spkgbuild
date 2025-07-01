@@ -1,0 +1,75 @@
+# description	: GTK is a multi-platform toolkit for creating graphical user interfaces
+# depends	: glib cairo pango fribidi harfbuzz gdk-pixbuf libpng 
+# depends	: libtiff libjpeg-turbo libepoxy graphene iso-codes libdrm
+# depends	: shared-mime-info cups gobject-introspection libxkbcommon
+# depends	: vulkan-loader wayland wayland-protocols mesa fontconfig
+# depends	: shaderc libx11 libxi libxext libxrandr libxcursor
+# depends	: libxfixes libxdamage libxinerama linux-api-headers
+# depends	: xorg-proto librsvg adwaita-icon-theme python3-gobject3
+# depends	: libcloudproviders colord tinysparql
+# optional	: gstreamer gstreamer!!gst-plugins-bad
+
+pkgname=gtk4
+pkgver=4.18.6
+pkgrel=1
+source="https://download.gnome.org/sources/gtk/${pkgver%.*}/gtk-$pkgver.tar.xz
+        0001-HACK-Don-t-use-objcopy-for-resource-embedding.patch
+        gtk-update-icon-cache.hook gtk-update-icon-cache.script
+        gtk4-querymodules.hook gtk4-querymodules.script
+        settings.ini"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd gtk-$pkgver
+
+    # Get the GCC version string (e.g., "gcc 15.1.0")
+    version_str=$(gcc -dumpversion)
+
+    # Extract the major version number
+    major_version=${version_str%%.*}
+
+    # Compare with 15
+    if (( major_version >= 15 )); then
+        # Fix building with GCC-15
+        sed -e '939 s/= { 0, }//' \
+            -e '940 a memset (&transform, 0, sizeof(GtkCssTransform));' \
+            -i gtk/gtkcsstransformvalue.c
+    fi
+
+    patch -Np1 -i ../0001-HACK-Don-t-use-objcopy-for-resource-embedding.patch
+
+    local meson_options=(
+        -D broadway-backend=true
+        -D cloudproviders=enabled
+        -D colord=enabled
+        -D documentation=false
+        -D man-pages=true
+        -D sysprof=disabled
+        -D tracker=enabled
+        -D media-gstreamer="$(scratch isinstalled gst-plugins-bad && echo enabled || echo disabled)" 
+        -D build-demos=false
+        -D build-testsuite=false
+        -D build-examples=false
+    )
+
+    CFLAGS+=" -DG_DISABLE_CAST_CHECKS"
+    arch-meson build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    cd gtk-$pkgver
+
+    meson install -C build --destdir "$pkgdir"
+
+    install -Dm 644 "$srcdir"/settings.ini "$pkgdir"/etc/gtk-4.0/settings.ini
+
+    #ln -sr "$pkgdir"/usr/bin/gtk{4,}-update-icon-cache
+    #ln -sr "$pkgdir"/usr/share/man/man1/gtk{4,}-update-icon-cache.1
+
+    #install -Dt "$pkgdir/usr/share/libalpm/hooks" -m644 "$srcdir"/gtk4-querymodules.hook
+    #install -D "$srcdir"/gtk4-querymodules.script "$pkgdir/usr/share/libalpm/scripts/gtk4-querymodules"
+
+    #install -Dt "$pkgdir/usr/share/libalpm/hooks" -m644 gtk-update-icon-cache.hook
+    #install -D gtk-update-icon-cache.script "$pkgdir/usr/share/libalpm/scripts/gtk-update-icon-cache"
+}

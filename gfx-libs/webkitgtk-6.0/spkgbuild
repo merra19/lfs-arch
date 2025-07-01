@@ -1,0 +1,61 @@
+# description	: Web content engine for GTK
+# depends	: at-spi2-core bubblewrap cairo enchant expat freetype
+# depends	: fontconfig gcc gdk-pixbuf glib glibc gst-plugins-bad
+# depends	: gst-plugins-base gstreamer gtk3 harfbuzz gst-libav
+# depends	: hyphen icu lcms2 libavif libdrm libglvnd libepoxy libx11
+# depends	: libgcrypt libjpeg-turbo libjxl libmanette libpng libxml2
+# depends	: libseccomp libsecret libsoup3 libtasn1 sqlite python3
+# depends	: libwebp libxslt mesa openjpeg2 pango wayland geoclue
+# depends	: woff2  xdg-dbus-proxy zlib llvm cmake gperf unifdef
+# depends	: gobject-introspection lld ninja ruby wayland-protocols
+# depends	: gst-plugins-good
+
+pkgname=webkitgtk-6.0
+pkgver=2.48.3
+pkgrel=1
+options="!lto"
+source="https://webkitgtk.org/releases/webkitgtk-$pkgver.tar.xz"
+optsflags=" -Ofast -falign-functions=32 -fno-lto -fno-semantic-interposition  "
+
+build() {
+    local cmake_options=(
+        -D USE_SYSTEMD=OFF
+        -D ENABLE_JOURNALD_LOG=OFF
+        -D CMAKE_BUILD_TYPE=Release
+        -D CMAKE_INSTALL_LIBDIR=lib
+        -D CMAKE_INSTALL_LIBEXECDIR=lib
+        -D CMAKE_INSTALL_PREFIX=/usr
+        -D CMAKE_SKIP_RPATH=ON
+        -D ENABLE_DOCUMENTATION=OFF
+        -D ENABLE_MINIBROWSER=ON
+        -D ENABLE_SPEECH_SYNTHESIS=OFF
+        -D PORT=GTK
+        -D USE_FLITE=OFF
+        -D USE_GTK4=ON
+        -D USE_LIBBACKTRACE=OFF
+        -D USE_SOUP2=OFF
+        -D USE_SYSTEM_SYSPROF_CAPTURE=NO
+    )
+
+    CXXFLAGS="$CXXFLAGS -std=gnu++98 "
+
+    # Upstream prefers Clang
+    # https://gitlab.archlinux.org/archlinux/packaging/packages/webkitgtk-6.0/-/issues/4
+    #export CC=clang CXX=clang++
+    #LDFLAGS+=" -fuse-ld=lld"
+
+    # Skia uses malloc_usable_size
+    CFLAGS="${CFLAGS/_FORTIFY_SOURCE=3/_FORTIFY_SOURCE=2}"
+    CXXFLAGS="${CXXFLAGS/_FORTIFY_SOURCE=3/_FORTIFY_SOURCE=2}"
+
+    # JITted code crashes when CET is used
+    CFLAGS+=' -fcf-protection=none'
+    CXXFLAGS+=' -fcf-protection=none'
+
+    cmake -S webkitgtk-$pkgver -B build -G Ninja "${cmake_options[@]}"
+    cmake --build build
+}
+
+package() {
+    DESTDIR="$pkgdir" cmake --install build
+}

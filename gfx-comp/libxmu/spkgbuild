@@ -1,0 +1,25 @@
+# description	: X.Org Xmu library
+# depends	: libx11 libxt libxext xorg-proto glibc
+
+pkgname=libxmu
+pkgver=1.2.1
+pkgrel=1
+source="https://www.x.org/pub/individual/lib/libXmu-$pkgver.tar.xz"
+optsflags=" -O3 -Os -fdata-sections -ffat-lto-objects -ffunction-sections -flto=auto -fno-semantic-interposition "
+
+build() {
+    cd libXmu-$pkgver
+
+    ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --localstatedir=/var \
+        --disable-static 
+    make
+}
+
+package() {
+    cd libXmu-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

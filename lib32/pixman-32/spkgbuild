@@ -3,7 +3,7 @@
 
 pkgname=pixman-32
 _pkgname=pixman
-pkgver=0.44.2
+pkgver=0.46.2
 pkgrel=1
 options="!lto"
 source="https://www.cairographics.org/releases/$_pkgname-$pkgver.tar.gz"

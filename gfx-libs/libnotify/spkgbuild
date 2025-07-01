@@ -1,0 +1,18 @@
+# description	: A library for sending desktop notifications
+# depends	: glib gobject-introspection gdk-pixbuf docbook-xml 
+# depends	: libxslt
+
+pkgname=libnotify
+pkgver=0.8.6
+pkgrel=1
+source="https://download.gnome.org/sources/libnotify/${pkgver%.*}/libnotify-$pkgver.tar.xz"
+optsflags=" -O3 -Os -fdata-sections -ffat-lto-objects -ffunction-sections -flto=auto -fno-semantic-interposition "
+
+build() {
+    arch-meson libnotify-$pkgver build -D gtk_doc=false -D man=true -D docbook_docs=disabled
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

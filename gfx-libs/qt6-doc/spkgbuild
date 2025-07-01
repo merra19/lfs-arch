@@ -1,0 +1,31 @@
+# description	: Additional format plugins for the Qt image I/O system
+# depends	: alsa-lib cmake cups gperf gtk3 pulseaudio libxkbfile
+# depends	: meson python3 vulkan-headers llvm
+
+pkgname=qt6-doc
+pkgver=6.9.1
+pkgrel=1
+_pkgfn=qt-everywhere-src-$pkgver
+source="https://download.qt.io/official_releases/qt/${pkgver%.*}/${pkgver}/single/$_pkgfn.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cmake -B build -S $_pkgfn \
+        -G Ninja \
+        -D CMAKE_INSTALL_PREFIX=/usr \
+        -D INSTALL_BINDIR=lib/qt6/bin \
+        -D INSTALL_DOCDIR=share/doc/qt6 \
+        -D INSTALL_ARCHDATADIR=lib/qt6 \
+        -D INSTALL_DATADIR=share/qt6 \
+        -D INSTALL_INCLUDEDIR=include/qt6 \
+        -D INSTALL_MKSPECSDIR=lib/qt6/mkspecs \
+        -D INSTALL_EXAMPLESDIR=share/doc/qt6/examples \
+        -D QT_FEATURE_journald=ON \
+        -D QT_FEATURE_openssl_linked=ON \
+        -D CMAKE_MESSAGE_LOG_LEVEL=STATUS
+    cmake --build build --target docs
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --build build --target install_docs
+}

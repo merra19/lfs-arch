@@ -1,0 +1,28 @@
+# description	: X.Org libdrm library
+# depends	: meson libxslt libpciaccess cairo glibc
+
+pkgname=libdrm
+pkgver=2.4.125
+pkgrel=1
+source="https://dri.freedesktop.org/libdrm/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition "
+
+build() {
+    cd $pkgname-$pkgver
+
+    arch-meson build \
+        -D udev=true \
+        -D etnaviv=disabled \
+        -D freedreno=disabled \
+        -D vc4=disabled \
+        -D valgrind=disabled \
+        -D man-pages=enabled \
+        -D install-test-programs=false
+    meson compile -C build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    meson install -C build --destdir "$pkgdir"
+}

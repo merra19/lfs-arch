@@ -1,0 +1,30 @@
+# description	: D-Bus accessibility specifications and registration daemon
+# depends	: dbus glib libxml2 gobject-introspection libx11 libxtst 
+# depends	: libxi
+
+pkgname=at-spi2-core
+pkgver=2.56.2
+pkgrel=1
+source="https://download.gnome.org/sources/at-spi2-core/${pkgver%.*}/at-spi2-core-$pkgver.tar.xz"
+optsflags=" -O3 -Os -fdata-sections -ffat-lto-objects -ffunction-sections -flto=auto -fno-semantic-interposition "
+
+build() {
+	cd at-spi2-core-$pkgver
+
+    local meson_options=(
+        -D use_systemd=false
+        -D default_bus=dbus-broker
+        -D docs=false
+    )
+
+    arch-meson build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    cd at-spi2-core-$pkgver
+
+    meson install -C build --destdir "$pkgdir"
+
+    rm -r $pkgdir/usr/lib/systemd
+}

@@ -3,17 +3,19 @@
 
 pkgname=openssl-32
 _pkgname=openssl
-pkgver=3.4.0
+pkgver=3.5.0
 pkgrel=1
 options="!lto"
 source="https://www.openssl.org/source/$_pkgname-$pkgver.tar.gz
-        ca-dir.patch"
+        ca-dir.patch 0001-Use-clearlinux-CFLAGS-during-build.patch"
 
 build() {
     cd $_pkgname-$pkgver
 
 	# set ca dir to /etc/ssl by default
 	patch -Np1 -i ../ca-dir.patch
+
+    patch -Np1 -i ../0001-Use-clearlinux-CFLAGS-during-build.patch
 
     ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
     CFLAGS="${CFLAGS}${CFLAGS:+ }-m32 -mstackrealign"

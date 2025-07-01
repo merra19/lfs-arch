@@ -1,0 +1,22 @@
+# description	: A text widget implementing syntax highlighting and other features
+# depends	: gtk3 gobject-introspection libxml2 vala glib fribidi
+
+pkgname=gtksourceview4
+pkgver=4.8.4
+pkgrel=1
+source="https://download.gnome.org/sources/gtksourceview/${pkgver%.*}/gtksourceview-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    local meson_options=(
+        -D glade_catalog=false
+        -D gtk_doc=false
+    )
+
+    arch-meson gtksourceview-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

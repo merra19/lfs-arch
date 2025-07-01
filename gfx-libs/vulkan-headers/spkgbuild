@@ -1,0 +1,29 @@
+# description	: Vulkan Header files and API registry
+# depends	: cmake
+
+pkgname=vulkan-headers
+pkgver=1.4.313
+pkgrel=1
+source="https://github.com/KhronosGroup/Vulkan-Headers/archive/v$pkgver/Vulkan-Headers-$pkgver.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd Vulkan-Headers*
+
+    cmake -B build \
+        -D CMAKE_INSTALL_PREFIX=/usr \
+        -D CMAKE_BUILD_TYPE=Release \
+        -D CMAKE_INSTALL_SYSCONFDIR=/etc \
+        -D CMAKE_SKIP_INSTALL_RPATH=ON \
+        -G Ninja
+    ninja -C build
+}
+
+package() {
+    cd Vulkan-Headers*
+
+    DESTDIR="$pkgdir" ninja  -C build install
+
+    python -m compileall -d /usr "$pkgdir/usr"
+    python -O -m compileall -d /usr "$pkgdir/usr"
+}

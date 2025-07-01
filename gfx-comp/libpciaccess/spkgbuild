@@ -1,0 +1,21 @@
+# description	: Library providing generic access to the PCI bus and devices
+# depends	: zlib glibc
+
+pkgname=libpciaccess
+pkgver=0.18.1
+pkgrel=1
+source="https://www.x.org/pub/individual/lib/libpciaccess-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+	arch-meson build
+	ninja -C build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    meson install -C build --destdir="$pkgdir"
+}

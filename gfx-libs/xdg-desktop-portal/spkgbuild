@@ -1,0 +1,29 @@
+# description	: Desktop integration portal
+# depends	: glib json-glib wireplumber pipewire fuse gdk-pixbuf 
+# depends	: bubblewrap dbus gst-plugins-base python3-docutils
+# depends	: xmlto geoclue
+
+pkgname=xdg-desktop-portal
+pkgver=1.20.3
+pkgrel=1
+options="!lto"
+source="https://github.com/flatpak/xdg-desktop-portal/releases/download/$pkgver/$pkgname-$pkgver.tar.xz"
+optsflags=" -fno-lto "
+
+build() {
+	cd $pkgname-$pkgver
+
+    arch-meson build \
+        -D flatpak-interfaces=disabled \
+        -D tests=disabled \
+        -D documentation=disabled
+    meson compile -C build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+	meson install -C build --destdir "$pkgdir"
+
+    rm -r $pkgdir/usr/lib/systemd
+}

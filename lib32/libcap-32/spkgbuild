@@ -3,7 +3,7 @@
 
 pkgname=libcap-32
 _pkgname=libcap
-pkgver=2.73
+pkgver=2.76
 pkgrel=1
 source="https://www.kernel.org/pub/linux/libs/security/linux-privs/libcap2/$_pkgname-$pkgver.tar.xz"
 optsflags=" -O3 -ffat-lto-objects -flto=auto "

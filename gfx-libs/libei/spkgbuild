@@ -1,0 +1,23 @@
+# description	: Library for Emulated Input, primarily aimed at the Wayland stack
+# depends	: python3-attrs elogind libevdev libxkbcommon libxml2
+
+pkgname=libei
+pkgver=1.4.1
+pkgrel=1
+source="https://gitlab.freedesktop.org/libinput/libei/-/archive/$pkgver/libei-$pkgver.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    local meson_options=(
+        #-D documentation=api
+        -D sd-bus-provider=libelogind
+        -D tests=disabled
+    )
+
+    arch-meson libei-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir" 
+}

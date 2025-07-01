@@ -1,0 +1,24 @@
+# description	: X.Org Xinerama library
+# depends	: libx11 libxext xorg-proto
+
+pkgname=libxinerama
+pkgver=1.1.5
+pkgrel=1
+source="https://www.x.org/pub/individual/lib/libXinerama-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto -fno-math-errno -fno-semantic-interposition -fno-trapping-math -fzero-call-used-regs=used "
+
+build() {
+    cd libXinerama-$pkgver
+
+    ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --localstatedir=/var 
+    make
+}
+
+package() {
+    cd libXinerama-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

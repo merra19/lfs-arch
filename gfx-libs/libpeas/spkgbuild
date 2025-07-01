@@ -1,0 +1,26 @@
+# description	: A GObject plugins library
+# depends	: glib gobject-introspection python3-gobject3 gtk3 vala
+# depends	: hicolor-icon-theme luajit meson 
+## glade
+
+pkgname=libpeas
+pkgver=1.36.0
+pkgrel=1
+source="https://download.gnome.org/sources/libpeas/${pkgver%.*}/libpeas-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    local meson_options=(
+        -D gtk_doc=false
+        -D python3=false
+        -D vapi=true
+        -D demos=false
+    )
+
+    arch-meson libpeas-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

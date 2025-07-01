@@ -3,7 +3,7 @@
 
 pkgname=libffi-32
 _pkgname=libffi
-pkgver=3.4.7
+pkgver=3.5.1
 pkgrel=1
 source="https://github.com/libffi/libffi/releases/download/v$pkgver/$_pkgname-$pkgver.tar.gz"
 optsflags=" -falign-functions=32 -fno-lto -fno-semantic-interposition "

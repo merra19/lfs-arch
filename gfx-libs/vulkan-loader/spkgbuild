@@ -1,0 +1,29 @@
+# description	: Vulkan Installable Client Driver (ICD) Loader
+# depends	: cmake vulkan-headers wayland libxrandr libx11 libxcb
+# depends	: glibc
+
+pkgname=vulkan-loader
+pkgver=1.4.313
+pkgrel=1
+source="$pkgname-$pkgver.tar.gz::https://github.com/KhronosGroup/Vulkan-Loader/archive/refs/tags/v$pkgver.tar.gz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd Vulkan-Loader*
+
+    local cmake_options=(
+        -D CMAKE_BUILD_TYPE=Release
+        -D CMAKE_INSTALL_PREFIX=/usr
+        -D CMAKE_INSTALL_SYSCONFDIR=/etc
+        -D CMAKE_SKIP_INSTALL_RPATH=ON
+    )
+
+    cmake -B build -G Ninja "${cmake_options[@]}"
+    cmake --build build
+}
+
+package() {
+    cd Vulkan-Loader*
+
+    DESTDIR="$pkgdir" cmake --install build
+}

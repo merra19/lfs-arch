@@ -1,0 +1,25 @@
+# description	: X.Org Xi library
+# depends	: libx11 libxext libxfixes xorg-proto glibc
+
+pkgname=libxi
+pkgver=1.8.2
+pkgrel=1
+source=" https://www.x.org/pub/individual/lib/libXi-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto -fno-math-errno -fno-semantic-interposition -fno-trapping-math -fzero-call-used-regs=used "
+
+build() {
+    cd libXi-$pkgver
+
+    ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --localstatedir=/var \
+        --disable-static 
+    make
+}
+
+package() {
+    cd libXi-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

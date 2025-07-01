@@ -3,14 +3,14 @@
 
 pkgname=readline-32
 _pkgname=readline
-pkgver=8.2.13
+pkgver=8.3
 pkgrel=1
 options="!lto !asneeded"
-source="https://ftp.gnu.org/gnu/readline/$_pkgname-$pkgver.tar.gz"
+source="https://ftp.gnu.org/gnu/readline/$_pkgname-$pkgver-rc2.tar.gz"
 optsflags=" -Os -fdata-sections -ffunction-sections -fno-lto -fno-semantic-interposition "
 
 build() {
-    cd $_pkgname-$pkgver
+    cd $_pkgname-$pkgver-rc2
     
     sed -i '/MV.*old/d' Makefile.in
     sed -i '/{OLDSUFF}/c:' support/shlib-install
@@ -33,7 +33,7 @@ build() {
 }
 
 package() {
-    cd $_pkgname-$pkgver
+    cd $_pkgname-$pkgver-rc2
 
     make DESTDIR="$pkgdir" SHLIB_LIBS="-lncurses" install
     rm -rf "${pkgdir}"/usr/{include,share,bin}

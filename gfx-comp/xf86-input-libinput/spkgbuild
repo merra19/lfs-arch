@@ -1,0 +1,26 @@
+# description	: X.org input driver based on libinput
+# depends	: libinput xorg-proto xorg-server
+
+pkgname=xf86-input-libinput
+pkgver=1.5.0
+pkgrel=1
+source="https://www.x.org/pub/individual/driver/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    cd $pkgname-$pkgver
+
+    ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --localstatedir=/var \
+        --disable-static
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+    make
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

@@ -1,0 +1,25 @@
+# description	: X.Org Xxf86vm library
+# depends	: libx11 libxext xorg-proto glibc
+
+pkgname=libxxf86vm
+pkgver=1.1.6
+pkgrel=1
+source="https://www.x.org/pub/individual/lib/libXxf86vm-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto -fno-math-errno -fno-semantic-interposition -fno-trapping-math -fzero-call-used-regs=used "
+
+build() {
+    cd libXxf86vm-$pkgver
+
+    ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --localstatedir=/var \
+        --disable-static 
+    make
+}
+
+package() {
+    cd libXxf86vm-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

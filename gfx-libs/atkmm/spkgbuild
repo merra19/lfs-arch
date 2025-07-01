@@ -1,0 +1,22 @@
+# description	: C++ interface for the ATK library
+# depends	: at-spi2-core glibmm libsigc++
+
+pkgname=atkmm
+pkgver=2.28.4
+pkgrel=1
+options="!emptydirs"
+source="https://download.gnome.org/sources/atkmm/${pkgver%.*}/atkmm-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+    local meson_options=(
+        -D maintainer-mode=false
+    )
+
+    arch-meson atkmm-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

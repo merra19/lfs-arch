@@ -3,7 +3,7 @@
 
 pkgname=nettle-32
 _pkgname=nettle
-pkgver=3.10.1
+pkgver=3.10.2
 pkgrel=1
 source="https://ftp.gnu.org/gnu/$_pkgname/$_pkgname-$pkgver.tar.gz"
 optsflags=" -O3 -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition "

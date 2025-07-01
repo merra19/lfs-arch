@@ -1,0 +1,22 @@
+# description	: The OpenGL Utility Library
+# depends	: libglvnd glibc
+
+pkgname=glu
+pkgver=9.0.3
+pkgrel=1
+source="ftp://ftp.freedesktop.org/pub/mesa/glu/$pkgname-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto=auto "
+
+build() {
+	cd $pkgname-$pkgver
+
+    arch-meson  build \
+        -D default_library=shared
+    meson compile -C build
+}
+
+package() {
+    cd $pkgname-$pkgver
+
+	meson install -C build --destdir "$pkgdir"
+}

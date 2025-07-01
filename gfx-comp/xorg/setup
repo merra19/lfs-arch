@@ -1,0 +1,42 @@
+#!/bin/sh
+
+usage() {
+	cat <<-__EOF__
+		usage: setup username  [plasma|xfce]
+
+		write xinitrc file in <username> HOME
+
+		options:
+		help  Show this help
+
+	__EOF__
+	exit $1
+}
+
+writehome() {
+    echo "$1" > /home/$users/.xinitrc 
+    chown $users:$users /home/$users/.xinitrc 
+}
+
+users=$1
+
+if ( ! getent passwd $users > /dev/null ) ;then
+    echo " user:$users doesnt exit"
+    exit 1
+fi
+
+
+case $2 in
+    xfce)
+        writehome "dbus-launch --exit-with-x11 startxfce4"
+        ;;
+    plasma)
+        writehome "dbus-launch --exit-with-x11 /usr/bin/startplasma-x11"
+        ;;
+    help)
+        usage ; exit 0
+        ;;
+    *)
+        usage ; exit 0
+        ;;
+esac

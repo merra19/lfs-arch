@@ -7,7 +7,7 @@
 # depends	: wayland-protocols glibc
 
 pkgname=sdl2-32
-pkgver=2.30.11
+pkgver=2.32.8
 pkgrel=1
 source="https://www.libsdl.org/release/SDL2-$pkgver.tar.gz"
 optsflags=" -O3 -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition "

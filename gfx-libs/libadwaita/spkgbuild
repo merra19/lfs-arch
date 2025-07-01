@@ -1,0 +1,22 @@
+# description	: A library for registering global keyboard shortcuts
+# depends	: appstream fribidi glib glibc graphene gtk4 pango vala
+# depends	: gobject-introspection hicolor-icon-theme sassc meson
+
+pkgname=libadwaita
+pkgver=1.7.4
+pkgrel=1
+source="https://download.gnome.org/sources/libadwaita/1.6/libadwaita-1.6.4.tar.xz"
+
+build() {
+    local meson_options=(
+        -D gtk_doc=false
+    )
+
+    arch-meson libadwaita-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+}
+
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

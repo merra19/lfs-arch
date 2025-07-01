@@ -1,0 +1,70 @@
+# description	: OpenGL-like graphic library for Linux
+# depends	: python3-mako elfutils bison flex libdrm llvm libglvnd 
+# depends	: vulkan-loader wayland-protocols lm-sensors wayland 
+# depends	: glslang expat zlib zstd xorg-proto libxrandr libx11 
+# depends	: libxshmfence libxxf86vm libxfixes libxext libxcb libclc 
+# depends	: python3-ply rust-bindgen cbindgen libva libvdpau glibc
+# depends	: python3-yaml gcc rustc
+
+pkgname=mesa
+pkgver=25.1.3
+pkgrel=1
+options="!lto !asneeded"
+source="https://mesa.freedesktop.org/archive/mesa-$pkgver.tar.xz
+        syn-2.0.68.tar.gz::https://crates.io/api/v1/crates/syn/2.0.68/download
+        unicode-ident-1.0.12.tar.gz::https://crates.io/api/v1/crates/unicode-ident/1.0.12/download
+        quote-1.0.33.tar.gz::https://crates.io/api/v1/crates/quote/1.0.33/download
+        proc-macro2-1.0.86.tar.gz::https://crates.io/api/v1/crates/proc-macro2/1.0.86/download
+        paste-1.0.14.tar.gz::https://crates.io/api/v1/crates/paste/1.0.14/download
+        0001-Revert-hasvk-elk-stop-turning-load_push_constants-in.patch 
+        lib32"
+noextract="syn-2.0.68.tar.gz unicode-ident-1.0.12.tar.gz quote-1.0.33.tar.gz proc-macro2-1.0.86.tar.gz
+        paste-1.0.14.tar.gz"
+optsflags=" -fno-lto "
+
+prepare() {
+    cd mesa-$pkgver 
+
+    patch -Np1 -i ../0001-Revert-hasvk-elk-stop-turning-load_push_constants-in.patch 
+
+    mkdir -p subprojects/packagecache
+    cp ../*.tar.gz subprojects/packagecache
+}
+
+build() {
+
+    # -D gallium-drivers=d3d12
+
+    local meson_options=(
+        -D android-libbacktrace=disabled
+        -D b_ndebug=true
+        -D gallium-drivers=r300,r600,radeonsi,nouveau,virgl,svga,llvmpipe,softpipe,iris,crocus,i915,zink
+        -D gallium-extra-hud=true
+        -D gallium-nine=true
+        -D gallium-opencl=icd
+        -D gallium-rusticl=true
+        -D gles1=disabled
+        -D html-docs=disabled
+        -D libunwind=disabled
+        -D microsoft-clc=disabled
+        -D osmesa=true
+        -D valgrind=disabled
+        -D video-codecs=all
+        -D vulkan-drivers=amd,intel,intel_hasvk,nouveau,swrast,virtio
+        -D vulkan-layers=device-select,intel-nullhw,overlay,screenshot
+    )
+    arch-meson mesa-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+    (
+    local libdir=usr/lib icddir=usr/share/vulkan/icd.d
+
+    cd "$pkgdir"
+
+    # indirect rendering
+    ln -sr $libdir/libGLX_{mesa,indirect}.so.0
+    )
+}

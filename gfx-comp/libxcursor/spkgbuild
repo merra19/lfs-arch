@@ -1,0 +1,25 @@
+# description	: X.Org Xcursor library
+# depends	: libx11 libxfixes libxrender xorg-proto glibc
+
+pkgname=libxcursor
+pkgver=1.2.3
+pkgrel=1
+source="https://www.x.org/pub/individual/lib/libXcursor-$pkgver.tar.xz"
+optsflags=" -O3 -Os -fdata-sections -ffat-lto-objects -ffunction-sections -flto=auto -fno-semantic-interposition "
+
+build() {
+    cd libXcursor-$pkgver
+
+    ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --localstatedir=/var \
+        --disable-static 
+    make
+}
+
+package() {
+    cd libXcursor-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

@@ -3,7 +3,7 @@
 
 pkgname=libsm-32
 _pkgname=libSM
-pkgver=1.2.5
+pkgver=1.2.6
 pkgrel=1
 source="https://www.x.org/pub/individual/lib/libSM-$pkgver.tar.xz"
 optsflags=" -ffat-lto-objects -flto -fno-math-errno -fno-semantic-interposition -fno-trapping-math "

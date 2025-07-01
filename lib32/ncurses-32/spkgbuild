@@ -2,16 +2,15 @@
 # depends	: ncurses glibc
 
 pkgname=ncurses-32
-_pkgname=ncurses
-pkgver=6.5
-version_pkg=6.5
-pkgrel=1
-source="https://invisible-mirror.net/archives/ncurses/$_pkgname-${version_pkg}.tar.gz
+pkgver=6.5_20250531
+_pkgver=${pkgver/_/-}
+source="https://invisible-mirror.net/archives/ncurses/$_pkgname-$_pkgver.tar.gz
         ncurses-6.3-libs.patch ncurses-6.3-pkgconfig.patch"
 optsflags=" -O3 -ffat-lto-objects -flto=auto "
 
+
 build() {
-    cd $_pkgname-${version_pkg}
+    cd $_pkgname-$_pkgver
 
     patch -Np1 < ../ncurses-6.3-libs.patch
     patch -Np1 < ../ncurses-6.3-pkgconfig.patch
@@ -49,7 +48,7 @@ build() {
 }
 
 package() {
-    cd $_pkgname-${version_pkg}
+    cd $_pkgname-$_pkgver
 
     make DESTDIR="$pkgdir" install
 

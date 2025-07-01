@@ -5,7 +5,7 @@
 
 pkgname=networkmanager-32
 _pkgname=NetworkManager
-pkgver=1.50.0
+pkgver=1.52.0
 pkgrel=1
 source="$_pkgname-$pkgver.tar.xz::https://download.gnome.org/sources/NetworkManager/${pkgver%.*}/NetworkManager-$pkgver.tar.xz"
 optsflags=" -O3 -Os -fdata-sections -ffat-lto-objects -ffunction-sections -flto=auto -fno-semantic-interposition "

@@ -1,0 +1,18 @@
+# description	: Library for handling OpenGL function pointer management
+# depends	: mesa meson xorg-proto libx11 glibc
+
+pkgname=libepoxy
+pkgver=1.5.10
+pkgrel=1
+source="https://download.gnome.org/sources/libepoxy/1.5/libepoxy-$pkgver.tar.xz"
+optsflags=" -O3 -Ofast -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition "
+
+build() {
+    arch-meson libepoxy-$pkgver build -D docs=true
+    meson compile -C build
+}
+
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

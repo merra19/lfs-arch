@@ -4,7 +4,7 @@
 
 pkgname=libxft-32
 _pkgname=libXft
-pkgver=2.3.8
+pkgver=2.3.9
 pkgrel=1
 source="https://www.x.org/pub/individual/lib/libXft-$pkgver.tar.xz"
 optsflags=" -O3 -ffat-lto-objects -flto=auto "

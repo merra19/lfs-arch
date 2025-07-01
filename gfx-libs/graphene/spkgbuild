@@ -1,0 +1,23 @@
+# description	: A thin layer of types for graphic libraries
+# depends	: gobject-introspection glib meson
+
+
+pkgname=graphene
+pkgver=1.10.8
+pkgrel=1
+source="https://download.gnome.org/sources/graphene/${pkgver%.*}/graphene-$pkgver.tar.xz"
+optsflags=" -O3 -Ofast -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition "
+
+build() {
+    local meson_options=(
+        -D gtk_doc=false
+        -D installed_tests=false
+    )
+
+    arch-meson graphene-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

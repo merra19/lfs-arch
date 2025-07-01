@@ -3,11 +3,25 @@
 
 pkgname=util-linux-32
 _pkgname=util-linux
-pkgver=2.40.4
+pkgver=2.41
 pkgrel=1
 options="!emptydirs"
-source="https://www.kernel.org/pub/linux/utils/util-linux/v${pkgver:0:4}/$_pkgname-$pkgver.tar.xz"
+source="$_pkgname-$pkgver.zip::https://github.com/util-linux/util-linux/archive/refs/heads/stable/v$pkgver.zip"
 optsflags=" -O3 -Os -fdata-sections -ffat-lto-objects -ffunction-sections -flto=auto -fno-semantic-interposition "
+
+prepare() {
+    cd $_pkgname-stable-v$pkgver
+
+    # create fully locked system accout
+    patch -Np1 -i ../0001-sysusers-and-tmpfiles-no-systemd.patch
+
+    # create fully locked system accout
+    sed -i '/^u /s|u|u!|' misc-utils/uuidd-sysusers.conf.in
+
+    # do not mark dirty
+    sed -i '/dirty=/c dirty=' tools/git-version-gen
+}   
+
 
 build() {
     ASFLAGS="${ASFLAGS}${ASFLAGS:+ }--32"
@@ -32,7 +46,7 @@ build() {
         -D ncursesw=enabled
     )
 
-    arch-meson util-linux-$pkgver build32 "${_meson_options[@]}"
+    arch-meson util-linux-stable-v$pkgver build32 "${_meson_options[@]}"
     meson compile -C build32
     unset PKG_CONFIG_PATH
 }

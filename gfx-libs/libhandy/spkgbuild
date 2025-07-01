@@ -1,0 +1,25 @@
+# description	: Building blocks for modern adaptive GNOME apps
+# depends	: glib gobject-introspection gtk3 libxml2 vala pango
+# depends	: at-spi2-core cairo fribidi gdk-pixbuf
+## glade
+
+pkgname=libhandy
+pkgver=1.8.3
+pkgrel=1
+options="!lto"
+source="https://download.gnome.org/sources/libhandy/${pkgver%.*}/libhandy-$pkgver.tar.xz"
+optsflags=" -fno-lto "
+
+build() {
+    local meson_options=(
+        -D gtk_doc=false
+        -D glade_catalog=disabled
+    )
+
+    arch-meson libhandy-$pkgver build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

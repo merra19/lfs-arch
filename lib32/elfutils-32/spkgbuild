@@ -4,7 +4,7 @@
 
 pkgname=elfutils-32
 _pkgname=elfutils
-pkgver=0.192
+pkgver=0.193
 pkgrel=1
 options="!lto staticlibs"
 source="https://sourceware.org/ftp/elfutils/$pkgver/$_pkgname-$pkgver.tar.bz2"

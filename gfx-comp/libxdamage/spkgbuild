@@ -1,0 +1,26 @@
+# description	: X.Org Xdamage library
+# depends	: libx11 libxfixes xorg-proto
+
+pkgname=libxdamage
+pkgver=1.1.6
+pkgrel=1
+source="https://www.x.org/pub/individual/lib/libXdamage-$pkgver.tar.xz"
+optsflags=" -O3 -ffat-lto-objects -flto -fno-math-errno -fno-semantic-interposition -fno-trapping-math -fzero-call-used-regs=used "
+
+build() {
+    cd libXdamage-$pkgver
+
+    ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --localstatedir=/var \
+        --disable-static 
+    sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+    make
+}
+
+package() {
+    cd libXdamage-$pkgver
+
+    make DESTDIR="$pkgdir" install
+}

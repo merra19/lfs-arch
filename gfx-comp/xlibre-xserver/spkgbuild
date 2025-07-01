@@ -1,0 +1,56 @@
+# description	: X C-language Bindings sample implementations
+# depends	: libglvnd openssl iceauth xauth xkbcomp libdrm libxdmcp
+# depends	: libpciaccess libxau libxfont2 libxkbfile libxshmfence 
+# depends	: pixman xbitmaps xkeyboard-config libxcvt mesa libepoxy 
+# depends	: elogind dbus pam xorg-proto xtrans xorg-fonts libxext
+# depends	: libx11 xorg-legacy libunwind xcb-util-renderutil xkbcomp
+# depends	: xcb-util-image xcb-util-keysyms xcb-util-wm font-util
+
+pkgname=xlibre-xserver
+pkgver=25.0.0.2
+pkgrel=1
+options="!lto !asneeded"
+source="https://github.com/X11Libre/xserver/archive/refs/tags/$pkgname-$pkgver.tar.gz
+        xvfb-run xvfb-run.1"
+
+build() {
+	cd xserver-$pkgname-$pkgver
+
+    export CFLAGS=${CFLAGS/-fno-plt}
+    export CXXFLAGS=${CXXFLAGS/-fno-plt}
+    export LDFLAGS=${LDFLAGS/-Wl,-z,now}
+
+    #patch -Np1 -i ../xorg-server-$pkgver-tearfree_backport-1.patch
+
+    arch-meson build \
+        -D ipv6=true \
+        -D xvfb=true \
+        -D xnest=true \
+        -D xcsecurity=true \
+        -D xorg=true \
+        -D xephyr=true \
+        -D glamor=true \
+        -D udev=true \
+        -D dtrace=false \
+        -D systemd_logind=true \
+        -D suid_wrapper=true \
+        -D xkb_dir=/usr/share/X11/xkb \
+        -D xkb_output_dir=/var/lib/xkb \
+        -D libunwind=true
+	ninja -C build
+}
+
+
+
+
+package() {
+    cd xserver-$pkgname-$pkgver
+    
+    DESTDIR="$pkgdir" ninja -C build install
+
+    # distro specific files must be installed in /usr/share/X11/xorg.conf.d
+    install -m755 -d "${pkgdir}/etc/X11/xorg.conf.d"
+
+    install -m755 "${srcdir}/xvfb-run" "${pkgdir}/usr/bin/"
+    install -m644 "${srcdir}/xvfb-run.1" "${pkgdir}/usr/share/man/man1/" # outda
+}

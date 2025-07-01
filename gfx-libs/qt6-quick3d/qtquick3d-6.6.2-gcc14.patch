@@ -1,0 +1,99 @@
+From 68cf30f33b9ef5e9ff7c4881b18facf8d24bb34d Mon Sep 17 00:00:00 2001
+From: William Douglas <william.douglas@intel.com>
+Date: Fri, 31 May 2024 12:35:50 -0700
+Subject: [PATCH] Really force sse2
+
+---
+ src/3rdparty/embree/kernels/bvh/bvh.cpp            |  6 ------
+ src/3rdparty/embree/kernels/bvh/bvh_statistics.cpp |  6 ------
+ src/3rdparty/embree/kernels/common/device.cpp      | 14 --------------
+ src/3rdparty/embree/kernels/common/state.cpp       | 14 --------------
+ 4 files changed, 40 deletions(-)
+
+diff --git a/src/3rdparty/embree/kernels/bvh/bvh.cpp b/src/3rdparty/embree/kernels/bvh/bvh.cpp
+index a8d6c18..19a82ca 100644
+--- a/src/3rdparty/embree/kernels/bvh/bvh.cpp
++++ b/src/3rdparty/embree/kernels/bvh/bvh.cpp
+@@ -179,12 +179,6 @@ namespace embree
+     }
+   }
+ 
+-#if defined(__AVX__)
+-  template class BVHN<8>;
+-#endif
+-
+-#if !defined(__AVX__) || !defined(EMBREE_TARGET_SSE2) && !defined(EMBREE_TARGET_SSE42)
+   template class BVHN<4>;
+-#endif
+ }
+ 
+diff --git a/src/3rdparty/embree/kernels/bvh/bvh_statistics.cpp b/src/3rdparty/embree/kernels/bvh/bvh_statistics.cpp
+index 5e45b81..e3cc1e9 100644
+--- a/src/3rdparty/embree/kernels/bvh/bvh_statistics.cpp
++++ b/src/3rdparty/embree/kernels/bvh/bvh_statistics.cpp
+@@ -155,11 +155,5 @@ namespace embree
+     return s;
+   } 
+ 
+-#if defined(__AVX__)
+-  template class BVHNStatistics<8>;
+-#endif
+-
+-#if !defined(__AVX__) || !defined(EMBREE_TARGET_SSE2) && !defined(EMBREE_TARGET_SSE42)
+   template class BVHNStatistics<4>;
+-#endif
+ }
+diff --git a/src/3rdparty/embree/kernels/common/device.cpp b/src/3rdparty/embree/kernels/common/device.cpp
+index effc31e..9efdfd5 100644
+--- a/src/3rdparty/embree/kernels/common/device.cpp
++++ b/src/3rdparty/embree/kernels/common/device.cpp
+@@ -140,21 +140,7 @@ namespace embree
+   std::string getEnabledTargets()
+   {
+     std::string v;
+-#if defined(EMBREE_TARGET_SSE2)
+     v += "SSE2 ";
+-#endif
+-#if defined(EMBREE_TARGET_SSE42)
+-    v += "SSE4.2 ";
+-#endif
+-#if defined(EMBREE_TARGET_AVX)
+-    v += "AVX ";
+-#endif
+-#if defined(EMBREE_TARGET_AVX2)
+-    v += "AVX2 ";
+-#endif
+-#if defined(EMBREE_TARGET_AVX512)
+-    v += "AVX512 ";
+-#endif
+     return v;
+   }
+ 
+diff --git a/src/3rdparty/embree/kernels/common/state.cpp b/src/3rdparty/embree/kernels/common/state.cpp
+index 845d7a2..b2e9bf4 100644
+--- a/src/3rdparty/embree/kernels/common/state.cpp
++++ b/src/3rdparty/embree/kernels/common/state.cpp
+@@ -156,21 +156,7 @@ namespace embree
+      * call that same or lower ISA version of non-inlined class member
+      * functions */
+ #if defined(DEBUG)
+-#if defined(EMBREE_TARGET_SSE2)
+     assert(sse2::getISA() <= SSE2);
+-#endif
+-#if defined(EMBREE_TARGET_SSE42)
+-    assert(sse42::getISA() <= SSE42);
+-#endif
+-#if defined(EMBREE_TARGET_AVX)
+-    assert(avx::getISA() <= AVX);
+-#endif
+-#if defined(EMBREE_TARGET_AVX2)
+-    assert(avx2::getISA() <= AVX2);
+-#endif
+-#if defined (EMBREE_TARGET_AVX512)
+-    assert(avx512::getISA() <= AVX512);
+-#endif
+ #endif
+   }
+ 
+-- 
+2.45.1

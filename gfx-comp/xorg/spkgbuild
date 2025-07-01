@@ -1,0 +1,13 @@
+# description	: Meta port for Xorg
+# depends	: xorg-server mesa xinit pulseaudio pipewire 
+# depends	: wireplumber ttf-dejavu 
+
+pkgname=xorg
+pkgver=1.0
+pkgrel=1
+source="xkb-defaults.conf setup"
+
+package() {
+    install -Dm 0644 xkb-defaults.conf  "$pkgdir"/etc/X11/xorg.conf.d/xkb-defaults.conf
+    install -Dm 0755 setup "$pkgdir"/tools/setup
+}

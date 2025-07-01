@@ -3,7 +3,7 @@
 # depends	: libxcb-32 vulkan-loader
 
 pkgname=vulkan-loader-32
-pkgver=1.4.304
+pkgver=1.4.313
 pkgrel=1
 source="$pkgname-$pkgver.tar.gz::https://github.com/KhronosGroup/Vulkan-Loader/archive/refs/tags/v$pkgver.tar.gz"
 optsflags=" -O3 -ffat-lto-objects -flto=auto "

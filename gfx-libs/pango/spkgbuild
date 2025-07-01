@@ -1,0 +1,27 @@
+# description	: Internationalized text layout and rendering library
+# depends	: fontconfig freetype harfbuzz fribidi glib cairo
+# depends	: gobject-introspection libx11 libxft libxrender 
+# depends	: xorg-proto 
+
+pkgname=pango
+pkgver=1.56.4
+pkgrel=1
+source="https://download.gnome.org/sources/pango/${pkgver%.*}/pango-$pkgver.tar.xz"
+optsflags=" -O3 -falign-functions=32 -ffat-lto-objects -flto=auto -fno-semantic-interposition "
+
+build() {
+    local meson_options=(
+        -D documentation=false
+        -D man-pages=true
+        -D sysprof=disabled
+        -D libthai=disabled
+    )
+
+    arch-meson pango-$pkgver  build "${meson_options[@]}"
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}
+
